@@ -23,7 +23,7 @@ export function PromptHero({ onSubmit, isLoading = false }: PromptHeroProps) {
       <div className="w-full max-w-2xl">
         {/* Heading - Bodoni */}
         <div className="text-center mb-8 md:mb-12">
-          <h1 className="font-heading text-4xl md:text-5xl lg:text-6xl font-normal mb-4 tracking-normal">
+          <h1 className="font-heading text-5xl md:text-6xl lg:text-7xl font-normal mb-4 tracking-tight">
             <span className="bg-gradient-to-r from-blue-300 via-blue-400 to-cyan-300 bg-clip-text text-transparent">
               Build Anything
             </span>
