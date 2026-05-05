@@ -13,7 +13,7 @@ export function Footer() {
           <a
             key={link.label}
             href={link.href}
-            className="text-[10px] md:text-xs text-blue-300/60 hover:text-blue-300/90 transition-colors duration-200 font-light whitespace-nowrap"
+            className="text-[10px] md:text-xs text-white/40 hover:text-white/70 transition-colors duration-200 font-light whitespace-nowrap"
           >
             {link.label}
           </a>
