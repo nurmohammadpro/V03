@@ -128,12 +128,11 @@
     font-weight: 200;
     @apply bg-background text-foreground;
     font-family: var(--font-body);
-    font-weight: 200;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-weight: 200;
+    font-weight: 300;
     font-family: var(--font-heading);
-    font-weight: 200;
+    font-weight: 300;
   }
   code, pre, kbd, samp {
     font-family: var(--font-mono);
