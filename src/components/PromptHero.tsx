@@ -21,14 +21,14 @@ export function PromptHero({ onSubmit, isLoading = false }: PromptHeroProps) {
   return (
     <div className="fixed inset-0 flex flex-col items-center justify-center z-10 px-4 md:px-6">
       <div className="w-full max-w-2xl">
-        {/* Heading - Bodoni */}
-        <div className="text-center mb-8 md:mb-12">
-          <h1 className="font-heading text-5xl md:text-6xl lg:text-7xl font-extralight mb-4 tracking-tight">
+        {/* Heading */}
+        <div className="text-center mb-6 md:mb-10">
+          <h1 className="font-heading text-5xl md:text-6xl lg:text-7xl font-extralight mb-3 tracking-tight">
             <span className="bg-gradient-to-r from-blue-300 via-blue-400 to-cyan-300 bg-clip-text text-transparent">
               Build Anything
             </span>
           </h1>
-          <p className="text-lg md:text-xl text-blue-200/60 font-extralight">
+          <p className="text-base md:text-lg text-blue-200/60 font-extralight">
             Describe your app idea and let AI bring it to life
           </p>
         </div>
@@ -36,30 +36,30 @@ export function PromptHero({ onSubmit, isLoading = false }: PromptHeroProps) {
         {/* Prompt Input */}
         <form onSubmit={handleSubmit} className="relative">
           <div className="relative">
-            <div className="relative bg-black/70 backdrop-blur-sm border border-blue-500/20 rounded-2xl p-4 md:p-6 transition-none">
+            <div className="relative bg-black/70 backdrop-blur-sm border border-blue-500/20 rounded-2xl p-3 md:p-5 transition-none">
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="Describe your app idea... e.g., 'A real-time collaboration tool for remote teams'"
                 aria-label="App idea prompt"
-                className="w-full bg-transparent text-lg md:text-xl text-white/90 placeholder-blue-300/40 resize-none focus:outline-none h-24 md:h-28 font-extralight"
+                className="w-full bg-transparent text-sm md:text-base text-white/90 placeholder:text-xs md:placeholder:text-sm placeholder-blue-300/40 resize-none focus:outline-none h-20 md:h-[88px] font-extralight"
                 disabled={isLoading}
               />
 
-              <div className="flex justify-end mt-4">
+              <div className="flex justify-end mt-3">
                 <Button
                   type="submit"
                   disabled={!prompt.trim() || isLoading}
-                  className="bg-gradient-to-r from-blue-500/80 to-cyan-400/80 hover:from-blue-500 hover:to-cyan-400 text-white font-extralight px-6 md:px-8 py-2 md:py-3 rounded-lg transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
+                  className="bg-gradient-to-r from-blue-500/80 to-cyan-400/80 hover:from-blue-500 hover:to-cyan-400 text-white font-extralight px-5 md:px-6 py-1.5 md:py-2 text-sm rounded-lg transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {isLoading ? (
                     <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
                       Creating...
                     </>
                   ) : (
                     <>
-                      <Send className="w-4 h-4 mr-2" />
+                      <Send className="w-3.5 h-3.5 mr-1.5" />
                       Create App
                     </>
                   )}
@@ -69,7 +69,7 @@ export function PromptHero({ onSubmit, isLoading = false }: PromptHeroProps) {
           </div>
         </form>
 
-        <p className="text-center text-sm md:text-base text-blue-300/40 mt-6 md:mt-8 font-extralight">
+        <p className="text-center text-xs md:text-sm text-blue-300/40 mt-5 md:mt-6 font-extralight">
           Sign in to save your creations and collaborate with your team
         </p>
       </div>
