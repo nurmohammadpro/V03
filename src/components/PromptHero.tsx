@@ -23,9 +23,9 @@ export function PromptHero({ onSubmit, isLoading = false }: PromptHeroProps) {
       <div className="w-full max-w-2xl">
         {/* Social proof badge */}
         <div className="flex justify-center mb-8">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-blue-500/20 bg-blue-950/30 backdrop-blur-sm">
-            <Sparkles className="w-3 h-3 text-blue-400" />
-            <span className="text-[11px] md:text-xs text-blue-300/70 font-light tracking-wider uppercase">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-blue-500/30 bg-blue-950/40 backdrop-blur-sm">
+            <Sparkles className="w-3 h-3 text-blue-300" />
+            <span className="text-[11px] md:text-xs text-blue-200/80 font-light tracking-wider uppercase">
               10,000+ apps generated
             </span>
           </div>
@@ -38,11 +38,11 @@ export function PromptHero({ onSubmit, isLoading = false }: PromptHeroProps) {
               From idea to app
             </span>
             <br />
-            <span className="bg-gradient-to-r from-blue-400 via-blue-500 to-cyan-400 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-blue-300 via-blue-400 to-cyan-300 bg-clip-text text-transparent">
               in one conversation
             </span>
           </h1>
-          <p className="text-sm md:text-base text-blue-200/50 font-light max-w-lg mx-auto">
+          <p className="text-sm md:text-base text-blue-200/70 font-light max-w-lg mx-auto">
             Describe your idea in plain English. Get a production-ready codebase for MERN, Next.js, Laravel, Django, or NestJS.
           </p>
         </div>
@@ -50,13 +50,13 @@ export function PromptHero({ onSubmit, isLoading = false }: PromptHeroProps) {
         {/* Prompt Input */}
         <form onSubmit={handleSubmit} className="relative">
           <div className="relative">
-            <div className="relative bg-black/70 backdrop-blur-sm border border-blue-500/20 rounded-2xl p-3 md:p-5 transition-none">
+            <div className="relative bg-black/60 backdrop-blur-sm border border-blue-500/25 rounded-2xl p-3 md:p-5 transition-none">
               <textarea
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
                 placeholder="e.g. 'A real-time Kanban board with drag & drop, user auth, and WebSocket sync'"
                 aria-label="App idea prompt"
-                className="w-full bg-transparent text-xs md:text-sm text-white/90 placeholder:text-[10px] md:placeholder:text-xs placeholder-blue-300/30 resize-none focus:outline-none h-20 md:h-[88px] font-light leading-relaxed"
+                className="w-full bg-transparent text-sm md:text-base text-white/90 placeholder:text-blue-300/50 resize-none focus:outline-none h-20 md:h-[88px] font-light leading-relaxed"
                 disabled={isLoading}
               />
 
@@ -88,14 +88,14 @@ export function PromptHero({ onSubmit, isLoading = false }: PromptHeroProps) {
           {['Next.js', 'MERN', 'Laravel', 'Django', 'NestJS'].map((fw) => (
             <span
               key={fw}
-              className="text-[10px] md:text-xs text-blue-300/40 font-light"
+              className="text-[11px] md:text-xs text-blue-200/60 font-light"
             >
               {fw}
             </span>
           ))}
         </div>
 
-        <p className="text-center text-[10px] md:text-xs text-blue-300/30 mt-5 font-light">
+        <p className="text-center text-[11px] md:text-xs text-blue-200/50 mt-5 font-light">
           3 free generations daily — no credit card required
         </p>
       </div>
