@@ -1,6 +1,5 @@
 node_modules
 .git
-src
 *.md
-plan.md
-todo.md
+.gitignore
+.dockerignore

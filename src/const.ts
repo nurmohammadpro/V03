@@ -8,7 +8,15 @@ export const getLoginUrl = () => {
   const redirectUri = `${window.location.origin}/api/oauth/callback`;
   const state = btoa(redirectUri);
 
-  const url = new URL(`${oauthPortalUrl}/app-auth`);
+  // Build URL with base to handle both absolute and relative paths
+  const base = oauthPortalUrl.startsWith("http")
+    ? oauthPortalUrl
+    : window.location.origin;
+  const path = oauthPortalUrl.startsWith("http")
+    ? ""
+    : oauthPortalUrl;
+
+  const url = new URL(`${path}/app-auth`, base);
   url.searchParams.set("appId", appId);
   url.searchParams.set("redirectUri", redirectUri);
   url.searchParams.set("state", state);
