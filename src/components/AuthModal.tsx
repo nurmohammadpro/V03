@@ -27,7 +27,7 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
         <DialogOverlay className="bg-black/40 backdrop-blur-md" />
         <DialogContent className="w-full max-w-md bg-blue-950/95 backdrop-blur-xl border border-blue-500/30 rounded-2xl shadow-2xl animate-in fade-in zoom-in-95 duration-300">
         <DialogHeader>
-          <DialogTitle className="font-heading text-2xl font-extralight text-center">
+          <DialogTitle className="font-heading text-2xl font-light text-center">
             <span className="bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent">
               Welcome to v03.tech
             </span>
@@ -38,27 +38,27 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
           <TabsList className="grid w-full grid-cols-2 bg-blue-900/50 border border-blue-500/20">
             <TabsTrigger
               value="signin"
-              className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-blue-300 font-extralight"
+              className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-blue-300 font-light"
             >
               Sign In
             </TabsTrigger>
             <TabsTrigger
               value="signup"
-              className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-blue-300 font-extralight"
+              className="data-[state=active]:bg-blue-600 data-[state=active]:text-white text-blue-300 font-light"
             >
               Sign Up
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="signin" className="space-y-4 mt-6">
-            <p className="text-sm text-blue-200/70 text-center mb-4 font-extralight">
+            <p className="text-sm text-blue-200/70 text-center mb-4 font-light">
               Sign in with your account to start building
             </p>
 
             <Button
               onClick={handleOAuthSignIn}
               disabled={isLoading}
-              className="w-full bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 text-white font-extralight py-2 rounded-lg transition-all duration-300 disabled:opacity-50"
+              className="w-full bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 text-white font-light py-2 rounded-lg transition-all duration-300 disabled:opacity-50"
             >
               {isLoading ? (
                 <>
@@ -92,26 +92,26 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
               />
               <Button
                 disabled
-                className="w-full bg-blue-600/50 text-blue-300 cursor-not-allowed font-extralight"
+                className="w-full bg-blue-600/50 text-blue-300 cursor-not-allowed font-light"
               >
                 Sign In
               </Button>
             </div>
 
-            <p className="text-xs text-blue-300/50 text-center font-extralight">
+            <p className="text-xs text-blue-300/50 text-center font-light">
               Email/password coming soon. Use Manus OAuth for now.
             </p>
           </TabsContent>
 
           <TabsContent value="signup" className="space-y-4 mt-6">
-            <p className="text-sm text-blue-200/70 text-center mb-4 font-extralight">
+            <p className="text-sm text-blue-200/70 text-center mb-4 font-light">
               Create an account to start building amazing apps
             </p>
 
             <Button
               onClick={handleOAuthSignIn}
               disabled={isLoading}
-              className="w-full bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 text-white font-extralight py-2 rounded-lg transition-all duration-300 disabled:opacity-50"
+              className="w-full bg-gradient-to-r from-blue-500 to-cyan-400 hover:from-blue-600 hover:to-cyan-500 text-white font-light py-2 rounded-lg transition-all duration-300 disabled:opacity-50"
             >
               {isLoading ? (
                 <>
@@ -145,19 +145,19 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
               />
               <Button
                 disabled
-                className="w-full bg-blue-600/50 text-blue-300 cursor-not-allowed font-extralight"
+                className="w-full bg-blue-600/50 text-blue-300 cursor-not-allowed font-light"
               >
                 Sign Up
               </Button>
             </div>
 
-            <p className="text-xs text-blue-300/50 text-center font-extralight">
+            <p className="text-xs text-blue-300/50 text-center font-light">
               Email/password coming soon. Use Manus OAuth for now.
             </p>
           </TabsContent>
         </Tabs>
 
-        <p className="text-xs text-blue-300/40 text-center mt-6 font-extralight">
+        <p className="text-xs text-blue-300/40 text-center mt-6 font-light">
           By signing in, you agree to our Terms of Service and Privacy Policy
         </p>
         </DialogContent>

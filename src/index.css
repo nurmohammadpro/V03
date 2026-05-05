@@ -125,7 +125,7 @@
   }
 
   body {
-    font-weight: 200;
+    font-weight: 400;
     @apply bg-background text-foreground;
     font-family: var(--font-body);
   }
