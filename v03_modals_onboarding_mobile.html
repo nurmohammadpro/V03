@@ -1,0 +1,417 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg1:#161618;--bg2:#1c1c1f;--bg3:#222226;--bg4:#2a2a2f;
+  --b1:#ffffff0d;--b2:#ffffff16;--b3:#ffffff22;--b4:#ffffff32;
+  --t1:#f0eff2;--t2:#a8a7b0;--t3:#65646e;--t4:#3d3c44;
+  --accent:#5b8def;--accent2:#7b6ef6;--adim:#5b8def20;--a2dim:#7b6ef618;
+  --green:#3ecf8e;--amber:#f5a623;--red:#e05a5a;
+  --mono:'JetBrains Mono',monospace;
+  --sans:'Inter',system-ui,sans-serif;
+  --r4:4px;--r8:8px;--r12:12px;--r16:16px;--r24:24px;--r99:999px;
+  --ease:cubic-bezier(0.25,1,0.5,1);
+  --spring:cubic-bezier(0.34,1.56,0.64,1);
+}
+body{font-family:var(--sans);background:transparent;color:var(--t1);font-size:13px}
+
+.screen-nav{display:flex;gap:6px;padding:.75rem 0 1.25rem;flex-wrap:wrap}
+.snav-btn{padding:5px 13px;border-radius:var(--r99);border:.5px solid var(--b2);background:transparent;color:var(--t2);cursor:pointer;font-size:12px;font-family:var(--sans);transition:all 140ms}
+.snav-btn:hover{background:var(--bg3);color:var(--t1)}
+.snav-btn.active{background:var(--bg3);color:var(--t1);border-color:var(--b3)}
+
+.screen{display:none;border-radius:var(--r16);overflow:hidden;border:.5px solid var(--b2);background:var(--bg1)}
+.screen.active{display:block}
+
+@keyframes check-pop{0%{transform:scale(0)}60%{transform:scale(1.2)}100%{transform:scale(1)}}
+@keyframes fade-up{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slide-in{from{opacity:0;transform:translateX(-8px)}to{opacity:1;transform:translateX(0)}}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(200%)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* ── UPGRADE MODAL ── */
+.upgrade-bg{min-height:600px;display:flex;align-items:center;justify-content:center;padding:2rem;background:var(--bg1);position:relative}
+.upgrade-grid{position:absolute;inset:0;background-image:linear-gradient(var(--b1) 1px,transparent 1px),linear-gradient(90deg,var(--b1) 1px,transparent 1px);background-size:40px 40px;pointer-events:none}
+.upgrade-modal{background:var(--bg2);border:.5px solid var(--b3);border-radius:var(--r24);padding:2rem;width:100%;max-width:440px;position:relative;z-index:1}
+.upgrade-header{text-align:center;margin-bottom:1.75rem}
+.upgrade-icon{width:48px;height:48px;border-radius:var(--r12);background:var(--a2dim);border:.5px solid #7b6ef633;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;font-size:22px}
+.upgrade-title{font-size:22px;font-weight:600;letter-spacing:-.02em;margin-bottom:.5rem}
+.upgrade-sub{font-size:13px;color:var(--t2);line-height:1.5}
+.billing-toggle{display:flex;background:var(--bg3);border-radius:var(--r99);padding:3px;margin:1.25rem 0;border:.5px solid var(--b2)}
+.billing-opt{flex:1;text-align:center;padding:7px;border-radius:var(--r99);font-size:12px;cursor:pointer;transition:all 150ms;color:var(--t2)}
+.billing-opt.active{background:var(--bg4);color:var(--t1);font-weight:500}
+.billing-save{display:inline-block;font-size:10px;padding:1px 7px;border-radius:var(--r99);background:#3ecf8e18;color:var(--green);border:.5px solid #3ecf8e30;margin-left:5px}
+.price-row{display:flex;align-items:baseline;gap:4px;margin:1rem 0 .25rem}
+.price-main{font-size:36px;font-weight:600;letter-spacing:-.03em}
+.price-per{font-size:13px;color:var(--t2)}
+.price-was{font-size:13px;color:var(--t3);text-decoration:line-through;margin-left:4px}
+.feature-list{display:flex;flex-direction:column;gap:9px;margin:1.25rem 0}
+.feat-row{display:flex;align-items:center;gap:10px}
+.feat-check{width:18px;height:18px;border-radius:50%;background:#7b6ef620;border:.5px solid #7b6ef640;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--accent2)}
+.feat-text{font-size:13px;color:var(--t1)}
+.feat-badge{margin-left:auto;font-size:10px;padding:2px 7px;border-radius:var(--r99);background:var(--adim);color:var(--accent);border:.5px solid #5b8def30}
+.upgrade-cta{width:100%;padding:13px;border-radius:var(--r12);background:var(--accent2);color:#fff;font-size:14px;font-weight:500;border:none;cursor:pointer;font-family:var(--sans);transition:all 150ms;letter-spacing:-.01em}
+.upgrade-cta:hover{background:#6a5fe0;transform:translateY(-1px)}
+.upgrade-cta:active{transform:scale(.98)}
+.upgrade-fine{text-align:center;font-size:11px;color:var(--t3);margin-top:10px}
+
+/* ── ONBOARDING ── */
+.onboard-wrap{min-height:560px;display:flex;flex-direction:column;background:var(--bg1)}
+.onboard-top{padding:14px 16px;border-bottom:.5px solid var(--b1);display:flex;align-items:center;gap:8px}
+.onboard-logo{width:24px;height:24px;border-radius:var(--r4);background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff}
+.onboard-title{font-size:13px;font-weight:500}
+.onboard-credit{margin-left:auto;display:flex;align-items:center;gap:5px;font-size:11px;color:var(--t2);padding:3px 9px;background:var(--bg3);border-radius:var(--r99);border:.5px solid var(--b2)}
+.onboard-credit-dot{width:6px;height:6px;border-radius:50%;background:var(--accent)}
+.onboard-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2.5rem 1.5rem;gap:1.5rem}
+.onboard-greeting{text-align:center}
+.onboard-greeting h2{font-size:20px;font-weight:500;letter-spacing:-.02em;margin-bottom:.4rem}
+.onboard-greeting p{font-size:13px;color:var(--t2);line-height:1.5}
+.starter-grid{display:grid;grid-template-columns:1fr;gap:10px;width:100%;max-width:520px}
+.starter-card{background:var(--bg2);border:.5px solid var(--b2);border-radius:var(--r12);padding:1rem 1.1rem;cursor:pointer;transition:all 180ms var(--ease);display:flex;gap:12px;align-items:flex-start}
+.starter-card:hover{border-color:var(--b4);background:var(--bg3);transform:translateY(-1px)}
+.starter-fw{width:32px;height:32px;border-radius:var(--r8);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px}
+.starter-content{flex:1;min-width:0}
+.starter-label{font-size:11px;color:var(--t3);margin-bottom:3px;text-transform:uppercase;letter-spacing:.05em;font-weight:500}
+.starter-prompt{font-size:13px;color:var(--t1);line-height:1.4}
+.starter-tags{display:flex;gap:5px;margin-top:7px;flex-wrap:wrap}
+.starter-tag{font-size:10px;padding:2px 7px;border-radius:var(--r99);background:var(--bg4);color:var(--t3);border:.5px solid var(--b2)}
+.starter-arrow{margin-left:auto;color:var(--t3);font-size:14px;padding-top:6px;transition:transform 150ms}
+.starter-card:hover .starter-arrow{color:var(--t2);transform:translateX(2px)}
+.onboard-divider{display:flex;align-items:center;gap:10px;width:100%;max-width:520px}
+.onboard-divider-line{flex:1;height:.5px;background:var(--b2)}
+.onboard-divider span{font-size:11px;color:var(--t3)}
+.onboard-prompt-row{display:flex;gap:8px;width:100%;max-width:520px}
+.onboard-inp{flex:1;background:var(--bg3);border:.5px solid var(--b2);border-radius:var(--r8);padding:10px 13px;color:var(--t1);font-size:13px;font-family:var(--sans);outline:none;transition:border-color 150ms,box-shadow 150ms}
+.onboard-inp:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--adim)}
+.onboard-inp::placeholder{color:var(--t3)}
+.onboard-send{width:38px;height:38px;border-radius:var(--r8);background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 150ms;flex-shrink:0}
+.onboard-send:hover{background:#4a7ade}
+
+/* ── MOBILE ── */
+.mobile-frame{width:320px;margin:0 auto;border:.5px solid var(--b3);border-radius:24px;overflow:hidden;background:var(--bg1)}
+.mobile-notch{height:28px;background:var(--bg2);display:flex;align-items:center;justify-content:center;border-bottom:.5px solid var(--b1)}
+.mobile-notch-bar{width:80px;height:4px;background:var(--b4);border-radius:var(--r99)}
+.mobile-top{padding:10px 14px;border-bottom:.5px solid var(--b1);display:flex;align-items:center;gap:8px}
+.mobile-logo{width:22px;height:22px;border-radius:var(--r4);background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff}
+.mobile-proj{font-size:13px;font-weight:500;flex:1}
+.mobile-credit{font-size:11px;color:var(--t2);padding:3px 8px;background:var(--bg3);border-radius:var(--r99);border:.5px solid var(--b2)}
+.mobile-chat{padding:12px 14px;display:flex;flex-direction:column;gap:12px;min-height:200px}
+.mobile-msg{max-width:85%;padding:9px 12px;border-radius:var(--r12);font-size:12px;line-height:1.5}
+.mobile-msg-user{background:var(--accent);color:#fff;border-radius:var(--r12) var(--r4) var(--r12) var(--r12);align-self:flex-end}
+.mobile-msg-ai{background:var(--bg3);color:var(--t1);border:.5px solid var(--b2);border-radius:var(--r4) var(--r12) var(--r12) var(--r12)}
+.mobile-tab-bar{border-top:.5px solid var(--b2);display:flex;background:var(--bg2)}
+.mobile-tab{flex:1;padding:10px 0;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;transition:all 140ms;border-top:2px solid transparent}
+.mobile-tab.active{border-top-color:var(--accent)}
+.mobile-tab-icon{font-size:14px;line-height:1}
+.mobile-tab-label{font-size:9px;color:var(--t3);text-transform:uppercase;letter-spacing:.04em}
+.mobile-tab.active .mobile-tab-label{color:var(--accent)}
+.mobile-prompt{padding:10px 12px;border-top:.5px solid var(--b1);display:flex;gap:7px}
+.mobile-inp{flex:1;background:var(--bg3);border:.5px solid var(--b2);border-radius:var(--r99);padding:8px 12px;color:var(--t1);font-size:12px;font-family:var(--sans);outline:none}
+.mobile-inp::placeholder{color:var(--t3)}
+.mobile-send{width:32px;height:32px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.mobile-preview{background:#0f172a;min-height:160px;padding:14px}
+.mob-prev-nav{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.mob-prev-logo{font-size:12px;font-weight:700;color:#f8fafc}
+.mob-prev-links{display:flex;gap:10px}
+.mob-prev-link{font-size:10px;color:#64748b}
+.mob-prev-h{font-size:16px;font-weight:700;color:#f8fafc;margin-bottom:5px;text-align:center}
+.mob-prev-s{font-size:11px;color:#94a3b8;text-align:center;margin-bottom:10px}
+.mob-prev-btn{display:block;margin:0 auto;padding:7px 16px;background:#3b82f6;color:#fff;border-radius:5px;font-size:11px;font-weight:500;text-align:center;width:fit-content}
+
+.mobile-code{padding:12px;font-family:var(--mono);font-size:10px;line-height:1.7;color:var(--t2);background:var(--bg1);min-height:160px;overflow-x:auto}
+.tok-k{color:#7b6ef6}.tok-s{color:#3ecf8e}.tok-f{color:#5b8def}.tok-n{color:#f5a623}.tok-c{color:#484750}
+
+.mobile-wrap{min-height:580px;background:var(--bg1);display:flex;align-items:center;justify-content:center;padding:2rem}
+</style>
+
+<h2 class="sr-only">v03.tech upgrade modal, onboarding screen, and mobile layout mockups</h2>
+
+<div class="screen-nav">
+  <button class="snav-btn active" onclick="showScreen('upgrade')">Upgrade modal</button>
+  <button class="snav-btn" onclick="showScreen('onboard')">Onboarding</button>
+  <button class="snav-btn" onclick="showScreen('mobile')">Mobile view</button>
+</div>
+
+<!-- ══════════ UPGRADE MODAL ══════════ -->
+<div class="screen active" id="screen-upgrade">
+  <div class="upgrade-bg">
+    <div class="upgrade-grid"></div>
+    <div class="upgrade-modal">
+      <div class="upgrade-header">
+        <div class="upgrade-icon">&#9889;</div>
+        <div class="upgrade-title">Upgrade to Pro</div>
+        <p class="upgrade-sub">Unlock the full v03 experience — exports, sharing, GitHub push, and unlimited generations.</p>
+      </div>
+
+      <div class="billing-toggle">
+        <div class="billing-opt active" id="bill-mo" onclick="setBilling('mo')">Monthly</div>
+        <div class="billing-opt" id="bill-yr" onclick="setBilling('yr')">
+          Annual <span class="billing-save" id="save-badge" style="display:none">Save 20%</span>
+        </div>
+      </div>
+
+      <div class="price-row">
+        <span class="price-main" id="price-num">$19</span>
+        <span class="price-per" id="price-per">/month</span>
+        <span class="price-was" id="price-was" style="display:none">$19</span>
+      </div>
+      <div style="font-size:12px;color:var(--t3);margin-bottom:.25rem" id="price-sub">Billed monthly. Cancel anytime.</div>
+
+      <div class="feature-list">
+        <div class="feat-row" style="animation:fade-up 200ms var(--ease) both">
+          <div class="feat-check">✓</div>
+          <span class="feat-text">Unlimited daily generations</span>
+        </div>
+        <div class="feat-row" style="animation:fade-up 250ms var(--ease) both">
+          <div class="feat-check">✓</div>
+          <span class="feat-text">Export ZIP of any project</span>
+        </div>
+        <div class="feat-row" style="animation:fade-up 300ms var(--ease) both">
+          <div class="feat-check">✓</div>
+          <span class="feat-text">Shareable public preview links</span>
+        </div>
+        <div class="feat-row" style="animation:fade-up 350ms var(--ease) both">
+          <div class="feat-check">✓</div>
+          <span class="feat-text">Push directly to GitHub</span>
+          <span class="feat-badge">New</span>
+        </div>
+        <div class="feat-row" style="animation:fade-up 400ms var(--ease) both">
+          <div class="feat-check">✓</div>
+          <span class="feat-text">Inline AI code editing</span>
+          <span class="feat-badge">Pro</span>
+        </div>
+        <div class="feat-row" style="animation:fade-up 450ms var(--ease) both">
+          <div class="feat-check">✓</div>
+          <span class="feat-text">Unlimited version history</span>
+        </div>
+        <div class="feat-row" style="animation:fade-up 500ms var(--ease) both">
+          <div class="feat-check">✓</div>
+          <span class="feat-text">Priority generation queue</span>
+        </div>
+      </div>
+
+      <button class="upgrade-cta" id="upgrade-cta" onclick="clickUpgrade()">Upgrade to Pro — $19/mo</button>
+      <div class="upgrade-fine">Secured by Stripe · Cancel anytime · No commitment</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ ONBOARDING ══════════ -->
+<div class="screen" id="screen-onboard">
+  <div class="onboard-wrap">
+    <div class="onboard-top">
+      <div class="onboard-logo">v</div>
+      <span class="onboard-title">v03.tech</span>
+      <div class="onboard-credit"><div class="onboard-credit-dot"></div>3 free credits</div>
+    </div>
+    <div class="onboard-body">
+      <div class="onboard-greeting" style="animation:fade-up 250ms var(--ease) both">
+        <h2>What are you building?</h2>
+        <p>Pick a starter or describe your own idea below.</p>
+      </div>
+
+      <div class="starter-grid" style="animation:fade-up 320ms var(--ease) both">
+        <div class="starter-card" onclick="selectStarter(this,'Next.js')">
+          <div class="starter-fw" style="background:#ffffff15;color:#ffffff">N</div>
+          <div class="starter-content">
+            <div class="starter-label">Next.js 14</div>
+            <div class="starter-prompt">Build a minimal developer blog with MDX, Tailwind CSS, dark mode, and an RSS feed</div>
+            <div class="starter-tags">
+              <span class="starter-tag">MDX</span>
+              <span class="starter-tag">Tailwind</span>
+              <span class="starter-tag">dark mode</span>
+              <span class="starter-tag">RSS</span>
+            </div>
+          </div>
+          <div class="starter-arrow">→</div>
+        </div>
+        <div class="starter-card" onclick="selectStarter(this,'NestJS')">
+          <div class="starter-fw" style="background:#e0234e18;color:#e0234e">N</div>
+          <div class="starter-content">
+            <div class="starter-label">NestJS</div>
+            <div class="starter-prompt">Create a REST API with JWT authentication, role-based access, and Swagger documentation</div>
+            <div class="starter-tags">
+              <span class="starter-tag">JWT auth</span>
+              <span class="starter-tag">RBAC</span>
+              <span class="starter-tag">Swagger</span>
+              <span class="starter-tag">PostgreSQL</span>
+            </div>
+          </div>
+          <div class="starter-arrow">→</div>
+        </div>
+        <div class="starter-card" onclick="selectStarter(this,'Laravel')">
+          <div class="starter-fw" style="background:#ff2d2018;color:#ff2d20">L</div>
+          <div class="starter-content">
+            <div class="starter-label">Laravel 11</div>
+            <div class="starter-prompt">Make a portfolio site with Inertia.js, Vue 3, contact form, and animated project showcase</div>
+            <div class="starter-tags">
+              <span class="starter-tag">Inertia.js</span>
+              <span class="starter-tag">Vue 3</span>
+              <span class="starter-tag">Pest tests</span>
+            </div>
+          </div>
+          <div class="starter-arrow">→</div>
+        </div>
+      </div>
+
+      <div class="onboard-divider" style="animation:fade-up 400ms var(--ease) both">
+        <div class="onboard-divider-line"></div>
+        <span>or describe your own</span>
+        <div class="onboard-divider-line"></div>
+      </div>
+
+      <div class="onboard-prompt-row" style="animation:fade-up 440ms var(--ease) both">
+        <input class="onboard-inp" type="text" placeholder="e.g. Build a SaaS dashboard with Next.js and Stripe..." id="custom-inp">
+        <button class="onboard-send" onclick="sendCustom()">
+          <svg width="14" height="14" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ MOBILE ══════════ -->
+<div class="screen" id="screen-mobile">
+  <div class="mobile-wrap">
+    <div>
+      <div style="text-align:center;margin-bottom:1rem;font-size:12px;color:var(--t3)">
+        Mobile workspace — tabbed layout &lt; 1024px
+      </div>
+      <div class="mobile-frame">
+        <div class="mobile-notch"><div class="mobile-notch-bar"></div></div>
+        <div class="mobile-top">
+          <div class="mobile-logo">v</div>
+          <div class="mobile-proj">Next.js blog</div>
+          <div class="mobile-credit">6 ◉</div>
+        </div>
+
+        <div id="mob-chat-pane">
+          <div class="mobile-chat">
+            <div class="mobile-msg mobile-msg-user">Build me a Next.js blog with MDX and dark mode</div>
+            <div class="mobile-msg mobile-msg-ai">
+              <span style="display:inline-block;width:2px;height:12px;background:var(--accent);border-radius:1px;animation:blink 800ms ease-in-out infinite;vertical-align:middle;margin-right:4px"></span>
+              Generating your project...
+            </div>
+          </div>
+          <div class="mobile-prompt">
+            <input class="mobile-inp" placeholder="Continue editing...">
+            <button class="mobile-send">
+              <svg width="12" height="12" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <div id="mob-preview-pane" style="display:none">
+          <div class="mobile-preview">
+            <div class="mob-prev-nav">
+              <div class="mob-prev-logo">Minimal.</div>
+              <div class="mob-prev-links">
+                <span class="mob-prev-link">Blog</span>
+                <span class="mob-prev-link">About</span>
+              </div>
+            </div>
+            <div class="mob-prev-h">Writing about code.</div>
+            <div class="mob-prev-s">Thoughts from a developer who cares about the details.</div>
+            <div class="mob-prev-btn">Read the blog</div>
+          </div>
+        </div>
+
+        <div id="mob-code-pane" style="display:none">
+          <div class="mobile-code">
+<span class="tok-k">export default async function</span> <span class="tok-f">Home</span>() {
+  <span class="tok-k">const</span> posts = <span class="tok-k">await</span> <span class="tok-f">getAllPosts</span>()
+  <span class="tok-k">return</span> (
+    &lt;main&gt;
+      &lt;<span class="tok-f">Hero</span> /&gt;
+      {posts.<span class="tok-f">map</span>(p =&gt;
+        &lt;<span class="tok-f">PostCard</span> key={p.slug} {...p} /&gt;
+      )}
+    &lt;/main&gt;
+  )
+}
+          </div>
+        </div>
+
+        <div class="mobile-tab-bar">
+          <div class="mobile-tab active" id="mob-t-chat" onclick="mobTab('chat')">
+            <div class="mobile-tab-icon">&#128172;</div>
+            <div class="mobile-tab-label">Chat</div>
+          </div>
+          <div class="mobile-tab" id="mob-t-preview" onclick="mobTab('preview')">
+            <div class="mobile-tab-icon">&#127760;</div>
+            <div class="mobile-tab-label">Preview</div>
+          </div>
+          <div class="mobile-tab" id="mob-t-code" onclick="mobTab('code')">
+            <div class="mobile-tab-icon">&#128196;</div>
+            <div class="mobile-tab-label">Code</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:1.25rem;display:flex;flex-direction:column;gap:8px;max-width:320px;margin-left:auto;margin-right:auto">
+        <div style="font-size:11px;color:var(--t3);text-align:center;text-transform:uppercase;letter-spacing:.06em;font-weight:500">Key mobile rules</div>
+        <div style="padding:10px 12px;background:var(--bg2);border:.5px solid var(--b2);border-radius:var(--r8);font-size:11px;color:var(--t2);display:flex;gap:8px">
+          <span style="color:var(--accent);flex-shrink:0">→</span>Tabs replace the 50/50 split at &lt;1024px
+        </div>
+        <div style="padding:10px 12px;background:var(--bg2);border:.5px solid var(--b2);border-radius:var(--r8);font-size:11px;color:var(--t2);display:flex;gap:8px">
+          <span style="color:var(--accent);flex-shrink:0">→</span>Bottom prompt bar uses <code style="font-family:var(--mono);color:var(--accent)">env(safe-area-inset-bottom)</code> for iOS
+        </div>
+        <div style="padding:10px 12px;background:var(--bg2);border:.5px solid var(--b2);border-radius:var(--r8);font-size:11px;color:var(--t2);display:flex;gap:8px">
+          <span style="color:var(--accent);flex-shrink:0">→</span>Rounded input uses pill shape — feels native on mobile
+        </div>
+        <div style="padding:10px 12px;background:var(--bg2);border:.5px solid var(--b2);border-radius:var(--r8);font-size:11px;color:var(--t2);display:flex;gap:8px">
+          <span style="color:var(--accent);flex-shrink:0">→</span>File explorer becomes a bottom sheet drawer
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.snav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function setBilling(mode) {
+  const isMo = mode === 'mo';
+  document.getElementById('bill-mo').classList.toggle('active', isMo);
+  document.getElementById('bill-yr').classList.toggle('active', !isMo);
+  document.getElementById('save-badge').style.display = isMo ? 'none' : 'inline-block';
+  document.getElementById('price-num').textContent = isMo ? '$19' : '$15';
+  document.getElementById('price-per').textContent = '/month';
+  document.getElementById('price-was').style.display = isMo ? 'none' : 'inline';
+  document.getElementById('price-was').textContent = '$19';
+  document.getElementById('price-sub').textContent = isMo ? 'Billed monthly. Cancel anytime.' : 'Billed $182/year. Save $46 vs monthly.';
+  document.getElementById('upgrade-cta').textContent = isMo ? 'Upgrade to Pro — $19/mo' : 'Upgrade to Pro — $15/mo';
+}
+
+function clickUpgrade() {
+  const btn = document.getElementById('upgrade-cta');
+  btn.textContent = 'Redirecting to Stripe...';
+  btn.style.opacity = '.7';
+  setTimeout(() => { btn.textContent = 'Upgrade to Pro — $19/mo'; btn.style.opacity = '1'; }, 1800);
+}
+
+function selectStarter(card, fw) {
+  document.querySelectorAll('.starter-card').forEach(c => { c.style.borderColor = ''; c.style.background = ''; });
+  card.style.borderColor = 'var(--accent)';
+  card.style.background = 'var(--adim)';
+  const prompt = card.querySelector('.starter-prompt').textContent;
+  document.getElementById('custom-inp').value = prompt;
+}
+
+function sendCustom() {
+  const val = document.getElementById('custom-inp').value.trim();
+  if (val) sendPrompt('Show me how v03.tech would generate code for: ' + val);
+}
+
+function mobTab(tab) {
+  ['chat','preview','code'].forEach(t => {
+    document.getElementById('mob-' + t + '-pane').style.display = t === tab ? 'block' : 'none';
+    document.getElementById('mob-t-' + t).classList.toggle('active', t === tab);
+  });
+}
+</script>

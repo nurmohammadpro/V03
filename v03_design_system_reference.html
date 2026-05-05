@@ -1,0 +1,659 @@
+
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg1:#161618;--bg2:#1c1c1f;--bg3:#222226;--bg4:#2a2a2f;
+    --border:#ffffff12;--border-md:#ffffff1e;--border-strong:#ffffff2e;
+    --text1:#f0eff2;--text2:#a8a7b0;--text3:#65646e;
+    --accent:#5b8def;--accent2:#7b6ef6;--accent-dim:#5b8def22;
+    --green:#3ecf8e;--amber:#f5a623;--red:#e05a5a;
+    --mono:'JetBrains Mono',monospace;
+    --sans:'Inter',system-ui,sans-serif;
+    --r4:4px;--r8:8px;--r12:12px;--r16:16px;--r99:999px;
+    --ease-out-quart:cubic-bezier(0.25,1,0.5,1);
+    --ease-spring:cubic-bezier(0.34,1.56,0.64,1);
+  }
+  body{font-family:var(--sans);background:transparent;color:var(--text1);font-size:13px;line-height:1.5}
+  .nav{display:flex;gap:6px;padding:1rem 0 1.5rem;flex-wrap:wrap}
+  .nav-btn{padding:6px 14px;border-radius:var(--r99);border:0.5px solid var(--border-md);background:transparent;color:var(--text2);cursor:pointer;font-size:12px;font-family:var(--sans);transition:all 150ms}
+  .nav-btn:hover{background:var(--bg3);color:var(--text1)}
+  .nav-btn.active{background:var(--bg3);color:var(--text1);border-color:var(--border-strong)}
+  .panel{display:none}.panel.active{display:block}
+  .label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;font-weight:500}
+  .section{margin-bottom:2rem}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start}
+
+  /* === COLOR PANEL === */
+  .swatch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
+  .swatch{border-radius:var(--r8);overflow:hidden;border:0.5px solid var(--border)}
+  .swatch-color{height:48px}
+  .swatch-info{padding:8px 10px;background:var(--bg3)}
+  .swatch-name{font-size:12px;font-weight:500;color:var(--text1)}
+  .swatch-hex{font-size:11px;color:var(--text3);font-family:var(--mono)}
+  .swatch-use{font-size:10px;color:var(--text3);margin-top:2px}
+  .palette-row{display:flex;gap:4px;margin-bottom:6px;align-items:center}
+  .palette-chip{height:28px;flex:1;border-radius:var(--r4);cursor:pointer;transition:transform 150ms var(--ease-spring);position:relative}
+  .palette-chip:hover{transform:scaleY(1.2);z-index:1}
+  .palette-label{font-size:11px;color:var(--text3);width:50px;flex-shrink:0}
+  .combo-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .combo-card{border-radius:var(--r8);padding:14px;border:0.5px solid var(--border)}
+  .combo-title{font-size:12px;font-weight:500;margin-bottom:2px}
+  .combo-sub{font-size:11px;opacity:.7}
+  .combo-badge{display:inline-block;font-size:10px;padding:2px 8px;border-radius:var(--r99);margin-top:8px;font-weight:500}
+
+  /* === COMPONENTS PANEL === */
+  .comp-demo{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--r12);padding:1.25rem;margin-bottom:10px}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:var(--r8);font-size:13px;font-family:var(--sans);cursor:pointer;transition:all 150ms;border:0.5px solid;font-weight:500}
+  .btn-primary{background:var(--accent);color:#fff;border-color:var(--accent);box-shadow:0 0 0 0 var(--accent)}
+  .btn-primary:hover{background:#4a7ade;box-shadow:0 0 0 3px var(--accent-dim)}
+  .btn-primary:active{transform:scale(.97)}
+  .btn-ghost{background:transparent;color:var(--text2);border-color:var(--border-md)}
+  .btn-ghost:hover{background:var(--bg3);color:var(--text1);border-color:var(--border-strong)}
+  .btn-ghost:active{transform:scale(.97)}
+  .btn-danger{background:transparent;color:var(--red);border-color:#e05a5a33}
+  .btn-danger:hover{background:#e05a5a15}
+  .input-wrap{position:relative;margin-bottom:10px}
+  .inp{width:100%;padding:9px 12px;background:var(--bg3);border:0.5px solid var(--border-md);border-radius:var(--r8);color:var(--text1);font-size:13px;font-family:var(--sans);outline:none;transition:border-color 150ms,box-shadow 150ms}
+  .inp:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
+  .inp::placeholder{color:var(--text3)}
+  .inp-label{font-size:11px;color:var(--text2);margin-bottom:5px;display:block}
+  .inp-hint{font-size:11px;color:var(--text3);margin-top:4px}
+  .inp-error{border-color:var(--red)!important;box-shadow:0 0 0 3px #e05a5a22!important}
+  .inp-err-msg{font-size:11px;color:var(--red);margin-top:4px}
+  .badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:500;padding:3px 9px;border-radius:var(--r99)}
+  .badge-blue{background:#5b8def1a;color:#5b8def;border:0.5px solid #5b8def33}
+  .badge-green{background:#3ecf8e1a;color:#3ecf8e;border:0.5px solid #3ecf8e33}
+  .badge-amber{background:#f5a6231a;color:#f5a623;border:0.5px solid #f5a62333}
+  .badge-red{background:#e05a5a1a;color:#e05a5a;border:0.5px solid #e05a5a33}
+  .badge-purple{background:#7b6ef61a;color:#7b6ef6;border:0.5px solid #7b6ef633}
+  .card{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--r12);overflow:hidden;transition:border-color 200ms,transform 200ms var(--ease-out-quart)}
+  .card:hover{border-color:var(--border-strong);transform:translateY(-1px)}
+  .toggle{width:38px;height:22px;border-radius:var(--r99);background:var(--bg4);border:0.5px solid var(--border-md);cursor:pointer;position:relative;transition:background 200ms;flex-shrink:0}
+  .toggle.on{background:var(--accent);border-color:var(--accent)}
+  .toggle-knob{position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:#fff;transition:transform 200ms var(--ease-spring)}
+  .toggle.on .toggle-knob{transform:translateX(16px)}
+  .otp-grid{display:flex;gap:8px}
+  .otp-box{width:44px;height:52px;background:var(--bg3);border:0.5px solid var(--border-md);border-radius:var(--r8);display:flex;align-items:center;justify-content:center;font-size:20px;font-family:var(--mono);font-weight:500;color:var(--text1);transition:border-color 150ms,box-shadow 150ms;cursor:text}
+  .otp-box.filled{border-color:var(--border-strong)}
+  .otp-box.active{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)}
+  .otp-box.correct{border-color:var(--green);box-shadow:0 0 0 3px #3ecf8e22}
+  .fw-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;background:var(--bg3);border:0.5px solid var(--border-md);border-radius:var(--r8);font-size:12px;cursor:pointer;transition:all 150ms;color:var(--text2)}
+  .fw-chip:hover{border-color:var(--border-strong);color:var(--text1)}
+  .fw-chip.sel{background:var(--accent-dim);border-color:var(--accent);color:var(--accent)}
+  .fw-dot{width:7px;height:7px;border-radius:50%}
+  .credit-pill{display:inline-flex;align-items:center;gap:7px;padding:6px 12px;background:var(--bg3);border:0.5px solid var(--border-md);border-radius:var(--r99);font-size:13px;font-weight:500;cursor:pointer;transition:all 150ms}
+  .credit-pill:hover{border-color:var(--border-strong)}
+  .credit-dot{width:8px;height:8px;border-radius:50%;background:var(--accent)}
+
+  /* === ANIMATIONS PANEL === */
+  .anim-demo{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--r12);padding:1.25rem;margin-bottom:10px}
+  .anim-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .anim-label{font-size:12px;color:var(--text3);width:130px;flex-shrink:0}
+  .anim-stage{flex:1;min-height:44px;display:flex;align-items:center;gap:12px}
+  @keyframes cursor-blink{0%,100%{opacity:1}50%{opacity:0}}
+  @keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(200%)}}
+  @keyframes slide-up{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+  @keyframes scale-in{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes pulse-ring{0%{box-shadow:0 0 0 0 var(--accent-dim)}70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
+  @keyframes token-stream{0%{opacity:0;transform:translateX(-4px)}100%{opacity:1;transform:translateX(0)}}
+  @keyframes wc-morph{0%{width:100%}100%{width:50%}}
+  .stream-text{font-family:var(--mono);font-size:12px;color:var(--text1);line-height:1.6}
+  .stream-cursor{display:inline-block;width:2px;height:13px;background:var(--accent);border-radius:1px;animation:cursor-blink 800ms ease-in-out infinite;vertical-align:text-bottom;margin-left:1px}
+  .skeleton{background:var(--bg3);border-radius:var(--r4);overflow:hidden;position:relative}
+  .skeleton::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent,rgba(255,255,255,.04),transparent);animation:shimmer 1.6s ease-in-out infinite}
+  .spinner{width:18px;height:18px;border:2px solid var(--border-md);border-top-color:var(--accent);border-radius:50%;animation:spin 700ms linear infinite}
+  .toast-demo{padding:12px 16px;background:var(--bg3);border:0.5px solid var(--border-strong);border-radius:var(--r8);display:flex;align-items:center;gap:10px;font-size:13px;animation:slide-up 300ms var(--ease-out-quart)}
+  .toast-icon{width:16px;height:16px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700}
+  .split-demo{display:flex;gap:6px;overflow:hidden;border-radius:var(--r8)}
+  .split-chat{background:var(--bg3);padding:10px;font-size:11px;color:var(--text2);border-radius:var(--r4);transition:all 500ms var(--ease-out-quart)}
+  .split-preview{background:#1a1f2e;padding:10px;font-size:11px;color:#5b8def99;border-radius:var(--r4);transition:all 500ms var(--ease-out-quart);font-family:var(--mono)}
+  .ws-btn{font-size:11px;padding:4px 10px;background:var(--bg4);border:0.5px solid var(--border-md);border-radius:var(--r99);cursor:pointer;color:var(--text2);font-family:var(--sans)}
+  .ws-btn:hover{color:var(--text1)}
+  .lock-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;background:var(--bg3);border:0.5px solid var(--border-md);border-radius:var(--r8);font-size:12px;color:var(--text3);cursor:pointer;position:relative;transition:all 150ms}
+  .lock-btn:hover{color:var(--text2);border-color:var(--border-strong)}
+  .lock-icon{font-size:11px}
+  .lock-tooltip{position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--bg4);border:0.5px solid var(--border-strong);border-radius:var(--r8);padding:7px 11px;font-size:11px;color:var(--text1);white-space:nowrap;opacity:0;pointer-events:none;transition:opacity 150ms}
+  .lock-btn:hover .lock-tooltip{opacity:1}
+  .progress-bar{height:3px;background:var(--bg4);border-radius:var(--r99);overflow:hidden;margin:8px 0}
+  .progress-fill{height:100%;background:var(--accent);border-radius:var(--r99);transition:width 400ms var(--ease-out-quart)}
+
+  /* === TYPOGRAPHY PANEL === */
+  .type-row{padding:12px 0;border-bottom:0.5px solid var(--border)}
+  .type-row:last-child{border-bottom:none}
+  .type-preview{margin-bottom:4px}
+  .type-meta{font-size:11px;color:var(--text3);font-family:var(--mono)}
+  .code-block{background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--r8);padding:14px;font-family:var(--mono);font-size:12px;line-height:1.7;overflow-x:auto}
+  .tok-kw{color:#7b6ef6}
+  .tok-str{color:#3ecf8e}
+  .tok-fn{color:#5b8def}
+  .tok-num{color:#f5a623}
+  .tok-cmt{color:var(--text3)}
+  .tok-type{color:#e05a5a}
+  .tok-op{color:var(--text2)}
+</style>
+
+<h2 class="sr-only">v03.tech design system reference — color palette, components, animations, and typography</h2>
+
+<div class="nav" id="nav">
+  <button class="nav-btn active" onclick="switchTab('colors')">Color system</button>
+  <button class="nav-btn" onclick="switchTab('components')">Components</button>
+  <button class="nav-btn" onclick="switchTab('animations')">Animations</button>
+  <button class="nav-btn" onclick="switchTab('typography')">Typography</button>
+</div>
+
+<!-- ===================== COLORS ===================== -->
+<div class="panel active" id="tab-colors">
+
+  <div class="section">
+    <div class="label">Core palette — full ramp</div>
+    <div id="ramp-display">
+      <div class="palette-row"><span class="palette-label">Background</span>
+        <div class="palette-chip" style="background:#0f0f11" title="#0f0f11 — deepest bg"></div>
+        <div class="palette-chip" style="background:#161618" title="#161618 — primary bg"></div>
+        <div class="palette-chip" style="background:#1c1c1f" title="#1c1c1f — surface"></div>
+        <div class="palette-chip" style="background:#222226" title="#222226 — elevated surface"></div>
+        <div class="palette-chip" style="background:#2a2a2f" title="#2a2a2f — hover state"></div>
+        <div class="palette-chip" style="background:#333338" title="#333338 — border strong"></div>
+      </div>
+      <div class="palette-row"><span class="palette-label">Text</span>
+        <div class="palette-chip" style="background:#f0eff2" title="#f0eff2 — primary text"></div>
+        <div class="palette-chip" style="background:#c8c7d0" title="#c8c7d0 — secondary text"></div>
+        <div class="palette-chip" style="background:#a8a7b0" title="#a8a7b0 — muted text"></div>
+        <div class="palette-chip" style="background:#65646e" title="#65646e — placeholder"></div>
+        <div class="palette-chip" style="background:#3d3c44" title="#3d3c44 — faint divider"></div>
+        <div class="palette-chip" style="background:#25242a" title="#25242a — barely visible"></div>
+      </div>
+      <div class="palette-row"><span class="palette-label">Accent</span>
+        <div class="palette-chip" style="background:#1a3a6e" title="#1a3a6e — accent tint"></div>
+        <div class="palette-chip" style="background:#2a55a8" title="#2a55a8 — accent dim"></div>
+        <div class="palette-chip" style="background:#4a7ade" title="#4a7ade — accent hover"></div>
+        <div class="palette-chip" style="background:#5b8def" title="#5b8def — accent PRIMARY"></div>
+        <div class="palette-chip" style="background:#7aabf5" title="#7aabf5 — accent light"></div>
+        <div class="palette-chip" style="background:#a8cafa" title="#a8cafa — accent wash"></div>
+      </div>
+      <div class="palette-row"><span class="palette-label">Purple</span>
+        <div class="palette-chip" style="background:#2d1f5e" title="#2d1f5e"></div>
+        <div class="palette-chip" style="background:#4a35a0" title="#4a35a0"></div>
+        <div class="palette-chip" style="background:#6150d4" title="#6150d4"></div>
+        <div class="palette-chip" style="background:#7b6ef6" title="#7b6ef6 — secondary accent"></div>
+        <div class="palette-chip" style="background:#a496fa" title="#a496fa"></div>
+        <div class="palette-chip" style="background:#cdc7fd" title="#cdc7fd"></div>
+      </div>
+      <div class="palette-row"><span class="palette-label">Success</span>
+        <div class="palette-chip" style="background:#0e3324" title="#0e3324"></div>
+        <div class="palette-chip" style="background:#145e3e" title="#145e3e"></div>
+        <div class="palette-chip" style="background:#1c8f5e" title="#1c8f5e"></div>
+        <div class="palette-chip" style="background:#3ecf8e" title="#3ecf8e — success"></div>
+        <div class="palette-chip" style="background:#72e0ae" title="#72e0ae"></div>
+        <div class="palette-chip" style="background:#a8efd0" title="#a8efd0"></div>
+      </div>
+      <div class="palette-row"><span class="palette-label">Warning</span>
+        <div class="palette-chip" style="background:#3d2a08" title="#3d2a08"></div>
+        <div class="palette-chip" style="background:#6e4c0e" title="#6e4c0e"></div>
+        <div class="palette-chip" style="background:#a87018" title="#a87018"></div>
+        <div class="palette-chip" style="background:#f5a623" title="#f5a623 — warning"></div>
+        <div class="palette-chip" style="background:#f8c065" title="#f8c065"></div>
+        <div class="palette-chip" style="background:#fcd99e" title="#fcd99e"></div>
+      </div>
+      <div class="palette-row"><span class="palette-label">Danger</span>
+        <div class="palette-chip" style="background:#3d1616" title="#3d1616"></div>
+        <div class="palette-chip" style="background:#6e2424" title="#6e2424"></div>
+        <div class="palette-chip" style="background:#a83636" title="#a83636"></div>
+        <div class="palette-chip" style="background:#e05a5a" title="#e05a5a — danger"></div>
+        <div class="palette-chip" style="background:#e88585" title="#e88585"></div>
+        <div class="palette-chip" style="background:#f2b8b8" title="#f2b8b8"></div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--text3);margin-top:8px">Hover any chip to see its hex value</div>
+  </div>
+
+  <div class="section">
+    <div class="label">Accent combos — on-dark usage</div>
+    <div class="combo-grid">
+      <div class="combo-card" style="background:#1a2a4a;border-color:#5b8def33">
+        <div class="combo-title" style="color:#7aabf5">Primary action</div>
+        <div class="combo-sub" style="color:#5b8def99">Blue accent on deep navy bg</div>
+        <span class="combo-badge" style="background:#5b8def;color:#fff">Start building</span>
+      </div>
+      <div class="combo-card" style="background:#1e1a30;border-color:#7b6ef633">
+        <div class="combo-title" style="color:#a496fa">Pro / premium</div>
+        <div class="combo-sub" style="color:#7b6ef699">Purple for upgrade moments</div>
+        <span class="combo-badge" style="background:#7b6ef6;color:#fff">Upgrade to Pro</span>
+      </div>
+      <div class="combo-card" style="background:#0e2018;border-color:#3ecf8e33">
+        <div class="combo-title" style="color:#72e0ae">Success state</div>
+        <div class="combo-sub" style="color:#3ecf8e99">Generation complete</div>
+        <span class="combo-badge" style="background:#3ecf8e1a;color:#3ecf8e;border:0.5px solid #3ecf8e33">Live preview ready</span>
+      </div>
+      <div class="combo-card" style="background:#251a0a;border-color:#f5a62333">
+        <div class="combo-title" style="color:#f8c065">Warning / credit</div>
+        <div class="combo-sub" style="color:#f5a62399">Low credits, security flags</div>
+        <span class="combo-badge" style="background:#f5a6231a;color:#f5a623;border:0.5px solid #f5a62333">1 credit left</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="label">Framework identity colors</div>
+    <div class="row">
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--r8)">
+        <div style="width:8px;height:8px;border-radius:50%;background:#ffffff"></div>
+        <span style="font-size:12px;color:var(--text1)">Next.js</span><span style="font-size:11px;color:var(--text3)">#ffffff</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--r8)">
+        <div style="width:8px;height:8px;border-radius:50%;background:#61dafb"></div>
+        <span style="font-size:12px;color:var(--text1)">MERN</span><span style="font-size:11px;color:var(--text3)">#61dafb</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--r8)">
+        <div style="width:8px;height:8px;border-radius:50%;background:#ff2d20"></div>
+        <span style="font-size:12px;color:var(--text1)">Laravel</span><span style="font-size:11px;color:var(--text3)">#ff2d20</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--r8)">
+        <div style="width:8px;height:8px;border-radius:50%;background:#0c4b33"></div>
+        <span style="font-size:12px;color:var(--text1)">Django</span><span style="font-size:11px;color:var(--text3)">#0c4b33</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg2);border:0.5px solid var(--border);border-radius:var(--r8)">
+        <div style="width:8px;height:8px;border-radius:50%;background:#e0234e"></div>
+        <span style="font-size:12px;color:var(--text1)">NestJS</span><span style="font-size:11px;color:var(--text3)">#e0234e</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== COMPONENTS ===================== -->
+<div class="panel" id="tab-components">
+
+  <div class="section">
+    <div class="label">Buttons</div>
+    <div class="comp-demo">
+      <div class="row" style="margin-bottom:10px">
+        <button class="btn btn-primary">Start building</button>
+        <button class="btn btn-ghost">Cancel</button>
+        <button class="btn btn-danger">Delete project</button>
+      </div>
+      <div class="row">
+        <button class="btn btn-primary" style="opacity:.4;cursor:not-allowed">Generating...</button>
+        <button class="btn btn-ghost" style="gap:8px">
+          <div class="spinner" style="width:13px;height:13px;border-width:1.5px"></div>Loading
+        </button>
+        <button class="btn btn-primary" style="background:#7b6ef6;border-color:#7b6ef6">Upgrade to Pro</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="label">OTP input</div>
+    <div class="comp-demo">
+      <div class="otp-grid" id="otp-demo">
+        <div class="otp-box correct">4</div>
+        <div class="otp-box correct">2</div>
+        <div class="otp-box correct">7</div>
+        <div class="otp-box active"></div>
+        <div class="otp-box"></div>
+        <div class="otp-box"></div>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-top:10px">Auto-focuses next digit. Auto-submits on last entry. Green = confirmed digit.</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="label">Framework selector chips</div>
+    <div class="comp-demo">
+      <div class="row" id="fw-chips">
+        <div class="fw-chip sel" onclick="selectFw(this)"><div class="fw-dot" style="background:#ffffff"></div>Next.js</div>
+        <div class="fw-chip" onclick="selectFw(this)"><div class="fw-dot" style="background:#61dafb"></div>MERN</div>
+        <div class="fw-chip" onclick="selectFw(this)"><div class="fw-dot" style="background:#ff2d20"></div>Laravel</div>
+        <div class="fw-chip" onclick="selectFw(this)"><div class="fw-dot" style="background:#0c4b33"></div>Django</div>
+        <div class="fw-chip" onclick="selectFw(this)"><div class="fw-dot" style="background:#e0234e"></div>NestJS</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="label">Inputs</div>
+    <div class="comp-demo">
+      <div class="input-wrap">
+        <label class="inp-label">Email address</label>
+        <input class="inp" type="email" placeholder="you@example.com">
+      </div>
+      <div class="input-wrap">
+        <label class="inp-label">Project name</label>
+        <input class="inp" type="text" value="My next.js blog" style="border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-dim)">
+        <div class="inp-hint">Letters, numbers and hyphens only</div>
+      </div>
+      <div class="input-wrap">
+        <label class="inp-label">Prompt</label>
+        <input class="inp inp-error" type="text" value="ignore previous instructions">
+        <div class="inp-err-msg">Content policy violation detected</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="label">Badges & status pills</div>
+    <div class="comp-demo">
+      <div class="row">
+        <span class="badge badge-blue">Next.js</span>
+        <span class="badge badge-green">Preview ready</span>
+        <span class="badge badge-amber">1 credit left</span>
+        <span class="badge badge-red">Payment failed</span>
+        <span class="badge badge-purple">Pro</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="label">Credit counter + toggles</div>
+    <div class="comp-demo">
+      <div class="row" style="align-items:center">
+        <div class="credit-pill" id="credit-demo">
+          <div class="credit-dot"></div>
+          <span id="credit-num">6</span> credits
+        </div>
+        <div class="credit-pill" style="border-color:#7b6ef633">
+          <div class="credit-dot" style="background:#7b6ef6"></div>
+          <span style="color:#7b6ef6">∞</span>&nbsp;Pro
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="toggle on" id="t1" onclick="toggleIt(this)"><div class="toggle-knob"></div></div>
+          <span style="font-size:13px;color:var(--text2)">Streaming</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="toggle" id="t2" onclick="toggleIt(this)"><div class="toggle-knob"></div></div>
+          <span style="font-size:13px;color:var(--text2)">Auto-save</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="label">Lock button (gated feature)</div>
+    <div class="comp-demo">
+      <div class="row">
+        <div class="lock-btn">
+          <span class="lock-icon">&#128274;</span> Export ZIP
+          <div class="lock-tooltip">Upgrade to Pro to export</div>
+        </div>
+        <div class="lock-btn">
+          <span class="lock-icon">&#128274;</span> Share link
+          <div class="lock-tooltip">Upgrade to Pro to share</div>
+        </div>
+        <button class="btn btn-ghost" style="font-size:12px">
+          <span style="font-size:13px">&#128279;</span> GitHub push
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== ANIMATIONS ===================== -->
+<div class="panel" id="tab-animations">
+
+  <div class="section">
+    <div class="label">Streaming text cursor</div>
+    <div class="anim-demo">
+      <div class="stream-text" id="stream-out">Building your Next.js app<span class="stream-cursor"></span></div>
+      <div style="margin-top:10px;display:flex;gap:8px">
+        <button class="ws-btn" onclick="startStream()">Replay stream</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="label">Skeleton loading</div>
+    <div class="anim-demo">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div class="skeleton" style="height:14px;width:60%"></div>
+        <div class="skeleton" style="height:12px;width:80%"></div>
+        <div class="skeleton" style="height:12px;width:45%"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="label">Generation progress bar</div>
+    <div class="anim-demo">
+      <div style="font-size:12px;color:var(--text2);margin-bottom:6px">Validating syntax...</div>
+      <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:72%"></div></div>
+      <div style="font-size:11px;color:var(--text3);margin-top:4px">72% — running Semgrep scan</div>
+      <button class="ws-btn" style="margin-top:10px" onclick="animProg()">Animate</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="label">Toast notifications</div>
+    <div class="anim-demo" id="toast-area">
+      <div class="toast-demo">
+        <div class="toast-icon" style="background:#3ecf8e1a;color:#3ecf8e">✓</div>
+        <span style="color:var(--text1)">Preview ready — <span style="color:#5b8def;cursor:pointer">open workspace</span></span>
+      </div>
+      <div style="margin-top:8px">
+        <button class="ws-btn" onclick="showToast('success','Project pushed to GitHub')">Success</button>
+        <button class="ws-btn" onclick="showToast('warn','1 security warning found')" style="margin-left:6px">Warning</button>
+        <button class="ws-btn" onclick="showToast('err','Generation failed — credit refunded')" style="margin-left:6px">Error</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="label">Workspace split transition</div>
+    <div class="anim-demo">
+      <div class="split-demo" id="split-wrap">
+        <div class="split-chat" id="split-chat" style="flex:1">
+          <div style="color:var(--text3);margin-bottom:6px;font-size:11px">Chat</div>
+          <div style="color:var(--text2)">Build a blog with Next.js...</div>
+        </div>
+        <div class="split-preview" id="split-prev" style="flex:0;overflow:hidden;padding:0">
+          <div style="color:#5b8def;font-size:11px">// Preview</div>
+        </div>
+      </div>
+      <button class="ws-btn" style="margin-top:10px" onclick="animSplit()">Trigger split</button>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="label">Credit pulse (low credits warning)</div>
+    <div class="anim-demo">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div id="pulse-pill" class="credit-pill">
+          <div class="credit-dot" style="background:var(--amber)"></div>
+          <span style="color:var(--amber)">1</span> credit left
+        </div>
+        <button class="ws-btn" onclick="triggerPulse()">Trigger pulse</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="label">Easing curves used throughout v03</div>
+    <div class="anim-demo">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span class="anim-label">Layout transitions</span>
+          <code style="font-family:var(--mono);font-size:11px;color:var(--accent)">cubic-bezier(0.25,1,0.5,1)</code>
+          <span style="font-size:11px;color:var(--text3)">— fast start, smooth settle</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span class="anim-label">Toggles / spring</span>
+          <code style="font-family:var(--mono);font-size:11px;color:var(--accent)">cubic-bezier(0.34,1.56,0.64,1)</code>
+          <span style="font-size:11px;color:var(--text3)">— slight overshoot</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span class="anim-label">Toasts / modals</span>
+          <code style="font-family:var(--mono);font-size:11px;color:var(--accent)">cubic-bezier(0.16,1,0.3,1)</code>
+          <span style="font-size:11px;color:var(--text3)">— snappy entry</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span class="anim-label">Hover states</span>
+          <code style="font-family:var(--mono);font-size:11px;color:var(--accent)">150ms linear</code>
+          <span style="font-size:11px;color:var(--text3)">— instant feel</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span class="anim-label">Workspace split</span>
+          <code style="font-family:var(--mono);font-size:11px;color:var(--accent)">320ms ease-out-quart</code>
+          <span style="font-size:11px;color:var(--text3)">— deliberate, satisfying</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===================== TYPOGRAPHY ===================== -->
+<div class="panel" id="tab-typography">
+
+  <div class="section">
+    <div class="label">Type scale</div>
+    <div class="type-row">
+      <div class="type-preview" style="font-size:32px;font-weight:500;letter-spacing:-.02em;color:var(--text1)">Describe your app. Get the code.</div>
+      <div class="type-meta">32px / 500 / Inter / ls -0.02em — hero headline</div>
+    </div>
+    <div class="type-row">
+      <div class="type-preview" style="font-size:20px;font-weight:400;color:var(--text2)">Generate production-ready code in seconds.</div>
+      <div class="type-meta">20px / 400 / Inter — subheadline</div>
+    </div>
+    <div class="type-row">
+      <div class="type-preview" style="font-size:15px;font-weight:500;color:var(--text1)">Project title</div>
+      <div class="type-meta">15px / 500 — section heading, nav items</div>
+    </div>
+    <div class="type-row">
+      <div class="type-preview" style="font-size:13px;color:var(--text1)">Your chat message content appears here at comfortable reading size.</div>
+      <div class="type-meta">13px / 400 — body, chat messages, descriptions</div>
+    </div>
+    <div class="type-row">
+      <div class="type-preview" style="font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;font-weight:500">Section label</div>
+      <div class="type-meta">11px / 500 / uppercase / ls 0.06em — category labels</div>
+    </div>
+    <div class="type-row">
+      <div class="type-preview" style="font-size:11px;color:var(--text3)">Hint text, metadata, timestamps</div>
+      <div class="type-meta">11px / 400 — supporting info</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="label">Code block — syntax highlighting</div>
+    <div class="code-block">
+<span class="tok-kw">import</span> <span class="tok-fn">NextAuth</span> <span class="tok-kw">from</span> <span class="tok-str">'next-auth'</span>
+<span class="tok-kw">import</span> <span class="tok-type">GoogleProvider</span> <span class="tok-kw">from</span> <span class="tok-str">'next-auth/providers/google'</span>
+
+<span class="tok-kw">export const</span> <span class="tok-fn">authOptions</span><span class="tok-op">: </span><span class="tok-type">AuthOptions</span> <span class="tok-op">= {</span>
+  providers<span class="tok-op">: [</span>
+    <span class="tok-fn">GoogleProvider</span><span class="tok-op">({</span>
+      clientId<span class="tok-op">:</span> process<span class="tok-op">.</span>env<span class="tok-op">.</span><span class="tok-num">GOOGLE_ID</span><span class="tok-op">,</span>
+      clientSecret<span class="tok-op">:</span> process<span class="tok-op">.</span>env<span class="tok-op">.</span><span class="tok-num">GOOGLE_SECRET</span><span class="tok-op">,</span>
+    <span class="tok-op">}),</span>
+  <span class="tok-op">],</span>
+<span class="tok-op">}</span>
+
+<span class="tok-cmt">// Export handler for App Router</span>
+<span class="tok-kw">const</span> handler <span class="tok-op">=</span> <span class="tok-fn">NextAuth</span><span class="tok-op">(</span>authOptions<span class="tok-op">)</span>
+<span class="tok-kw">export</span> <span class="tok-op">{</span> handler <span class="tok-kw">as</span> GET<span class="tok-op">,</span> handler <span class="tok-kw">as</span> POST <span class="tok-op">}</span>
+    </div>
+    <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+      <span style="font-size:11px;color:var(--text3)">Token colors:</span>
+      <span class="tok-kw" style="font-size:11px">keyword #7b6ef6</span>
+      <span class="tok-str" style="font-size:11px">string #3ecf8e</span>
+      <span class="tok-fn" style="font-size:11px">function #5b8def</span>
+      <span class="tok-num" style="font-size:11px">constant #f5a623</span>
+      <span class="tok-type" style="font-size:11px">type #e05a5a</span>
+      <span class="tok-cmt" style="font-size:11px">comment #65646e</span>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="label">Font stack</div>
+    <div class="comp-demo" style="display:flex;flex-direction:column;gap:10px">
+      <div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:3px">UI / body</div>
+        <code style="font-family:var(--mono);font-size:11px;color:var(--accent)">'Inter', system-ui, -apple-system, sans-serif</code>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:3px">Code / monospace</div>
+        <code style="font-family:var(--mono);font-size:11px;color:var(--accent)">'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace</code>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+function switchTab(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.target.classList.add('active');
+}
+
+function selectFw(el) {
+  document.querySelectorAll('.fw-chip').forEach(c => c.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+function toggleIt(el) {
+  el.classList.toggle('on');
+}
+
+const streamLines = [
+  'Building your Next.js app',
+  'Building your Next.js app.\nCreating file structure...',
+  'Building your Next.js app.\nCreating file structure...\nGenerating app/page.tsx',
+  'Building your Next.js app.\nCreating file structure...\nGenerating app/page.tsx\nAdding Tailwind config...',
+  'Building your Next.js app.\nCreating file structure...\nGenerating app/page.tsx\nAdding Tailwind config...\nWiring up API routes...',
+];
+let streamTimer;
+function startStream() {
+  clearInterval(streamTimer);
+  let i = 0;
+  const el = document.getElementById('stream-out');
+  el.innerHTML = '<span class="stream-cursor"></span>';
+  streamTimer = setInterval(() => {
+    if (i >= streamLines.length) { clearInterval(streamTimer); return; }
+    el.innerHTML = streamLines[i].replace(/\n/g,'<br>') + '<span class="stream-cursor"></span>';
+    i++;
+  }, 700);
+}
+
+function animProg() {
+  const fill = document.getElementById('prog-fill');
+  fill.style.width = '0%';
+  setTimeout(() => { fill.style.width = '30%'; }, 50);
+  setTimeout(() => { fill.style.width = '60%'; }, 600);
+  setTimeout(() => { fill.style.width = '85%'; }, 1200);
+  setTimeout(() => { fill.style.width = '100%'; }, 1800);
+}
+
+function showToast(type, msg) {
+  const icons = {success:'✓',warn:'!',err:'✕'};
+  const colors = {success:'#3ecf8e',warn:'#f5a623',err:'#e05a5a'};
+  const area = document.getElementById('toast-area');
+  const t = document.createElement('div');
+  t.className = 'toast-demo';
+  t.style.marginTop = '8px';
+  t.innerHTML = `<div class="toast-icon" style="background:${colors[type]}1a;color:${colors[type]}">${icons[type]}</div><span>${msg}</span>`;
+  area.appendChild(t);
+  setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity 300ms'; setTimeout(() => t.remove(), 300); }, 2500);
+}
+
+let splitOpen = false;
+function animSplit() {
+  const chat = document.getElementById('split-chat');
+  const prev = document.getElementById('split-prev');
+  splitOpen = !splitOpen;
+  if (splitOpen) {
+    chat.style.flex = '1';
+    prev.style.flex = '1';
+    prev.style.padding = '10px';
+    prev.innerHTML = '<div style="color:#5b8def;font-size:11px">// Preview ready</div><div style="color:#3ecf8e;font-size:10px;margin-top:4px">localhost:3000</div>';
+  } else {
+    chat.style.flex = '1';
+    prev.style.flex = '0';
+    prev.style.padding = '0';
+  }
+}
+
+function triggerPulse() {
+  const pill = document.getElementById('pulse-pill');
+  pill.style.animation = 'none';
+  void pill.offsetWidth;
+  pill.style.animation = 'pulse-ring 600ms ease-out 3';
+}
+</script>

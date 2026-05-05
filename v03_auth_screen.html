@@ -1,0 +1,373 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg1:#161618;--bg2:#1c1c1f;--bg3:#252528;--bg4:#2e2e33;
+  --b1:#ffffff0a;--b2:#ffffff14;--b3:#ffffff20;--b4:#ffffff30;
+  --t1:#f0eff2;--t2:#a8a7b0;--t3:#5e5d66;
+  --ac:#5b8def;--ac2:#7b6ef6;--acdim:#5b8def1e;--ac2dim:#7b6ef614;
+  --green:#3ecf8e;--gdim:#3ecf8e1a;--gborder:#3ecf8e28;
+  --red:#e05a5a;--rdim:#e05a5a18;
+  --sans:'Inter',system-ui,sans-serif;
+  --mono:'JetBrains Mono',monospace;
+  --ease:cubic-bezier(0.25,1,0.5,1);
+  --spring:cubic-bezier(0.34,1.56,0.64,1);
+}
+body{font-family:var(--sans);background:transparent;font-size:13px;color:var(--t1)}
+
+@keyframes fade-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+@keyframes check-pop{0%{transform:scale(0) rotate(-10deg)}65%{transform:scale(1.15) rotate(2deg)}100%{transform:scale(1) rotate(0deg)}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+@keyframes pulse-ring{0%{box-shadow:0 0 0 0 #3ecf8e30}70%{box-shadow:0 0 0 8px transparent}100%{box-shadow:0 0 0 0 transparent}}
+@keyframes slide-right{from{transform:translateX(-24px);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes slide-left{from{transform:translateX(24px);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes count-down{from{stroke-dashoffset:0}to{stroke-dashoffset:113}}
+@keyframes dot-live{0%,100%{opacity:1}50%{opacity:.3}}
+
+.outer{background:var(--bg1);border-radius:16px;overflow:hidden;border:.5px solid var(--b2)}
+.bg-wrap{min-height:640px;display:flex;align-items:center;justify-content:center;padding:2.5rem 1.5rem;position:relative}
+.grid-bg{position:absolute;inset:0;background-image:linear-gradient(var(--b1) 1px,transparent 1px),linear-gradient(90deg,var(--b1) 1px,transparent 1px);background-size:44px 44px}
+.grid-fade{position:absolute;inset:0;background:radial-gradient(ellipse 60% 60% at 50% 50%,transparent 30%,var(--bg1) 100%)}
+
+.card{background:var(--bg2);border:.5px solid var(--b3);border-radius:20px;padding:2rem 2rem 1.75rem;width:100%;max-width:380px;position:relative;z-index:1;box-shadow:inset 0 1px 0 #ffffff08}
+.step{animation:fade-in 260ms var(--ease) both}
+
+.logo-row{display:flex;align-items:center;gap:9px;margin-bottom:1.75rem}
+.logo-mark{width:30px;height:30px;border-radius:9px;background:var(--ac);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:#fff;letter-spacing:-.02em;box-shadow:inset 0 1px 0 #ffffff28}
+.logo-name{font-size:14px;font-weight:600;letter-spacing:-.01em;color:var(--t1)}
+.logo-badge{margin-left:auto;font-size:10px;padding:3px 8px;border-radius:99px;background:var(--gdim);color:var(--green);border:.5px solid var(--gborder);font-weight:500}
+
+.step-h{font-size:20px;font-weight:600;letter-spacing:-.025em;color:var(--t1);margin-bottom:.35rem;line-height:1.2}
+.step-sub{font-size:13px;color:var(--t2);margin-bottom:1.5rem;line-height:1.55}
+.step-sub strong{color:var(--t1);font-weight:500}
+
+.lbl{font-size:11px;color:var(--t2);margin-bottom:5px;display:block;font-weight:500;letter-spacing:.01em}
+.inp-wrap{position:relative;margin-bottom:.85rem}
+.inp{width:100%;padding:10px 13px;background:var(--bg3);border:.5px solid var(--b3);border-radius:9px;color:var(--t1);font-size:13px;font-family:var(--sans);outline:none;transition:border-color 150ms,box-shadow 150ms;-webkit-appearance:none}
+.inp:focus{border-color:var(--ac);box-shadow:0 0 0 3px var(--acdim)}
+.inp::placeholder{color:var(--t3)}
+.inp.err{border-color:var(--red);box-shadow:0 0 0 3px var(--rdim)}
+.inp-err{font-size:11px;color:var(--red);margin-top:5px;display:flex;align-items:center;gap:5px}
+.inp-hint{font-size:11px;color:var(--t3);margin-top:5px}
+
+.btn-primary{width:100%;padding:11px;border-radius:9px;background:var(--ac);color:#fff;font-size:13px;font-weight:600;border:none;cursor:pointer;font-family:var(--sans);transition:background 150ms,transform 100ms;letter-spacing:-.01em;box-shadow:inset 0 1px 0 #ffffff20}
+.btn-primary:hover{background:#4a7ade}
+.btn-primary:active{transform:scale(.98)}
+.btn-primary:disabled{opacity:.45;cursor:not-allowed;transform:none}
+
+.divider{display:flex;align-items:center;gap:10px;margin:1.1rem 0}
+.divider-line{flex:1;height:.5px;background:var(--b2)}
+.divider-txt{font-size:11px;color:var(--t3)}
+
+.privacy-row{display:flex;align-items:flex-start;gap:9px;margin-bottom:1.25rem}
+.privacy-icon{width:16px;height:16px;flex-shrink:0;margin-top:1px;opacity:.5}
+.privacy-txt{font-size:11px;color:var(--t3);line-height:1.5}
+
+.tc-row{text-align:center;margin-top:1rem;font-size:11px;color:var(--t3);line-height:1.6}
+.tc-link{color:var(--t2);cursor:pointer;text-decoration:underline;text-decoration-color:var(--b3)}
+
+.otp-grid{display:flex;gap:9px;justify-content:center;margin:1.5rem 0 .75rem}
+.otp-cell{width:48px;height:56px;background:var(--bg3);border:.5px solid var(--b3);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;font-family:var(--mono);font-weight:600;color:var(--t1);transition:border-color 150ms,box-shadow 150ms;position:relative;cursor:default}
+.otp-cell.filled{border-color:var(--b4);color:var(--t1)}
+.otp-cell.active{border-color:var(--ac);box-shadow:0 0 0 3px var(--acdim)}
+.otp-cell.correct{border-color:var(--green);box-shadow:0 0 0 3px var(--gdim)}
+.otp-cell.wrong{border-color:var(--red);box-shadow:0 0 0 3px var(--rdim);animation:shake 350ms var(--ease)}
+.otp-cursor{display:inline-block;width:2px;height:22px;background:var(--ac);border-radius:1px;animation:blink 900ms ease-in-out infinite;vertical-align:middle}
+
+.timer-wrap{display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:.5rem}
+.timer-ring{position:relative;width:28px;height:28px;flex-shrink:0}
+.timer-ring svg{transform:rotate(-90deg)}
+.timer-track{fill:none;stroke:var(--b2);stroke-width:2.5}
+.timer-fill{fill:none;stroke:var(--ac);stroke-width:2.5;stroke-linecap:round;stroke-dasharray:113;transition:stroke-dashoffset 1s linear,stroke .5s}
+.timer-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-family:var(--mono);font-weight:600;color:var(--t2)}
+.timer-txt{font-size:12px;color:var(--t2)}
+.resend-btn{font-size:12px;color:var(--ac);cursor:pointer;background:none;border:none;font-family:var(--sans);padding:0;opacity:.4;pointer-events:none;transition:opacity 150ms}
+.resend-btn.active{opacity:1;pointer-events:auto}
+.resend-btn.active:hover{text-decoration:underline}
+
+.back-btn{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--t3);cursor:pointer;background:none;border:none;font-family:var(--sans);padding:0;margin-bottom:1.5rem;transition:color 150ms}
+.back-btn:hover{color:var(--t2)}
+.back-arrow{font-size:14px;line-height:1}
+
+.success-wrap{text-align:center;padding:1.5rem 0 1rem}
+.success-ring{width:64px;height:64px;border-radius:50%;background:var(--gdim);border:.5px solid var(--gborder);display:flex;align-items:center;justify-content:center;margin:0 auto 1.25rem;animation:pulse-ring 600ms ease-out 1}
+.check-svg{width:28px;height:28px;animation:check-pop 350ms var(--spring) both}
+
+.turnstile-row{display:flex;align-items:center;gap:7px;margin-top:.75rem;padding:8px 10px;background:var(--bg3);border-radius:8px;border:.5px solid var(--b2)}
+.ts-shield{width:14px;height:14px;fill:none}
+.ts-txt{font-size:11px;color:var(--t3)}
+.ts-brand{font-size:11px;color:var(--t2);margin-left:auto;font-weight:500}
+
+.step-indicator{display:flex;align-items:center;gap:6px;margin-bottom:1.5rem}
+.step-dot{width:6px;height:6px;border-radius:50%;background:var(--b3);transition:all 220ms}
+.step-dot.active{background:var(--ac);width:18px;border-radius:3px}
+.step-dot.done{background:var(--green)}
+
+.nav-tabs{display:flex;gap:6px;padding:.75rem 0 1.25rem;flex-wrap:wrap}
+.tab-btn{padding:5px 13px;border-radius:99px;border:.5px solid var(--b2);background:transparent;color:var(--t2);cursor:pointer;font-size:12px;font-family:var(--sans);transition:all 130ms}
+.tab-btn:hover{background:var(--bg3);color:var(--t1)}
+.tab-btn.on{background:var(--bg3);color:var(--t1);border-color:var(--b3)}
+</style>
+
+<h2 class="sr-only">v03.tech auth screen — interactive email and OTP flow mockup</h2>
+
+<div class="outer">
+  <div class="bg-wrap">
+    <div class="grid-bg"></div>
+    <div class="grid-fade"></div>
+
+    <div class="card">
+
+      <div class="logo-row">
+        <div class="logo-mark">v</div>
+        <span class="logo-name">v03.tech</span>
+        <span class="logo-badge">
+          <span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--green);animation:dot-live 2s ease-in-out infinite;vertical-align:middle;margin-right:4px"></span>
+          beta
+        </span>
+      </div>
+
+      <div class="step-indicator">
+        <div class="step-dot active" id="sd1"></div>
+        <div class="step-dot" id="sd2"></div>
+        <div class="step-dot" id="sd3"></div>
+      </div>
+
+      <div class="nav-tabs">
+        <button class="tab-btn on" onclick="goStep(1,this)">1 · Email</button>
+        <button class="tab-btn" id="tab2" onclick="goStep(2,this)" style="opacity:.45;pointer-events:none">2 · OTP</button>
+        <button class="tab-btn" id="tab3" onclick="goStep(3,this)" style="opacity:.45;pointer-events:none">3 · Done</button>
+      </div>
+
+      <div id="step1" class="step">
+        <div class="step-h">Welcome back</div>
+        <p class="step-sub">Enter your email to sign in or create an account. No passwords, ever.</p>
+
+        <div class="inp-wrap">
+          <label class="lbl" for="email-field">Email address</label>
+          <input class="inp" type="email" id="email-field" placeholder="you@example.com" oninput="onEmailInput(this)" autocomplete="email">
+          <div class="inp-hint" id="email-hint">We'll send a 6-digit code — no spam, ever.</div>
+        </div>
+
+        <div class="privacy-row">
+          <svg class="privacy-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" style="color:var(--t2)"><path d="M8 1.5L2 4v4c0 3.3 2.5 5.7 6 6.5 3.5-.8 6-3.2 6-6.5V4L8 1.5z"/></svg>
+          <span class="privacy-txt">Your email is used only for authentication. We never share it with third parties or send marketing emails.</span>
+        </div>
+
+        <button class="btn-primary" id="send-btn" onclick="goStep(2)" disabled>Send code</button>
+
+        <div class="turnstile-row">
+          <svg class="ts-shield" viewBox="0 0 16 16" stroke="var(--t3)" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"><path d="M8 1.5L2 4v4c0 3.3 2.5 5.7 6 6.5 3.5-.8 6-3.2 6-6.5V4L8 1.5z"/><path d="M5.5 8l1.8 1.8 3.2-3.2"/></svg>
+          <span class="ts-txt">Protected by Cloudflare Turnstile</span>
+          <span class="ts-brand">&#x2713; Verified</span>
+        </div>
+
+        <div class="tc-row">
+          By continuing you agree to our <span class="tc-link">Terms</span> and <span class="tc-link">Privacy Policy</span>
+        </div>
+      </div>
+
+      <div id="step2" class="step" style="display:none">
+        <button class="back-btn" onclick="goStep(1)">
+          <span class="back-arrow">&#8592;</span> Back
+        </button>
+        <div class="step-h">Check your inbox</div>
+        <p class="step-sub" id="otp-email-display">We sent a 6-digit code to <strong>you@example.com</strong>. It expires in 5 minutes.</p>
+
+        <div class="otp-grid" id="otp-grid">
+          <div class="otp-cell" id="c0"><span class="otp-cursor"></span></div>
+          <div class="otp-cell" id="c1"></div>
+          <div class="otp-cell" id="c2"></div>
+          <div class="otp-cell" id="c3"></div>
+          <div class="otp-cell" id="c4"></div>
+          <div class="otp-cell" id="c5"></div>
+        </div>
+        <input type="tel" id="otp-hidden" maxlength="6" inputmode="numeric" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px" oninput="onOtpInput(this)">
+
+        <div class="timer-wrap">
+          <div class="timer-ring">
+            <svg width="28" height="28" viewBox="0 0 28 28">
+              <circle class="timer-track" cx="14" cy="14" r="11"/>
+              <circle class="timer-fill" id="timer-arc" cx="14" cy="14" r="11"/>
+            </svg>
+            <div class="timer-num" id="timer-num">5:00</div>
+          </div>
+          <span class="timer-txt" id="timer-label">Code expires in</span>
+          <button class="resend-btn" id="resend-btn" onclick="resendCode()">Resend</button>
+        </div>
+
+        <div style="text-align:center;margin-top:.5rem">
+          <div id="otp-error" style="font-size:12px;color:var(--red);min-height:18px;transition:opacity 200ms;opacity:0"></div>
+        </div>
+
+        <div class="divider"><div class="divider-line"></div><span class="divider-txt">having trouble?</span><div class="divider-line"></div></div>
+
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 11px;background:var(--bg3);border-radius:9px;border:.5px solid var(--b2);cursor:pointer" onclick="goStep(1)" onmouseover="this.style.borderColor='var(--b3)'" onmouseout="this.style.borderColor='var(--b2)'">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="var(--t3)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M10 12L6 8l4-4"/></svg>
+            <span style="font-size:12px;color:var(--t2)">Use a different email address</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 11px;background:var(--bg3);border-radius:9px;border:.5px solid var(--b2)">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="var(--t3)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="6"/><path d="M8 5v3.5l2 2"/></svg>
+            <span style="font-size:12px;color:var(--t2)">Code may take up to 60 seconds to arrive</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;padding:9px 11px;background:var(--bg3);border-radius:9px;border:.5px solid var(--b2)">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="var(--t3)" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="12" height="9" rx="1.5"/><path d="M2 7h12M5 4V3M11 4V3"/></svg>
+            <span style="font-size:12px;color:var(--t2)">Check your spam or junk folder</span>
+          </div>
+        </div>
+      </div>
+
+      <div id="step3" class="step" style="display:none">
+        <div class="success-wrap">
+          <div class="success-ring">
+            <svg class="check-svg" viewBox="0 0 28 28" fill="none" stroke="var(--green)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 14.5l5.5 5.5 10.5-11"/>
+            </svg>
+          </div>
+          <div class="step-h" style="margin-bottom:.4rem">You're in</div>
+          <p class="step-sub" style="margin-bottom:1.5rem">Signed in as <strong id="success-email">you@example.com</strong>. Redirecting to your workspace...</p>
+          <div style="width:100%;height:3px;background:var(--b2);border-radius:99px;overflow:hidden">
+            <div id="redirect-bar" style="height:100%;background:var(--green);border-radius:99px;width:0%;transition:width 2s linear"></div>
+          </div>
+          <div style="font-size:11px;color:var(--t3);margin-top:8px">Taking you to the app in 2 seconds...</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+let timerInterval, timerSecs = 300, otpVal = '';
+const CORRECT = '427581';
+
+function onEmailInput(inp) {
+  const valid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(inp.value.trim());
+  document.getElementById('send-btn').disabled = !valid;
+}
+
+function goStep(n, tabEl) {
+  [1,2,3].forEach(i => {
+    document.getElementById('step'+i).style.display = i===n ? 'block' : 'none';
+  });
+  const dots = [document.getElementById('sd1'),document.getElementById('sd2'),document.getElementById('sd3')];
+  dots.forEach((d,i) => {
+    d.classList.toggle('active', i===n-1);
+    d.classList.toggle('done', i < n-1);
+  });
+  document.querySelectorAll('.tab-btn').forEach((b,i) => {
+    b.classList.toggle('on', i===n-1);
+    b.style.opacity = i < n ? '1' : '.45';
+    b.style.pointerEvents = i < n ? 'auto' : 'none';
+  });
+  if (n===2) {
+    const email = document.getElementById('email-field').value.trim() || 'you@example.com';
+    document.getElementById('otp-email-display').innerHTML = 'We sent a 6-digit code to <strong>'+email+'</strong>. It expires in 5 minutes.';
+    resetOtp();
+    startTimer();
+    setTimeout(() => { document.getElementById('otp-hidden').focus(); }, 100);
+  }
+  if (n===3) {
+    const email = document.getElementById('email-field').value.trim() || 'you@example.com';
+    document.getElementById('success-email').textContent = email;
+    clearInterval(timerInterval);
+    setTimeout(() => { document.getElementById('redirect-bar').style.width = '100%'; }, 50);
+  }
+}
+
+function resetOtp() {
+  otpVal = '';
+  for (let i=0;i<6;i++) {
+    const c = document.getElementById('c'+i);
+    c.className='otp-cell'+(i===0?' active':'');
+    c.innerHTML = i===0 ? '<span class="otp-cursor"></span>' : '';
+  }
+  document.getElementById('otp-hidden').value = '';
+  document.getElementById('otp-error').style.opacity = '0';
+}
+
+function onOtpInput(inp) {
+  const raw = inp.value.replace(/\D/g,'').slice(0,6);
+  inp.value = raw;
+  otpVal = raw;
+  for (let i=0;i<6;i++) {
+    const c = document.getElementById('c'+i);
+    if (i < raw.length) {
+      c.className = 'otp-cell filled';
+      c.textContent = raw[i];
+    } else if (i === raw.length) {
+      c.className = 'otp-cell active';
+      c.innerHTML = '<span class="otp-cursor"></span>';
+    } else {
+      c.className = 'otp-cell';
+      c.innerHTML = '';
+    }
+  }
+  if (raw.length === 6) verifyOtp(raw);
+}
+
+function verifyOtp(code) {
+  const err = document.getElementById('otp-error');
+  if (code === CORRECT) {
+    for (let i=0;i<6;i++) {
+      const c = document.getElementById('c'+i);
+      c.className = 'otp-cell correct';
+      c.textContent = code[i];
+    }
+    setTimeout(() => goStep(3), 600);
+  } else {
+    for (let i=0;i<6;i++) {
+      document.getElementById('c'+i).className = 'otp-cell wrong';
+    }
+    err.textContent = 'Incorrect code — ' + (2 - Math.floor(Math.random())) + ' attempts remaining';
+    err.style.opacity = '1';
+    setTimeout(() => {
+      resetOtp();
+      document.getElementById('otp-hidden').focus();
+    }, 800);
+  }
+}
+
+function startTimer() {
+  clearInterval(timerInterval);
+  timerSecs = 300;
+  const arc = document.getElementById('timer-arc');
+  const num = document.getElementById('timer-num');
+  const label = document.getElementById('timer-label');
+  const resend = document.getElementById('resend-btn');
+  resend.classList.remove('active');
+  arc.style.stroke = 'var(--ac)';
+
+  timerInterval = setInterval(() => {
+    timerSecs--;
+    const m = Math.floor(timerSecs/60);
+    const s = timerSecs%60;
+    num.textContent = m+':'+(s<10?'0':'')+s;
+    const pct = timerSecs/300;
+    arc.style.strokeDashoffset = (113*(1-pct)).toFixed(1);
+    if (timerSecs <= 60) arc.style.stroke = 'var(--amber,#f5a623)';
+    if (timerSecs <= 0) {
+      clearInterval(timerInterval);
+      num.textContent = '0:00';
+      label.textContent = 'Code expired';
+      arc.style.stroke = 'var(--red)';
+      resend.classList.add('active');
+    }
+    if (timerSecs <= 0) return;
+    if (timerSecs === 1) resend.classList.add('active');
+  }, 1000);
+}
+
+function resendCode() {
+  timerSecs = 300;
+  startTimer();
+  resetOtp();
+  document.getElementById('otp-hidden').focus();
+  const btn = document.getElementById('resend-btn');
+  btn.classList.remove('active');
+  btn.textContent = 'Sent!';
+  setTimeout(() => { btn.textContent = 'Resend'; }, 2000);
+}
+</script>
