@@ -12,7 +12,7 @@ export function Navbar({ onUserIconClick }: NavbarProps) {
   return (
     <nav className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-6 py-4 md:px-8 md:py-6">
       {/* Logo - Bodoni */}
-      <div className="font-heading text-2xl md:text-3xl font-normal tracking-normal">
+      <div className="font-heading text-2xl md:text-3xl font-extralight tracking-normal">
         <span className="bg-gradient-to-r from-blue-400 via-blue-500 to-cyan-400 bg-clip-text text-transparent">
           v03.tech
         </span>

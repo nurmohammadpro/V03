@@ -1,6 +1,6 @@
 @import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,opsz,wght@0,6..96,400..900;1,6..96,400..900&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@100..900&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');display=swap');display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 
@@ -44,7 +44,7 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
   --font-heading: 'Bodoni Moda', serif;
-  --font-body: 'Montserrat', sans-serif;
+  --font-body: 'Inter', sans-serif;
   --font-mono: 'Geist Mono', monospace;
 }
 
@@ -125,13 +125,14 @@
   }
 
   body {
+    font-weight: 200;
     @apply bg-background text-foreground;
     font-family: var(--font-body);
-    font-weight: 400;
+    font-weight: 200;
   }
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading);
-    font-weight: 400;
+    font-weight: 200;
   }
   code, pre, kbd, samp {
     font-family: var(--font-mono);
