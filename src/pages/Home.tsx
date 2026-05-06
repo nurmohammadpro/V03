@@ -6,6 +6,7 @@ import { PromptHero } from '@/components/PromptHero';
 import { Footer } from '@/components/Footer';
 import { AuthModal } from '@/components/AuthModal';
 import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { User } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -36,15 +37,18 @@ export default function Home() {
       <div className="relative w-full h-screen flex flex-col" style={{ zIndex: "var(--z-content)" }}>
         <Navbar
           actions={
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsAuthModalOpen(true)}
-              className="rounded-full hover:bg-white/5 transition-colors"
-              aria-label="User menu"
-            >
-              <User className="w-5 h-5 text-white/60" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsAuthModalOpen(true)}
+                className="rounded-full hover:bg-white/5 transition-colors"
+                aria-label="User menu"
+              >
+                <User className="w-5 h-5 text-white/60" />
+              </Button>
+            </div>
           }
         />
 
