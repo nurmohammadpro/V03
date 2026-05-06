@@ -19,6 +19,7 @@ import {
   PanelLeftOpen,
   Send,
   Sparkles,
+  PlaySquare,
 } from "lucide-react";
 
 const FRAMEWORKS = ["Next.js", "MERN", "Laravel", "Django", "NestJS"] as const;
@@ -298,6 +299,7 @@ export default function Workspace() {
   });
   const [codePanelOpen, setCodePanelOpen] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<"files" | "chat">("files");
+  const [outputView, setOutputView] = useState<"code" | "preview">("code");
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -309,6 +311,17 @@ export default function Workspace() {
   useEffect(() => {
     if (activeFileContent || files.length > 0) {
       setCodePanelOpen(true);
+    }
+  }, [activeFileContent, files.length]);
+
+  useEffect(() => {
+    if (!files.length) {
+      setOutputView("code");
+      return;
+    }
+
+    if (!activeFileContent) {
+      setOutputView("preview");
     }
   }, [activeFileContent, files.length]);
 
@@ -702,10 +715,33 @@ export default function Workspace() {
                       {activeFilePath || "No file selected"}
                     </p>
                   </div>
-                    <div className="flex items-center gap-2">
-                    <Badge className="rounded-full border border-[var(--app-border)] bg-[var(--app-panel)] px-2 py-0.5 text-[10px] font-normal text-[var(--app-text-muted)]">
-                      toggle view
-                    </Badge>
+                  <div className="flex items-center gap-2">
+                    <div className="inline-flex items-center rounded-[10px] border border-[var(--app-border)] bg-[var(--app-panel)] p-1">
+                      <button
+                        type="button"
+                        onClick={() => setOutputView("code")}
+                        className={`inline-flex h-7 items-center gap-1.5 rounded-[8px] px-2.5 text-[11px] transition-colors ${
+                          outputView === "code"
+                            ? "bg-[var(--app-surface)] text-[var(--app-text)]"
+                            : "text-[var(--app-text-muted)] hover:text-[var(--app-text)]"
+                        }`}
+                      >
+                        <Code2 className="h-3.5 w-3.5" />
+                        Code
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setOutputView("preview")}
+                        className={`inline-flex h-7 items-center gap-1.5 rounded-[8px] px-2.5 text-[11px] transition-colors ${
+                          outputView === "preview"
+                            ? "bg-[var(--app-surface)] text-[var(--app-text)]"
+                            : "text-[var(--app-text-muted)] hover:text-[var(--app-text)]"
+                        }`}
+                      >
+                        <PlaySquare className="h-3.5 w-3.5" />
+                        Preview
+                      </button>
+                    </div>
                     <Button
                       type="button"
                       variant="ghost"
@@ -727,7 +763,7 @@ export default function Workspace() {
 
               <div className="min-h-0 flex-1">
                 {activeFileContent || files.length > 0 ? (
-                  <WorkspaceLayout />
+                  <WorkspaceLayout viewMode={outputView} />
                 ) : (
                   <div className="flex h-full items-center justify-center px-6">
                     <div className="max-w-[320px] border-b border-[var(--app-border)] pb-5 text-center">
