@@ -87,6 +87,36 @@ export async function adminRoutes(app: FastifyInstance) {
     }
 
     const rows = await userQuery.orderBy(desc(users.createdAt));
+    const userIds = rows.map((row) => row.id);
+
+    const adminAssignments = userIds.length
+      ? await db
+          .select({
+            userId: userAdminAssignments.userId,
+          })
+          .from(userAdminAssignments)
+          .where(
+            and(
+              inArray(userAdminAssignments.userId, userIds),
+              eq(userAdminAssignments.isActive, true),
+              isNull(userAdminAssignments.revokedAt),
+            ),
+          )
+      : [];
+
+    const projectCounts = userIds.length
+      ? await db
+          .select({
+            userId: projects.userId,
+            count: sql<number>`count(*)`,
+          })
+          .from(projects)
+          .where(inArray(projects.userId, userIds))
+          .groupBy(projects.userId)
+      : [];
+
+    const adminUserIds = new Set(adminAssignments.map((assignment) => assignment.userId));
+    const projectCountMap = new Map(projectCounts.map((item) => [item.userId, item.count]));
 
     await writeAdminAuditLog({
       request,
@@ -96,7 +126,13 @@ export async function adminRoutes(app: FastifyInstance) {
       metadata: query,
     });
 
-    return reply.send({ users: rows });
+    return reply.send({
+      users: rows.map((row) => ({
+        ...row,
+        role: adminUserIds.has(row.id) ? "admin" : "user",
+        projectsCount: projectCountMap.get(row.id) ?? 0,
+      })),
+    });
   });
 
   app.get("/api/admin/users/:id", { preHandler: requireAdmin(["users.read"]) }, async (request, reply) => {
@@ -487,7 +523,24 @@ export async function adminRoutes(app: FastifyInstance) {
 
   app.get("/api/admin/ai/routing-rules", { preHandler: requireAdmin(["ai.read"]) }, async (_request, reply) => {
     const rules = await db.select().from(aiRoutingRules).orderBy(aiRoutingRules.priority);
-    return reply.send({ rules });
+    const modelIds = [...new Set(rules.flatMap((rule) => [rule.primaryModelId, rule.fallbackModelId]).filter(Boolean))] as string[];
+    const models = modelIds.length
+      ? await db.select({ id: aiModels.id, name: aiModels.name }).from(aiModels).where(inArray(aiModels.id, modelIds))
+      : [];
+    const modelMap = new Map(models.map((model) => [model.id, model.name]));
+
+    return reply.send({
+      rules: rules.map((rule) => ({
+        id: rule.id,
+        key: rule.key,
+        name: rule.name,
+        isActive: rule.isActive,
+        priority: rule.priority,
+        matchSummary: String((rule.matchConfig as Record<string, unknown>)?.summary ?? "Custom routing rule"),
+        primaryModel: rule.primaryModelId ? modelMap.get(rule.primaryModelId) ?? "Unassigned" : "Unassigned",
+        fallbackModel: rule.fallbackModelId ? modelMap.get(rule.fallbackModelId) ?? "Unassigned" : "Unassigned",
+      })),
+    });
   });
 
   app.put("/api/admin/ai/routing-rules/:id", { preHandler: requireAdmin(["ai.write"]) }, async (request, reply) => {
@@ -522,7 +575,17 @@ export async function adminRoutes(app: FastifyInstance) {
 
   app.get("/api/admin/services", { preHandler: requireAdmin(["services.read"]) }, async (_request, reply) => {
     const services = await db.select().from(serviceIntegrations).orderBy(serviceIntegrations.serviceType, serviceIntegrations.name);
-    return reply.send({ services });
+    return reply.send({
+      services: services.map((service) => ({
+        id: service.id,
+        key: service.key,
+        name: service.name,
+        serviceType: service.serviceType,
+        status: service.status,
+        secretRef: service.secretRef ?? "",
+        note: String((service.config as Record<string, unknown>)?.note ?? ""),
+      })),
+    });
   });
 
   app.patch("/api/admin/services/:id", { preHandler: requireAdmin(["services.write"]) }, async (request, reply) => {

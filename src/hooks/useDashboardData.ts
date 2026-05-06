@@ -364,13 +364,13 @@ export function useAdminUsers() {
           id: user.id,
           email: user.email,
           name: user.fullName ?? undefined,
-          role: (user.metadata.role === "admin" ? "admin" : "user") as User["role"],
+          role: user.role,
           status: (user.status as User["status"]) ?? "active",
           plan: user.plan,
           avatar: user.avatarUrl ?? undefined,
           createdAt: user.createdAt,
           lastActive: user.updatedAt,
-          projectsCount: typeof user.metadata.projectsCount === "number" ? user.metadata.projectsCount : undefined,
+          projectsCount: user.projectsCount,
         }));
       } catch {
         return MOCK_USERS;

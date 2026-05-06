@@ -123,12 +123,14 @@ export const api = {
         id: string;
         email: string;
         fullName: string | null;
+        role: "admin" | "user";
         status: string;
         plan: string;
         createdAt: string;
         updatedAt: string;
         avatarUrl: string | null;
         metadata: Record<string, unknown>;
+        projectsCount: number;
       }>;
     }>("/api/admin/users"),
 

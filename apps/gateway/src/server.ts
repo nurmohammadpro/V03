@@ -6,11 +6,18 @@ import { authRoutes } from "./routes/auth";
 import { projectRoutes } from "./routes/projects";
 import { chatRoutes } from "./routes/chat";
 import { adminRoutes } from "./routes/admin";
+import { ensureAdminSystemSeeded } from "./db/bootstrap";
 import "dotenv/config";
 
 const app = Fastify({ logger: true });
 
 async function start() {
+  if (process.env.BOOTSTRAP_ADMIN_SYSTEM === "true") {
+    await ensureAdminSystemSeeded({
+      superAdminEmail: process.env.BOOTSTRAP_SUPER_ADMIN_EMAIL,
+    });
+  }
+
   // CORS
   await app.register(cors, {
     origin: true,
