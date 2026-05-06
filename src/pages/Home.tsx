@@ -44,7 +44,7 @@ export default function Home() {
                 variant="outline"
                 size="icon"
                 onClick={() => setIsAuthModalOpen(true)}
-                className="h-9 w-9 rounded-full border-[var(--app-border-strong)] bg-[var(--app-panel)] text-[var(--app-text-muted)] shadow-none transition-colors hover:bg-[var(--app-panel-2)] hover:text-[var(--app-text)]"
+                className="h-9 w-9 rounded-[10px] border-[var(--app-border-strong)] bg-[var(--app-panel)] text-[var(--app-text-muted)] shadow-none transition-colors hover:bg-[var(--app-panel-2)] hover:text-[var(--app-text)]"
                 aria-label="User menu"
               >
                 <User className="h-4 w-4" />
