@@ -17,29 +17,20 @@ function TreeNode({ node, depth }: TreeNodeProps) {
     return (
       <div
         onClick={() => setActiveFile(node.path)}
+        className="flex items-center gap-1 py-0.5 pr-2 rounded-sm cursor-pointer text-[13px] whitespace-nowrap overflow-hidden text-ellipsis transition-colors"
         style={{
-          padding: "2px 8px 2px 0",
           paddingLeft: depth * 16 + 8,
-          cursor: "pointer",
-          fontSize: 13,
-          color: isActive ? "#fff" : "#999",
-          background: isActive ? "#2a2a4a" : "transparent",
-          borderRadius: 2,
-          whiteSpace: "nowrap",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          display: "flex",
-          alignItems: "center",
-          gap: 4,
+          color: isActive ? "var(--primary-foreground)" : undefined,
+          background: isActive ? "var(--surface-active)" : "transparent",
         }}
         onMouseEnter={(e) => {
-          if (!isActive) e.currentTarget.style.background = "#222";
+          if (!isActive) e.currentTarget.style.background = "var(--surface-hover)";
         }}
         onMouseLeave={(e) => {
           if (!isActive) e.currentTarget.style.background = "transparent";
         }}
       >
-        <span style={{ fontSize: 11 }}>{getFileIcon(node.name)}</span>
+        <span className="text-[11px]">{getFileIcon(node.name)}</span>
         <span>{node.name}</span>
       </div>
     );
@@ -49,22 +40,14 @@ function TreeNode({ node, depth }: TreeNodeProps) {
     <div>
       <div
         onClick={() => setExpanded(!expanded)}
-        style={{
-          padding: "2px 8px 2px 0",
-          paddingLeft: depth * 16 + 4,
-          cursor: "pointer",
-          fontSize: 13,
-          color: "#ccc",
-          display: "flex",
-          alignItems: "center",
-          gap: 4,
-        }}
+        className="flex items-center gap-1 py-0.5 pr-2 cursor-pointer text-[13px] text-foreground font-medium"
+        style={{ paddingLeft: depth * 16 + 4 }}
       >
-        <span style={{ fontSize: 10, width: 12, display: "inline-block" }}>
-          {expanded ? "\u25BC" : "\u25B6"}
+        <span className="text-[10px] w-3 inline-block">
+          {expanded ? "▼" : "▶"}
         </span>
-        <span style={{ fontSize: 11 }}>{getFolderIcon(node.name)}</span>
-        <span style={{ fontWeight: 500 }}>{node.name}</span>
+        <span className="text-[11px]">{getFolderIcon(node.name)}</span>
+        <span>{node.name}</span>
       </div>
       {expanded &&
         node.children?.map((child) => (
@@ -79,21 +62,14 @@ export default function FileTree() {
 
   if (!files || files.length === 0) {
     return (
-      <div
-        style={{
-          padding: 16,
-          fontSize: 12,
-          color: "#555",
-          textAlign: "center",
-        }}
-      >
+      <div className="p-4 text-xs text-muted-foreground text-center">
         No files yet. Generate a project to see files here.
       </div>
     );
   }
 
   return (
-    <div style={{ padding: "4px 0" }}>
+    <div className="py-1">
       {files.map((node) => (
         <TreeNode key={node.path} node={node} depth={0} />
       ))}
@@ -104,39 +80,39 @@ export default function FileTree() {
 function getFileIcon(name: string): string {
   const ext = name.split(".").pop()?.toLowerCase() ?? "";
   const iconMap: Record<string, string> = {
-    ts: "\u00A0\uD83D\uDCE0",   // 📠 for TS
-    tsx: "\u269B\uFE0F",        // ⚛ for React
-    js: "\uD83D\uDCDD",        // 📝
-    jsx: "\u269B\uFE0F",       // ⚛
-    py: "\uD83D\uDC0D",        // 🐍
-    html: "\uD83C\uDF10",      // 🌐
-    css: "\uD83C\uDFA8",       // 🎨
-    json: "\uD83D\uDCCB",      // 📋
-    md: "\uD83D\uDCDD",        // 📝
-    yml: "\u2699\uFE0F",       // ⚙
-    yaml: "\u2699\uFE0F",      // ⚙
-    dockerfile: "\uD83D\uDC33", // 🐳
-    env: "\uD83D\uDD12",       // 🔒
-    gitignore: "\uD83D\uDD11", // 🔑
+    ts: " 📠",
+    tsx: "⚛️",
+    js: "📝",
+    jsx: "⚛️",
+    py: "🐍",
+    html: "🌐",
+    css: "🎨",
+    json: "📋",
+    md: "📝",
+    yml: "⚙️",
+    yaml: "⚙️",
+    dockerfile: "🐳",
+    env: "🔒",
+    gitignore: "🔑",
   };
-  return iconMap[ext] ?? "\uD83D\uDCC4"; // 📄
+  return iconMap[ext] ?? "📄";
 }
 
 function getFolderIcon(name: string): string {
   const folderMap: Record<string, string> = {
-    src: "\uD83D\uDCC1",         // 📁
-    components: "\uD83E\uDE90",  // 🪐
-    pages: "\uD83D\uDCD6",       // 📖
-    public: "\uD83C\uDF0D",      // 🌍
-    api: "\uD83D\uDD17",         // 🔗
-    lib: "\uD83D\uDEE0\uFE0F",  // 🛠
-    utils: "\uD83D\uDEE0\uFE0F", // 🛠
-    styles: "\uD83C\uDFA8",      // 🎨
-    assets: "\uD83D\uDCBC",      // 💼
-    node_modules: "\uD83D\uDCB5", // 💵
-    dist: "\uD83D\uDCE6",        // 📦
-    build: "\uD83D\uDCE6",       // 📦
-    config: "\u2699\uFE0F",     // ⚙
+    src: "📁",
+    components: "🪐",
+    pages: "📖",
+    public: "🌍",
+    api: "🔗",
+    lib: "🛠️",
+    utils: "🛠️",
+    styles: "🎨",
+    assets: "💼",
+    node_modules: "💵",
+    dist: "📦",
+    build: "📦",
+    config: "⚙️",
   };
-  return folderMap[name.toLowerCase()] ?? "\uD83D\uDCC2"; // 📂
+  return folderMap[name.toLowerCase()] ?? "📂";
 }

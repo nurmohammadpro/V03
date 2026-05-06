@@ -1,10 +1,11 @@
 export function CinematicVignette() {
   return (
     <>
-      {/* Deep vintage film vignette - near-black edges pull inward */}
+      {/* Deep vintage film vignette */}
       <div
-        className="fixed inset-0 z-5 pointer-events-none"
+        className="fixed inset-0 pointer-events-none"
         style={{
+          zIndex: "var(--z-content)",
           background: `
             radial-gradient(
               ellipse 700px 500px at center,
@@ -19,32 +20,35 @@ export function CinematicVignette() {
         }}
       />
 
-      {/* Warm inner glow - film projector feel */}
+      {/* Warm inner glow */}
       <div
-        className="fixed inset-0 z-5 pointer-events-none"
+        className="fixed inset-0 pointer-events-none"
         style={{
+          zIndex: "var(--z-content)",
           background: `
             radial-gradient(
               ellipse 500px 400px at center,
-              rgba(60, 120, 220, 0.08) 0%,
-              rgba(40, 60, 140, 0.04) 35%,
+              oklch(0.55 0.22 264 / 0.08) 0%,
+              oklch(0.40 0.18 264 / 0.04) 35%,
               transparent 65%
             )
           `,
         }}
       />
 
-      {/* Subtle top/bottom film borders */}
+      {/* Film border strips */}
       <div
-        className="fixed top-0 left-0 right-0 z-5 pointer-events-none"
+        className="fixed top-0 left-0 right-0 pointer-events-none"
         style={{
+          zIndex: "var(--z-content)",
           height: '4px',
           background: 'linear-gradient(to bottom, rgba(0,0,0,0.6), transparent)',
         }}
       />
       <div
-        className="fixed bottom-0 left-0 right-0 z-5 pointer-events-none"
+        className="fixed bottom-0 left-0 right-0 pointer-events-none"
         style={{
+          zIndex: "var(--z-content)",
           height: '4px',
           background: 'linear-gradient(to top, rgba(0,0,0,0.6), transparent)',
         }}

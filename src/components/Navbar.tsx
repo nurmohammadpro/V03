@@ -1,33 +1,35 @@
-import { useAuth } from '@/_core/hooks/useAuth';
-import { Button } from '@/components/ui/button';
-import { User } from 'lucide-react';
+import { cn } from "@/lib/utils";
 
 interface NavbarProps {
-  onUserIconClick: () => void;
+  logo?: React.ReactNode;
+  children?: React.ReactNode;
+  actions?: React.ReactNode;
+  className?: string;
 }
 
-export function Navbar({ onUserIconClick }: NavbarProps) {
-  const { user } = useAuth();
-
+export function Navbar({ logo, children, actions, className }: NavbarProps) {
   return (
-    <nav className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-6 py-4 md:px-8 md:py-6">
-      <a href="/" className="flex items-center">
-        <img
-          src="/v03.svg"
-          alt="v03.tech"
-          className="h-8 md:h-9 w-auto"
-        />
-      </a>
+    <nav
+      className={cn(
+        "fixed top-0 left-0 right-0 flex items-center justify-between px-6 py-4 md:px-8 md:py-6",
+        className
+      )}
+      style={{ zIndex: "var(--z-navbar)" }}
+    >
+      <div className="flex items-center gap-6">
+        {logo ?? (
+          <a href="/" className="flex items-center">
+            <img
+              src="/v03.svg"
+              alt="v03.tech"
+              className="h-4 md:h-5 w-auto"
+            />
+          </a>
+        )}
+        {children}
+      </div>
 
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={onUserIconClick}
-        className="rounded-full hover:bg-white/5 transition-colors"
-        aria-label="User menu"
-      >
-        <User className="w-5 h-5 text-white/60" />
-      </Button>
+      {actions}
     </nav>
   );
 }

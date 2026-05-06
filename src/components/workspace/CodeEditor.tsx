@@ -29,7 +29,6 @@ function getLanguageExtension(filename: string) {
     case "css":
     case "scss":
     case "less":
-      // plain text fallback for these
       return [];
     case "json":
       return javascript({ jsx: false });
@@ -48,7 +47,6 @@ export default function CodeEditor() {
   useEffect(() => {
     if (!editorRef.current) return;
 
-    // Dispose previous editor
     if (viewRef.current) {
       viewRef.current.destroy();
       viewRef.current = null;
@@ -63,7 +61,7 @@ export default function CodeEditor() {
       doc: content,
       extensions: [
         oneDark,
-        EditorView.editable.of(false), // read-only for generated code
+        EditorView.editable.of(false),
         keymap.of([]),
         placeholder("Select a file or generate a project..."),
         EditorView.lineWrapping,
@@ -87,11 +85,7 @@ export default function CodeEditor() {
   return (
     <div
       ref={editorRef}
-      style={{
-        height: "100%",
-        overflow: "auto",
-        textAlign: "left",
-      }}
+      className="h-full overflow-auto text-left"
     />
   );
 }

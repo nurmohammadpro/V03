@@ -94,7 +94,6 @@ const MOCK_RESPONSES: Record<
   },
 };
 
-// Convert mock tree to FileNode format
 function buildFileNodes(tree: any[]): any[] {
   return tree.map((item: any) => ({
     name: item.name,
@@ -126,7 +125,6 @@ export default function Workspace() {
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-scroll
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -142,7 +140,6 @@ export default function Workspace() {
       addMessage(assistantMsg);
       setIsGenerating(true);
 
-      // Try real SSE first, fall back to mock
       try {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
@@ -162,7 +159,6 @@ export default function Workspace() {
 
         if (!response.ok) throw new Error("Backend unavailable");
 
-        // Process SSE stream
         const reader = response.body?.getReader();
         if (!reader) throw new Error("No reader");
 
@@ -202,11 +198,9 @@ export default function Workspace() {
           }
         }
       } catch {
-        // Fall back to mock
         console.log("Backend unavailable, using mock response");
         const mock = MOCK_RESPONSES[framework] ?? MOCK_RESPONSES["Next.js"];
 
-        // Simulate streaming
         const words = mock.text.split(" ");
         for (let i = 0; i < words.length; i++) {
           await new Promise((r) => setTimeout(r, 30));
@@ -229,67 +223,23 @@ export default function Workspace() {
   };
 
   return (
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        height: "100vh",
-        width: "100vw",
-        background: "#0f0f1a",
-        color: "#ccc",
-        overflow: "hidden",
-      }}
-    >
+    <div className="flex flex-col h-screen w-screen bg-background text-foreground overflow-hidden">
       {/* Header */}
-      <header
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "8px 16px",
-          background: "#151525",
-          borderBottom: "1px solid #2a2a3a",
-          flexShrink: 0,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <h1 style={{ margin: 0, fontSize: 16, fontWeight: 700, color: "#fff" }}>
-            v03.tech
-          </h1>
-          <span style={{ color: "#666", fontSize: 12 }}>Workspace</span>
+      <header className="flex items-center justify-between px-4 py-2 bg-card border-b border-border shrink-0">
+        <div className="flex items-center gap-3">
+          <h1 className="text-base font-bold text-white">v03.tech</h1>
+          <span className="text-muted-foreground text-xs">Workspace</span>
         </div>
 
-        <div style={{ position: "relative" }}>
+        <div className="relative">
           <button
             onClick={() => setShowFrameworkPicker(!showFrameworkPicker)}
-            style={{
-              background: "#2a2a3a",
-              border: "1px solid #3a3a4a",
-              color: "#ccc",
-              padding: "6px 14px",
-              borderRadius: 6,
-              cursor: "pointer",
-              fontSize: 13,
-              fontWeight: 500,
-            }}
+            className="bg-surface border border-border text-foreground px-3.5 py-1.5 rounded-md cursor-pointer text-[13px] font-medium hover:bg-surface-hover transition-colors"
           >
             {framework} ▼
           </button>
           {showFrameworkPicker && (
-            <div
-              style={{
-                position: "absolute",
-                top: "100%",
-                right: 0,
-                marginTop: 4,
-                background: "#1a1a2a",
-                border: "1px solid #3a3a4a",
-                borderRadius: 8,
-                overflow: "hidden",
-                zIndex: 100,
-                minWidth: 140,
-              }}
-            >
+            <div className="absolute top-full right-0 mt-1 bg-card border border-border rounded-lg overflow-hidden z-[100] min-w-[140px] shadow-[var(--shadow-md)]">
               {FRAMEWORKS.map((fw) => (
                 <div
                   key={fw}
@@ -297,19 +247,16 @@ export default function Workspace() {
                     setFramework(fw);
                     setShowFrameworkPicker(false);
                   }}
+                  className="px-4 py-2 cursor-pointer text-[13px] transition-colors"
                   style={{
-                    padding: "8px 16px",
-                    cursor: "pointer",
-                    fontSize: 13,
-                    color: fw === framework ? "#fff" : "#999",
-                    background: fw === framework ? "#2a2a4a" : "transparent",
+                    color: fw === framework ? "var(--primary-foreground)" : undefined,
+                    background: fw === framework ? "var(--surface-active)" : "transparent",
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "#222";
+                    if (fw !== framework) e.currentTarget.style.background = "var(--surface-hover)";
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background =
-                      fw === framework ? "#2a2a4a" : "transparent";
+                    if (fw !== framework) e.currentTarget.style.background = "transparent";
                   }}
                 >
                   {fw}
@@ -321,46 +268,16 @@ export default function Workspace() {
       </header>
 
       {/* Main content */}
-      <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+      <div className="flex-1 flex overflow-hidden">
         {/* Left: Chat pane */}
-        <div
-          style={{
-            width: "50%",
-            display: "flex",
-            flexDirection: "column",
-            borderRight: "1px solid #2a2a3a",
-          }}
-        >
+        <div className="w-1/2 flex flex-col border-r border-border">
           {/* Messages */}
-          <div
-            style={{
-              flex: 1,
-              overflow: "auto",
-              padding: "16px",
-              display: "flex",
-              flexDirection: "column",
-              gap: 12,
-            }}
-          >
+          <div className="flex-1 overflow-auto p-4 flex flex-col gap-3">
             {messages.length === 0 && (
-              <div
-                style={{
-                  flex: 1,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#555",
-                  fontSize: 14,
-                  textAlign: "center",
-                  flexDirection: "column",
-                  gap: 8,
-                }}
-              >
-                <div style={{ fontSize: 32, opacity: 0.3 }}>⚡</div>
-                <div>
-                  Describe the app you want to build.
-                </div>
-                <div style={{ fontSize: 12, color: "#444" }}>
+              <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm text-center flex-col gap-2">
+                <div className="text-[32px] opacity-30">⚡</div>
+                <div>Describe the app you want to build.</div>
+                <div className="text-xs text-muted-foreground">
                   Using {framework}
                 </div>
               </div>
@@ -368,39 +285,29 @@ export default function Workspace() {
             {messages.map((msg) => (
               <div
                 key={msg.id}
+                className="max-w-[85%] px-3.5 py-2.5 rounded-xl text-sm leading-relaxed whitespace-pre-wrap break-words"
                 style={{
-                  maxWidth: "85%",
                   alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
-                  padding: "10px 14px",
-                  borderRadius: 12,
-                  fontSize: 14,
-                  lineHeight: 1.5,
-                  whiteSpace: "pre-wrap",
-                  wordBreak: "break-word",
                   background:
                     msg.role === "user"
-                      ? "#2a2a4a"
+                      ? "var(--surface-active)"
                       : msg.role === "system"
-                      ? "#1a2a1a"
-                      : "#1a1a2a",
-                  color: msg.role === "user" ? "#e0e0ff" : "#ccc",
+                      ? "oklch(0.12 0.04 150)" // green-tinted for system messages
+                      : "var(--surface)",
+                  color:
+                    msg.role === "user"
+                      ? "var(--primary-foreground)"
+                      : "var(--foreground)",
                   border:
                     msg.role === "assistant"
-                      ? "1px solid #2a2a3a"
+                      ? "1px solid var(--border)"
                       : "none",
                 }}
               >
                 {msg.content}
                 {msg.isStreaming && (
                   <span
-                    style={{
-                      display: "inline-block",
-                      width: 8,
-                      height: 14,
-                      background: "#888",
-                      marginLeft: 2,
-                      animation: "blink 1s step-end infinite",
-                    }}
+                    className="inline-block w-2 h-3.5 bg-muted-foreground ml-0.5 animate-pulse"
                   />
                 )}
               </div>
@@ -411,13 +318,7 @@ export default function Workspace() {
           {/* Prompt bar */}
           <form
             onSubmit={handleSubmit}
-            style={{
-              padding: "12px 16px",
-              borderTop: "1px solid #2a2a3a",
-              display: "flex",
-              gap: 8,
-              background: "#151525",
-            }}
+            className="p-3 border-t border-border flex gap-2 bg-card"
           >
             <textarea
               ref={inputRef}
@@ -426,18 +327,7 @@ export default function Workspace() {
               placeholder="Describe the app you want to build..."
               disabled={isGenerating}
               rows={2}
-              style={{
-                flex: 1,
-                background: "#1a1a2a",
-                border: "1px solid #2a2a3a",
-                borderRadius: 8,
-                color: "#ccc",
-                padding: "10px 14px",
-                fontSize: 14,
-                resize: "none",
-                outline: "none",
-                fontFamily: "inherit",
-              }}
+              className="flex-1 bg-surface border border-border rounded-lg text-foreground px-3.5 py-2.5 text-sm resize-none outline-none font-[inherit] placeholder:text-muted-foreground focus:border-ring transition-colors"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
@@ -448,18 +338,7 @@ export default function Workspace() {
             <button
               type="submit"
               disabled={isGenerating || !input.trim()}
-              style={{
-                background: isGenerating ? "#333" : "#5555ff",
-                border: "none",
-                color: "#fff",
-                padding: "10px 20px",
-                borderRadius: 8,
-                cursor: isGenerating ? "not-allowed" : "pointer",
-                fontSize: 14,
-                fontWeight: 600,
-                alignSelf: "flex-end",
-                opacity: isGenerating || !input.trim() ? 0.5 : 1,
-              }}
+              className="bg-primary border-0 text-primary-foreground px-5 py-2.5 rounded-lg text-sm font-semibold self-end transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90"
             >
               {isGenerating ? "..." : "→"}
             </button>
@@ -467,12 +346,11 @@ export default function Workspace() {
         </div>
 
         {/* Right: Code workspace */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        <div className="flex-1 flex flex-col">
           <WorkspaceLayout />
         </div>
       </div>
 
-      {/* Blink keyframe */}
       <style>{`
         @keyframes blink {
           0%, 100% { opacity: 1; }

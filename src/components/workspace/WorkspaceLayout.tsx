@@ -41,62 +41,26 @@ export default function WorkspaceLayout() {
   return (
     <div
       ref={containerRef}
-      className="workspace-layout"
-      style={{
-        display: "flex",
-        height: "100%",
-        width: "100%",
-        overflow: "hidden",
-        position: "relative",
-        userSelect: isDragging ? "none" : "auto",
-      }}
+      className="flex h-full w-full overflow-hidden relative"
+      style={{ userSelect: isDragging ? "none" : "auto" }}
     >
       {/* Left Panel */}
       <div
-        className="workspace-left"
-        style={{
-          width: `${layout.leftPanelWidth}%`,
-          display: "flex",
-          flexDirection: "column",
-          borderRight: "1px solid #2a2a3a",
-          overflow: "hidden",
-        }}
+        className="flex flex-col border-r border-border overflow-hidden"
+        style={{ width: `${layout.leftPanelWidth}%` }}
       >
-        {/* File tree toggle and chat pane will go here */}
-        <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+        <div className="flex flex-col h-full">
           {isFileTreeOpen && (
-            <div
-              style={{
-                maxHeight: "40%",
-                overflow: "auto",
-                borderBottom: "1px solid #2a2a3a",
-              }}
-            >
-              <div
-                style={{
-                  padding: "8px 12px",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  color: "#888",
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px",
-                  borderBottom: "1px solid #2a2a3a",
-                }}
-              >
+            <div className="max-h-[40%] overflow-auto border-b border-border">
+              <div className="px-3 py-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b border-border">
                 Files
               </div>
               <FileTree />
             </div>
           )}
-          {/* Chat pane placeholder - will be wired in Workspace.tsx */}
           <div
             id="workspace-chat-pane"
-            style={{
-              flex: 1,
-              display: "flex",
-              flexDirection: "column",
-              overflow: "hidden",
-            }}
+            className="flex-1 flex flex-col overflow-hidden"
           />
         </div>
       </div>
@@ -104,85 +68,43 @@ export default function WorkspaceLayout() {
       {/* Resizable divider */}
       <div
         onMouseDown={handleMouseDown}
+        className="shrink-0 cursor-col-resize transition-[background] duration-[var(--duration-fast)]"
         style={{
           width: 4,
-          cursor: "col-resize",
-          background: isDragging ? "#5555ff" : "#2a2a3a",
-          flexShrink: 0,
-          transition: isDragging ? "none" : "background 0.2s",
+          background: isDragging ? "var(--primary)" : "var(--border)",
         }}
         onMouseEnter={(e) => {
-          if (!isDragging) e.currentTarget.style.background = "#5555ff";
+          if (!isDragging) e.currentTarget.style.background = "var(--primary)";
         }}
         onMouseLeave={(e) => {
-          if (!isDragging) e.currentTarget.style.background = "#2a2a3a";
+          if (!isDragging) e.currentTarget.style.background = "var(--border)";
         }}
       />
 
       {/* Right Panel */}
-      <div
-        className="workspace-right"
-        style={{
-          flex: 1,
-          display: "flex",
-          flexDirection: "column",
-          overflow: "hidden",
-        }}
-      >
-        {/* Tabs */}
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            padding: "0 8px",
-            background: "#1a1a2a",
-            borderBottom: "1px solid #2a2a3a",
-            minHeight: 36,
-            gap: 4,
-          }}
-        >
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Tabs bar */}
+        <div className="flex items-center gap-1 px-2 bg-surface border-b border-border min-h-[36px]">
           <button
             onClick={toggleFileTree}
             title="Toggle file tree"
-            style={{
-              background: "none",
-              border: "1px solid #2a2a3a",
-              color: "#888",
-              padding: "2px 8px",
-              borderRadius: 4,
-              fontSize: 12,
-              cursor: "pointer",
-            }}
+            className="bg-transparent border border-border text-muted-foreground px-2 py-0.5 rounded text-xs cursor-pointer hover:text-foreground hover:border-foreground/30 transition-colors"
           >
             {isFileTreeOpen ? "<<" : ">>"}
           </button>
           {activeFileContent && (
-            <div
-              style={{
-                fontSize: 13,
-                color: "#ccc",
-                padding: "4px 12px",
-                background: "#2a2a3a",
-                borderRadius: "4px 4px 0 0",
-              }}
-            >
+            <div className="text-[13px] text-foreground px-3 py-1 bg-surface-active rounded-t-md">
               {useWorkspaceStore.getState().activeFilePath ?? "untitled"}
             </div>
           )}
-          <div style={{ flex: 1 }} />
-          <div
-            style={{
-              fontSize: 11,
-              color: "#666",
-              padding: "0 8px",
-            }}
-          >
+          <div className="flex-1" />
+          <div className="text-[11px] text-muted-foreground px-2">
             {activeFileLanguage ?? ""}
           </div>
         </div>
 
-        {/* CodeMirror / Preview */}
-        <div style={{ flex: 1, overflow: "hidden" }}>
+        {/* CodeMirror */}
+        <div className="flex-1 overflow-hidden">
           <CodeEditor />
         </div>
       </div>

@@ -5,6 +5,8 @@ import { Navbar } from '@/components/Navbar';
 import { PromptHero } from '@/components/PromptHero';
 import { Footer } from '@/components/Footer';
 import { AuthModal } from '@/components/AuthModal';
+import { Button } from '@/components/ui/button';
+import { User } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Home() {
@@ -14,41 +16,43 @@ export default function Home() {
 
   const handlePromptSubmit = (prompt: string) => {
     if (!isAuthenticated) {
-      // Open auth modal if user is not authenticated
       setIsAuthModalOpen(true);
       return;
     }
 
-    // Handle authenticated prompt submission
     setIsPromptLoading(true);
     console.log('Prompt submitted:', prompt);
 
-    // Simulate API call
     setTimeout(() => {
       setIsPromptLoading(false);
       toast.success('App creation started! Redirecting to editor...');
-      // Here you would redirect to the app editor
     }, 2000);
   };
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-background">
-      {/* Universe Background */}
       <UniverseBackground />
 
-      {/* Content Layer */}
-      <div className="relative z-10 w-full h-screen flex flex-col">
-        {/* Navbar */}
-        <Navbar onUserIconClick={() => setIsAuthModalOpen(true)} />
+      <div className="relative w-full h-screen flex flex-col" style={{ zIndex: "var(--z-content)" }}>
+        <Navbar
+          actions={
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsAuthModalOpen(true)}
+              className="rounded-full hover:bg-white/5 transition-colors"
+              aria-label="User menu"
+            >
+              <User className="w-5 h-5 text-white/60" />
+            </Button>
+          }
+        />
 
-        {/* Hero Section */}
         <PromptHero onSubmit={handlePromptSubmit} isLoading={isPromptLoading} />
 
-        {/* Footer */}
         <Footer />
       </div>
 
-      {/* Auth Modal */}
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />
     </div>
   );

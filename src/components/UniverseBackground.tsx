@@ -205,7 +205,7 @@ export function UniverseBackground() {
       className="fixed inset-0 w-full h-full"
       style={{
         background: 'rgb(1, 2, 8)',
-        zIndex: 0,
+        zIndex: "var(--z-canvas)",
       }}
     />
   );
