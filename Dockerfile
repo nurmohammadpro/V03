@@ -21,6 +21,6 @@ FROM nginx:alpine
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 
-ENV API_UPSTREAM=http://gateway:3001
+ENV API_UPSTREAM=http://127.0.0.1:3001
 
 EXPOSE 80
