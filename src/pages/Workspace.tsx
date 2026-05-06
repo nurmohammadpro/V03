@@ -10,7 +10,7 @@ import {
   getChatSSEUrl,
   type ChatMessage,
 } from "@/lib/sse";
-import { ChevronDown, FolderTree, MessageSquare, Code2, Send, Terminal, Plus } from "lucide-react";
+import { ChevronDown, FolderTree, MessageSquare, Code2, Send, Terminal, Plus, PanelLeftClose, PanelLeft } from "lucide-react";
 
 const FRAMEWORKS = ["Next.js", "MERN", "Laravel", "Django", "NestJS"];
 
@@ -117,6 +117,7 @@ export default function Workspace() {
   const [input, setInput] = useState("");
   const [showFrameworkPicker, setShowFrameworkPicker] = useState(false);
   const [framework, setFramework] = useState(selectedFramework);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarTab, setSidebarTab] = useState<"files" | "chat">("files");
 
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -181,22 +182,37 @@ export default function Workspace() {
     if (!input.trim() || isGenerating) return;
     sendMessage(input);
     setInput("");
+    // Auto-collapse sidebar on first message
+    if (sidebarOpen) setSidebarOpen(false);
   };
 
   return (
     <div className="h-screen w-screen bg-[#05070A] text-[#E6EDF3] flex overflow-hidden">
-      {/* ===== Sidebar (260px fixed) ===== */}
-      <aside className="fixed left-0 top-0 h-full w-[260px] bg-[#0B0F14] border-r border-white/5 flex flex-col z-10">
+      {/* ===== Sidebar (260px, collapsible) ===== */}
+      <aside
+        className={`fixed left-0 top-0 h-full w-[260px] bg-[#0B0F14] border-r border-white/5 flex flex-col z-10 transition-transform duration-300 ease-in-out ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
         {/* Project header */}
         <div className="px-4 pt-5 pb-3 space-y-3">
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-[#3B82F6] flex items-center justify-center text-white font-bold text-sm">
-              v
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-[#3B82F6] flex items-center justify-center text-white font-bold text-sm">
+                v
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-[#E6EDF3] truncate">v03.tech</p>
+                <p className="text-[11px] text-[#6B7280]">Workspace</p>
+              </div>
             </div>
-            <div className="min-w-0">
-              <p className="text-sm font-semibold text-[#E6EDF3] truncate">v03.tech</p>
-              <p className="text-[11px] text-[#6B7280]">Workspace</p>
-            </div>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-[#6B7280] hover:text-[#E6EDF3] hover:bg-[#1F2937] transition-colors -mr-1"
+              title="Close sidebar"
+            >
+              <PanelLeftClose className="w-4 h-4" />
+            </button>
           </div>
           {/* Framework selector */}
           <div className="relative">
@@ -306,8 +322,19 @@ export default function Workspace() {
         </div>
       </aside>
 
+      {/* ===== Floating toggle button (when sidebar collapsed) ===== */}
+      {!sidebarOpen && (
+        <button
+          onClick={() => setSidebarOpen(true)}
+          className="fixed left-3 top-4 z-20 w-8 h-8 rounded-lg bg-[#0F141A] border border-white/5 flex items-center justify-center text-[#6B7280] hover:text-[#E6EDF3] hover:bg-[#1F2937] transition-colors"
+          title="Open sidebar"
+        >
+          <PanelLeft className="w-4 h-4" />
+        </button>
+      )}
+
       {/* ===== Main Content (Chat) ===== */}
-      <main className="ml-[260px] mr-[500px] flex-1 flex flex-col min-w-0 relative z-[1]">
+      <main className={`${sidebarOpen ? 'ml-[260px]' : 'ml-0'} mr-[500px] flex-1 flex flex-col min-w-0 relative z-[1] transition-[margin] duration-300 ease-in-out`}>
         {/* Chat area */}
         <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
           {messages.length === 0 && (
