@@ -9,9 +9,9 @@ import {
   Activity,
   LucideIcon,
 } from "lucide-react";
-import type { Activity } from "@/lib/types";
+import type { Activity as ActivityItem } from "@/lib/types";
 
-const ACTIVITY_ICONS: Record<Activity["type"], LucideIcon> = {
+const ACTIVITY_ICONS: Record<ActivityItem["type"], LucideIcon> = {
   user_register: UserPlus,
   project_create: FolderPlus,
   generation_complete: Zap,
@@ -20,7 +20,7 @@ const ACTIVITY_ICONS: Record<Activity["type"], LucideIcon> = {
   error: AlertCircle,
 };
 
-const ACTIVITY_COLORS: Record<Activity["type"], string> = {
+const ACTIVITY_COLORS: Record<ActivityItem["type"], string> = {
   user_register: "bg-[#22C55E]",
   project_create: "bg-[#3B82F6]",
   generation_complete: "bg-[#A855F7]",
@@ -42,7 +42,7 @@ function timeAgo(iso: string): string {
 }
 
 interface ActivityFeedProps {
-  activities: Activity[];
+  activities: ActivityItem[];
   loading?: boolean;
   title?: string;
   maxItems?: number;
