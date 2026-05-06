@@ -1,5 +1,11 @@
 import { AdminShell } from "@/components/admin/AdminShell";
-import { useAdminStats, useSubscriptionPlans, useUpdateAdminPlan } from "@/hooks/useDashboardData";
+import {
+  useAdminStats,
+  useReplaceAdminPlanFeatures,
+  useReplaceAdminPlanPrices,
+  useSubscriptionPlans,
+  useUpdateAdminPlan,
+} from "@/hooks/useDashboardData";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -11,9 +17,13 @@ export default function AdminBilling() {
   const { stats } = useAdminStats();
   const { plans } = useSubscriptionPlans();
   const updatePlan = useUpdateAdminPlan();
+  const replaceFeatures = useReplaceAdminPlanFeatures();
+  const replacePrices = useReplaceAdminPlanPrices();
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
   const [draftDescription, setDraftDescription] = useState("");
+  const [draftFeatures, setDraftFeatures] = useState<Array<{ key: string; label: string; featureType: string; value: string }>>([]);
+  const [draftPrices, setDraftPrices] = useState<Array<{ market: string; currency: string; billingCycle: string; amount: string; isActive: boolean }>>([]);
 
   const editingPlan = useMemo(
     () => plans.find((plan) => plan.id === editingPlanId) ?? null,
@@ -38,24 +48,87 @@ export default function AdminBilling() {
     setEditingPlanId(planId);
     setDraftName(plan.name);
     setDraftDescription(plan.description);
+    setDraftFeatures(
+      plan.features.map((feature) => ({
+        key: feature.key,
+        label: feature.label,
+        featureType: feature.featureType,
+        value: feature.value,
+      })),
+    );
+    setDraftPrices(
+      plan.prices.map((price) => ({
+        market: price.market,
+        currency: price.currency,
+        billingCycle: price.billingCycle,
+        amount: String(price.amount),
+        isActive: price.isActive,
+      })),
+    );
   }
 
   async function handleSavePlan() {
     if (!editingPlan) return;
 
     try {
-      await updatePlan.mutateAsync({
-        planId: editingPlan.id,
-        body: {
-          name: draftName.trim(),
-          description: draftDescription.trim(),
-        },
-      });
+      await Promise.all([
+        updatePlan.mutateAsync({
+          planId: editingPlan.id,
+          body: {
+            name: draftName.trim(),
+            description: draftDescription.trim(),
+          },
+        }),
+        replaceFeatures.mutateAsync({
+          planId: editingPlan.id,
+          features: draftFeatures.map((feature, index) => ({
+            key: feature.key.trim(),
+            label: feature.label.trim(),
+            featureType: feature.featureType,
+            value: feature.value.trim(),
+            sortOrder: index,
+          })),
+        }),
+        replacePrices.mutateAsync({
+          planId: editingPlan.id,
+          prices: draftPrices.map((price) => ({
+            market: price.market,
+            currency: price.currency.trim(),
+            billingCycle: price.billingCycle,
+            amountMinor: Number(price.amount) || 0,
+            isActive: price.isActive,
+          })),
+        }),
+      ]);
       toast.success("Plan details updated.");
       setEditingPlanId(null);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not save plan.");
     }
+  }
+
+  function updateFeatureRow(index: number, field: "key" | "label" | "featureType" | "value", value: string) {
+    setDraftFeatures((current) =>
+      current.map((item, itemIndex) => (itemIndex === index ? { ...item, [field]: value } : item)),
+    );
+  }
+
+  function updatePriceRow(
+    index: number,
+    field: "market" | "currency" | "billingCycle" | "amount",
+    value: string,
+  ) {
+    setDraftPrices((current) =>
+      current.map((item, itemIndex) => (itemIndex === index ? { ...item, [field]: value } : item)),
+    );
+  }
+
+  function addFeatureRow() {
+    setDraftFeatures((current) => [...current, { key: "", label: "", featureType: "text", value: "" }]);
+  }
+
+  function addPriceRow() {
+    setDraftPrices((current) => [...current, { market: "global", currency: "USD", billingCycle: "monthly", amount: "", isActive: true }]);
   }
 
   return (
@@ -167,7 +240,7 @@ export default function AdminBilling() {
           <DialogHeader className="text-left">
             <DialogTitle className="text-sm font-medium text-[var(--app-text)]">Edit plan</DialogTitle>
             <DialogDescription className="text-sm font-light leading-6 text-[var(--app-text-muted)]">
-              Update the plan name and description. Pricing row editing can follow next.
+              Update the plan metadata, feature rows, and market-wise prices.
             </DialogDescription>
           </DialogHeader>
 
@@ -193,6 +266,100 @@ export default function AdminBilling() {
                 className="min-h-[120px] rounded-[8px] border-0 bg-[var(--app-panel)] text-[var(--app-text)]"
               />
             </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <label className="text-[11px] uppercase tracking-[0.12em] text-[var(--app-text-dim)]">
+                  Features
+                </label>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={addFeatureRow}
+                  className="rounded-[8px] border-0 bg-[var(--app-panel)] text-[var(--app-text-muted)] hover:bg-[var(--app-surface)] hover:text-[var(--app-text)]"
+                >
+                  Add feature
+                </Button>
+              </div>
+              <div className="space-y-3">
+                {draftFeatures.map((feature, index) => (
+                  <div key={`${feature.key}-${index}`} className="grid gap-2 rounded-[8px] bg-[var(--app-panel)] p-3 md:grid-cols-4">
+                    <Input
+                      value={feature.label}
+                      onChange={(event) => updateFeatureRow(index, "label", event.target.value)}
+                      placeholder="Label"
+                      className="rounded-[8px] border-0 bg-[var(--app-panel-2)] text-[var(--app-text)]"
+                    />
+                    <Input
+                      value={feature.key}
+                      onChange={(event) => updateFeatureRow(index, "key", event.target.value)}
+                      placeholder="Key"
+                      className="rounded-[8px] border-0 bg-[var(--app-panel-2)] text-[var(--app-text)]"
+                    />
+                    <Input
+                      value={feature.featureType}
+                      onChange={(event) => updateFeatureRow(index, "featureType", event.target.value)}
+                      placeholder="Type"
+                      className="rounded-[8px] border-0 bg-[var(--app-panel-2)] text-[var(--app-text)]"
+                    />
+                    <Input
+                      value={feature.value}
+                      onChange={(event) => updateFeatureRow(index, "value", event.target.value)}
+                      placeholder="Value"
+                      className="rounded-[8px] border-0 bg-[var(--app-panel-2)] text-[var(--app-text)]"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between gap-3">
+                <label className="text-[11px] uppercase tracking-[0.12em] text-[var(--app-text-dim)]">
+                  Pricing
+                </label>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={addPriceRow}
+                  className="rounded-[8px] border-0 bg-[var(--app-panel)] text-[var(--app-text-muted)] hover:bg-[var(--app-surface)] hover:text-[var(--app-text)]"
+                >
+                  Add price
+                </Button>
+              </div>
+              <div className="space-y-3">
+                {draftPrices.map((price, index) => (
+                  <div key={`${price.market}-${price.billingCycle}-${index}`} className="grid gap-2 rounded-[8px] bg-[var(--app-panel)] p-3 md:grid-cols-4">
+                    <Input
+                      value={price.market}
+                      onChange={(event) => updatePriceRow(index, "market", event.target.value)}
+                      placeholder="Market"
+                      className="rounded-[8px] border-0 bg-[var(--app-panel-2)] text-[var(--app-text)]"
+                    />
+                    <Input
+                      value={price.currency}
+                      onChange={(event) => updatePriceRow(index, "currency", event.target.value)}
+                      placeholder="Currency"
+                      className="rounded-[8px] border-0 bg-[var(--app-panel-2)] text-[var(--app-text)]"
+                    />
+                    <Input
+                      value={price.billingCycle}
+                      onChange={(event) => updatePriceRow(index, "billingCycle", event.target.value)}
+                      placeholder="Billing cycle"
+                      className="rounded-[8px] border-0 bg-[var(--app-panel-2)] text-[var(--app-text)]"
+                    />
+                    <Input
+                      value={price.amount}
+                      onChange={(event) => updatePriceRow(index, "amount", event.target.value)}
+                      placeholder="Amount"
+                      className="rounded-[8px] border-0 bg-[var(--app-panel-2)] text-[var(--app-text)]"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
 
           <DialogFooter className="mt-2 flex-row justify-end gap-2">
@@ -207,10 +374,10 @@ export default function AdminBilling() {
             <Button
               type="button"
               onClick={handleSavePlan}
-              disabled={updatePlan.isPending}
+              disabled={updatePlan.isPending || replaceFeatures.isPending || replacePrices.isPending}
               className="rounded-[8px] bg-[var(--app-accent)] text-white hover:bg-[color-mix(in_srgb,var(--app-accent)_88%,white)]"
             >
-              {updatePlan.isPending ? "Saving..." : "Save"}
+              {updatePlan.isPending || replaceFeatures.isPending || replacePrices.isPending ? "Saving..." : "Save"}
             </Button>
           </DialogFooter>
         </DialogContent>

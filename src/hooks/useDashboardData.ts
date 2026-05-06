@@ -601,6 +601,52 @@ export function useUpdateAdminPlan() {
   });
 }
 
+export function useReplaceAdminPlanFeatures() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      planId,
+      features,
+    }: {
+      planId: string;
+      features: Array<{
+        key: string;
+        label: string;
+        featureType?: string;
+        value?: string | null;
+        sortOrder?: number;
+      }>;
+    }) => api.replaceAdminPlanFeatures(planId, features),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-plans"] });
+    },
+  });
+}
+
+export function useReplaceAdminPlanPrices() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      planId,
+      prices,
+    }: {
+      planId: string;
+      prices: Array<{
+        market: string;
+        currency: string;
+        billingCycle: string;
+        amountMinor: number;
+        isActive?: boolean;
+      }>;
+    }) => api.replaceAdminPlanPrices(planId, prices),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-plans"] });
+    },
+  });
+}
+
 export function useUpdateAiProvider() {
   const qc = useQueryClient();
 

@@ -151,6 +151,53 @@ export const api = {
       body,
     }),
 
+  replaceAdminPlanFeatures: (
+    id: string,
+    features: Array<{
+      key: string;
+      label: string;
+      featureType?: string;
+      value?: string | null;
+      sortOrder?: number;
+    }>,
+  ) =>
+    request<{
+      features: Array<{
+        id: string;
+        key: string;
+        label: string;
+        featureType: string;
+        value: string | null;
+      }>;
+    }>(`/api/admin/plans/${id}/features`, {
+      method: "PUT",
+      body: { features },
+    }),
+
+  replaceAdminPlanPrices: (
+    id: string,
+    prices: Array<{
+      market: string;
+      currency: string;
+      billingCycle: string;
+      amountMinor: number;
+      isActive?: boolean;
+    }>,
+  ) =>
+    request<{
+      prices: Array<{
+        id: string;
+        market: string;
+        currency: string;
+        billingCycle: string;
+        amountMinor: number;
+        isActive: boolean;
+      }>;
+    }>(`/api/admin/plans/${id}/prices`, {
+      method: "PUT",
+      body: { prices },
+    }),
+
   getAiProviders: () =>
     request<{
       providers: Array<{
