@@ -704,7 +704,7 @@ export default function Workspace() {
                   </div>
                     <div className="flex items-center gap-2">
                     <Badge className="rounded-full border border-[var(--app-border)] bg-[var(--app-panel)] px-2 py-0.5 text-[10px] font-normal text-[var(--app-text-muted)]">
-                      code + preview
+                      toggle view
                     </Badge>
                     <Button
                       type="button"
@@ -721,8 +721,8 @@ export default function Workspace() {
 
               <div className="border-b border-[var(--app-border)] px-4 py-2 text-xs text-[var(--app-text-dim)]">
                 {activeFileContent
-                  ? "Code and preview stay visible together in this output surface."
-                  : "Generate or select a file to inspect code and reserve preview runtime."}
+                  ? "Switch between source view and runtime preview from the output toolbar."
+                  : "Generate or select a file to inspect code, then toggle into preview mode when needed."}
               </div>
 
               <div className="min-h-0 flex-1">
