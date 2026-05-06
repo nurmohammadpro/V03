@@ -21,7 +21,7 @@ interface AuthModalProps {
 export function AuthModal({
   isOpen,
   onClose,
-  title = "Welcome to v03.tech",
+  title = "Welcome to V03",
   providerName = "GitHub",
   providerLogo,
   onProviderSignIn,
@@ -60,16 +60,25 @@ export function AuthModal({
           <DialogClose asChild>
             <button
               type="button"
-              className="absolute right-0 top-0 inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-white/10 bg-white/5 text-white/55 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20"
+              className="absolute right-0 top-0 inline-flex h-6 w-6 p-1 items-center justify-center rounded-sm border border-white/10 bg-white/5 text-white/55 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20"
               aria-label="Close authentication modal"
             >
               <X className="h-4 w-4" />
             </button>
           </DialogClose>
-          <DialogHeader>
+          <DialogHeader className="mb-5">
             <DialogTitle className="font-heading text-2xl font-normal text-center">
               <span className="bg-gradient-to-r from-white/80 to-cyan-300 bg-clip-text text-transparent">
-                {title}
+                {title === "Welcome to V03" ? (
+                  <>
+                    Welcome to{" "}
+                    <span className="font-mono uppercase tracking-[0.14em] text-white">
+                      V03
+                    </span>
+                  </>
+                ) : (
+                  title
+                )}
               </span>
             </DialogTitle>
           </DialogHeader>
@@ -116,7 +125,7 @@ export function AuthModal({
 
               {showEmailAuth && (
                 <>
-                  <Separator label="or" className="my-4" />
+                  <Separator label="or" className="my-4 " />
 
                   <div className="space-y-3">
                     <Input
@@ -176,7 +185,7 @@ export function AuthModal({
 
               {showEmailAuth && (
                 <>
-                  <Separator label="or" className="my-4" />
+                  <Separator label="or" className="my-4 rounded-md" />
 
                   <div className="space-y-3">
                     <Input
