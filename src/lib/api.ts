@@ -1,3 +1,5 @@
+import type { AdminPermission, AdminRole, AiRoutingRule, ServiceIntegration } from "@/lib/types";
+
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
 interface ApiOptions {
@@ -45,12 +47,37 @@ export const api = {
     }),
 
   verifyOtp: (email: string, code: string) =>
-    request<{ ok: boolean; token: string }>("/api/auth/verify-otp", {
+    request<{
+      ok: boolean;
+      token: string;
+      user: {
+        userId: string;
+        email: string;
+        fullName: string | null;
+        plan: string;
+        status: string;
+        isAdmin: boolean;
+        roleKeys: string[];
+        permissionKeys: string[];
+      };
+    }>("/api/auth/verify-otp", {
       method: "POST",
       body: { email, code },
     }),
 
-  getMe: () => request<{ user: { email: string } }>("/api/auth/me"),
+  getMe: () =>
+    request<{
+      user: {
+        userId: string;
+        email: string;
+        fullName: string | null;
+        plan: string;
+        status: string;
+        isAdmin: boolean;
+        roleKeys: string[];
+        permissionKeys: string[];
+      };
+    }>("/api/auth/me"),
 
   // Projects
   getProjects: () =>
@@ -66,6 +93,108 @@ export const api = {
 
   deleteProject: (id: string) =>
     request<{ ok: boolean }>(`/api/projects/${id}`, { method: "DELETE" }),
+
+  // Admin
+  getAdminBootstrap: () =>
+    request<{
+      actor: {
+        userId: string;
+        email: string;
+        fullName: string | null;
+        plan: string;
+        status: string;
+        isAdmin: boolean;
+        roleKeys: string[];
+        permissionKeys: string[];
+      };
+      summary: {
+        totalUsers: number;
+        totalProjects: number;
+        totalPlans: number;
+        totalProviders: number;
+        activeSubscriptions: number;
+        totalAdmins: number;
+      };
+    }>("/api/admin/bootstrap"),
+
+  getAdminUsers: () =>
+    request<{
+      users: Array<{
+        id: string;
+        email: string;
+        fullName: string | null;
+        status: string;
+        plan: string;
+        createdAt: string;
+        updatedAt: string;
+        avatarUrl: string | null;
+        metadata: Record<string, unknown>;
+      }>;
+    }>("/api/admin/users"),
+
+  getAdminPlans: () =>
+    request<{
+      plans: Array<{
+        id: string;
+        key: string;
+        name: string;
+        description: string | null;
+        status: string;
+        billingModel: string;
+        metadata: Record<string, unknown>;
+        features: Array<{
+          id: string;
+          key: string;
+          label: string;
+          featureType: string;
+          value: string | null;
+        }>;
+        prices: Array<{
+          id: string;
+          market: string;
+          currency: string;
+          billingCycle: string;
+          amountMinor: number;
+          isActive: boolean;
+        }>;
+      }>;
+    }>("/api/admin/plans"),
+
+  getAiProviders: () =>
+    request<{
+      providers: Array<{
+        id: string;
+        key: string;
+        name: string;
+        providerType: string;
+        status: string;
+        baseUrl: string | null;
+        authMode: string;
+        secretRef: string | null;
+        weight: number;
+        config: Record<string, unknown>;
+        models: Array<{
+          id: string;
+          providerId: string;
+          key: string;
+          name: string;
+          status: string;
+          inputCostPerMillion: number | null;
+          outputCostPerMillion: number | null;
+          latencyTier: string | null;
+          qualityTier: string | null;
+        }>;
+      }>;
+    }>("/api/admin/ai/providers"),
+
+  getAiRoutingRules: () =>
+    request<{ rules: AiRoutingRule[] }>("/api/admin/ai/routing-rules"),
+
+  getServiceIntegrations: () =>
+    request<{ services: ServiceIntegration[] }>("/api/admin/services"),
+
+  getAdminRbac: () =>
+    request<{ roles: AdminRole[]; permissions: AdminPermission[] }>("/api/admin/rbac/roles"),
 
   // Health
   health: () => request<{ status: string; service: string; version: string }>("/api/health"),

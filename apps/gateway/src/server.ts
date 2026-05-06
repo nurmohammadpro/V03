@@ -5,6 +5,7 @@ import cookie from "@fastify/cookie";
 import { authRoutes } from "./routes/auth";
 import { projectRoutes } from "./routes/projects";
 import { chatRoutes } from "./routes/chat";
+import { adminRoutes } from "./routes/admin";
 import "dotenv/config";
 
 const app = Fastify({ logger: true });
@@ -28,6 +29,7 @@ async function start() {
   await app.register(authRoutes);
   await app.register(projectRoutes);
   await app.register(chatRoutes);
+  await app.register(adminRoutes);
 
   // Health check
   app.get("/api/health", async () => ({ status: "ok", service: "v03-gateway", version: "1.0.0" }));

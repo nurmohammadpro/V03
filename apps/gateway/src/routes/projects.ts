@@ -2,30 +2,25 @@ import { FastifyInstance } from "fastify";
 import db from "../db";
 import { projects, projectSnapshots } from "../db/schema";
 import { eq } from "drizzle-orm";
+import { getRequestActor, requireAuthenticated } from "../middleware/auth";
 
 export async function projectRoutes(app: FastifyInstance) {
   // All project routes require auth
-  app.addHook("onRequest", async (request, reply) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      return reply.status(401).send({ error: "Unauthorized" });
-    }
-  });
+  app.addHook("onRequest", requireAuthenticated);
 
   // GET /api/projects
   app.get("/api/projects", async (request, reply) => {
-    const user = request.user as any;
+    const actor = getRequestActor(request);
     const result = await db
       .select()
       .from(projects)
-      .where(eq(projects.userId, user.sub || "00000000-0000-0000-0000-000000000000"));
+      .where(eq(projects.userId, actor.userId));
     return reply.send({ projects: result });
   });
 
   // POST /api/projects
   app.post("/api/projects", async (request, reply) => {
-    const user = request.user as any;
+    const actor = getRequestActor(request);
     const { name, framework } = request.body as { name?: string; framework?: string };
     if (!name) {
       return reply.status(400).send({ error: "Name is required" });
@@ -33,7 +28,7 @@ export async function projectRoutes(app: FastifyInstance) {
 
     const [project] = await db
       .insert(projects)
-      .values({ userId: user.sub || "00000000-0000-0000-0000-000000000000", name, framework })
+      .values({ userId: actor.userId, name, framework })
       .returning();
 
     return reply.status(201).send({ project });

@@ -100,16 +100,17 @@ export function UsersTable({ users, loading }: UsersTableProps) {
         ) : (
           <div className="divide-y divide-[var(--app-border)]">
             {/* Column headers */}
-            <div className="hidden gap-3 px-3 py-2 text-[11px] font-normal uppercase tracking-[0.12em] text-[var(--app-text-dim)] sm:grid sm:grid-cols-[1fr_90px_80px_40px]">
+            <div className="hidden gap-3 px-3 py-2 text-[11px] font-normal uppercase tracking-[0.12em] text-[var(--app-text-dim)] sm:grid sm:grid-cols-[1fr_90px_90px_80px_40px]">
               <span>User</span>
               <span>Role</span>
+              <span>Plan</span>
               <span>Status</span>
               <span />
             </div>
             {filtered.map((user) => (
               <div
                 key={user.id}
-                className="group grid gap-3 rounded-[10px] px-3 py-3 transition-colors hover:bg-[var(--app-surface-subtle)] sm:grid-cols-[1fr_90px_80px_40px] sm:items-center"
+                className="group grid gap-3 rounded-[10px] px-3 py-3 transition-colors hover:bg-[var(--app-surface-subtle)] sm:grid-cols-[1fr_90px_90px_80px_40px] sm:items-center"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <Avatar size="sm">
@@ -140,6 +141,10 @@ export function UsersTable({ users, loading }: UsersTableProps) {
                   )}
                 </div>
                 <div className="flex items-center gap-2 sm:block">
+                  <span className="text-[11px] uppercase tracking-[0.12em] text-[var(--app-text-dim)] sm:hidden">Plan</span>
+                  <span className="text-sm text-[var(--app-text-muted)]">{user.plan || "free"}</span>
+                </div>
+                <div className="flex items-center gap-2 sm:block">
                   <span className="text-[11px] uppercase tracking-[0.12em] text-[var(--app-text-dim)] sm:hidden">Status</span>
                   <Badge
                     className={cn(
@@ -155,8 +160,20 @@ export function UsersTable({ users, loading }: UsersTableProps) {
                   <ActionMenu
                     items={[
                       {
+                        label: "View profile",
+                        onSelect: () => toast.info("Profile panel wiring is queued for API integration"),
+                      },
+                      {
                         label: user.status === "suspended" ? "Unsuspend user" : "Suspend user",
                         onSelect: () => toast.info("User status actions are not wired yet"),
+                      },
+                      {
+                        label: "Upgrade plan",
+                        onSelect: () => toast.info("Plan change actions are not wired yet"),
+                      },
+                      {
+                        label: "Downgrade plan",
+                        onSelect: () => toast.info("Plan change actions are not wired yet"),
                       },
                       {
                         label: user.role === "admin" ? "Remove admin role" : "Promote to admin",

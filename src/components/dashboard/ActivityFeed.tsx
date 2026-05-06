@@ -7,6 +7,7 @@ import {
   AlertCircle,
   Download,
   Activity,
+  ShieldCheck,
   LucideIcon,
 } from "lucide-react";
 import type { Activity as ActivityItem } from "@/lib/types";
@@ -18,6 +19,7 @@ const ACTIVITY_ICONS: Record<ActivityItem["type"], LucideIcon> = {
   deploy: Rocket,
   export: Download,
   error: AlertCircle,
+  admin_action: ShieldCheck,
 };
 
 const ACTIVITY_COLORS: Record<ActivityItem["type"], string> = {
@@ -27,6 +29,7 @@ const ACTIVITY_COLORS: Record<ActivityItem["type"], string> = {
   deploy: "bg-[#06B6D4]",
   export: "bg-[#F59E0B]",
   error: "bg-[#EF4444]",
+  admin_action: "bg-[var(--app-accent)]",
 };
 
 function timeAgo(iso: string): string {
