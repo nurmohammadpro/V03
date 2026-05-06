@@ -12,14 +12,14 @@ export default function WorkspaceLayout({ viewMode }: { viewMode: "code" | "prev
     <div className="flex flex-col h-full w-full">
       <div className="flex min-h-[42px] items-center border-b border-[var(--app-border)] bg-[var(--app-panel-2)] px-3 py-2">
         {activeFileContent && activeFilePath && (
-          <div className="flex items-center gap-2 rounded-[10px] border border-[var(--app-border)] bg-[var(--app-panel)] px-2.5 py-1 text-xs text-[var(--app-text-muted)]">
+          <div className="flex items-center gap-2 rounded-[7px] bg-[var(--app-panel)] px-2.5 py-1 text-xs text-[var(--app-text-muted)]">
             <span className="h-2 w-2 rounded-full bg-[var(--app-accent)]" />
-            <span className="font-medium text-[var(--app-text)]">{activeFilePath.split("/").pop()}</span>
+            <span className="font-normal text-[var(--app-text)]">{activeFilePath.split("/").pop()}</span>
           </div>
         )}
         {!activeFileContent && files.length > 0 && (
           <div className="text-xs text-[var(--app-text-muted)]">
-            Select a file for source view, or stay in preview mode while the runtime surface is prepared.
+            Select a file for code view or stay in preview.
           </div>
         )}
         <div className="flex-1" />

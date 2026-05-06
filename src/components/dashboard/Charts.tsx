@@ -38,7 +38,7 @@ export function TrendChart({
 
   if (loading) {
     return (
-      <div className="rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel)] shadow-[var(--shadow-sm)] backdrop-blur-xl">
+      <div className="rounded-[8px] bg-[var(--app-panel)] backdrop-blur-xl">
         <div className="px-4 pt-4 pb-2">
           <div className="h-3.5 w-28 animate-pulse rounded bg-[var(--app-surface)]" />
         </div>
@@ -50,9 +50,9 @@ export function TrendChart({
   }
 
   return (
-    <div className="overflow-hidden rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel)] shadow-[var(--shadow-sm)] backdrop-blur-xl">
+    <div className="overflow-hidden rounded-[8px] bg-[var(--app-panel)] backdrop-blur-xl">
       <div className="px-4 pt-4 pb-1">
-        <p className="text-xs font-medium uppercase tracking-[0.12em] text-[var(--app-text-dim)]">{title}</p>
+        <p className="text-xs font-normal uppercase tracking-[0.12em] text-[var(--app-text-dim)]">{title}</p>
       </div>
       <ResponsiveContainer width="100%" height={height}>
         {variant === "area" ? (

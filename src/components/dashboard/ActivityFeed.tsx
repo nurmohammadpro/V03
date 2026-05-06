@@ -59,9 +59,9 @@ export function ActivityFeed({
   const display = activities.slice(0, maxItems);
 
   return (
-    <div className={cn("rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel)] shadow-[var(--shadow-sm)] backdrop-blur-xl", className)}>
+    <div className={cn("rounded-[8px] bg-[var(--app-panel)] backdrop-blur-xl", className)}>
       <div className="border-b border-[var(--app-border)] px-4 py-3">
-        <h3 className="flex items-center gap-2 text-sm font-medium text-[var(--app-text)]">
+        <h3 className="flex items-center gap-2 text-sm font-normal text-[var(--app-text)]">
           <span className="relative flex h-2 w-2">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--app-success)] opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--app-success)]" />
@@ -95,11 +95,11 @@ export function ActivityFeed({
               return (
                 <div
                   key={item.id}
-                  className="group flex items-start gap-3 rounded-[10px] px-2 py-2.5 transition-colors hover:bg-[var(--app-surface-subtle)]"
+                  className="group flex items-start gap-3 rounded-[8px] px-2 py-2.5 transition-colors hover:bg-[var(--app-surface-subtle)]"
                 >
                   <div
                     className={cn(
-                      "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] text-white",
+                      "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-[7px] text-white",
                       ACTIVITY_COLORS[item.type]
                     )}
                   >

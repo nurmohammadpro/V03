@@ -35,6 +35,13 @@ export default function Home() {
 
       <div className="relative w-full h-screen flex flex-col" style={{ zIndex: "var(--z-content)" }}>
         <Navbar
+          children={
+            <div className="hidden items-center gap-5 md:flex">
+              <a href="/pricing" className="text-sm font-light text-white/55 transition-colors hover:text-white">
+                Pricing
+              </a>
+            </div>
+          }
           actions={
             <Button
               type="button"
@@ -51,7 +58,7 @@ export default function Home() {
 
         <PromptHero onSubmit={handlePromptSubmit} isLoading={isPromptLoading} />
 
-        <Footer />
+        <Footer links={[{ label: "Terms", href: "/terms" }, { label: "Privacy", href: "/privacy" }, { label: "Refund", href: "/refund" }]} />
       </div>
 
       <AuthModal isOpen={isAuthModalOpen} onClose={() => setIsAuthModalOpen(false)} />

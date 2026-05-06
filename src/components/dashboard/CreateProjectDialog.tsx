@@ -1,7 +1,13 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { useCreateProject } from "@/hooks/useProjects";
 import { toast } from "sonner";
 import {
@@ -13,7 +19,6 @@ import {
   Layers3,
   Package2,
   Sparkles,
-  X,
 } from "lucide-react";
 
 const TEMPLATES = [
@@ -64,8 +69,6 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
   const [, navigate] = useLocation();
   const createProject = useCreateProject();
 
-  if (!open) return null;
-
   function handleSelectTemplate(template: (typeof TEMPLATES)[0]) {
     setName(template.name);
     setFramework(template.frameworks[0]);
@@ -92,28 +95,24 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
-      <div className="relative mx-4 w-full max-w-lg overflow-hidden rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel-2)] backdrop-blur-xl">
+    <Dialog open={open} onOpenChange={(next) => (!createProject.isPending ? handleClose() : next)}>
+      <DialogContent
+        showCloseButton={false}
+        className="max-w-lg overflow-hidden rounded-[10px] border border-[var(--app-border)] bg-[var(--app-panel-2)] p-0 text-[var(--app-text)] backdrop-blur-xl"
+      >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[var(--app-border)] px-5 py-4">
+        <DialogHeader className="border-b border-[var(--app-border)] px-5 py-4 text-left">
           <div>
-            <h2 className="text-sm font-medium text-[var(--app-text)]">
+            <DialogTitle className="text-sm font-medium text-[var(--app-text)]">
               {step === "template" ? "New Project" : "Configure Project"}
-            </h2>
-            <p className="mt-0.5 text-xs text-[var(--app-text-muted)]">
+            </DialogTitle>
+            <DialogDescription className="mt-0.5 text-xs font-light text-[var(--app-text-muted)]">
               {step === "template"
                 ? "Start from a template or configure manually"
                 : "Name your project and pick a framework"}
-            </p>
+            </DialogDescription>
           </div>
-          <button
-            onClick={handleClose}
-            className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--app-text-dim)] transition-colors hover:bg-[var(--app-surface)] hover:text-[var(--app-text)]"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
+        </DialogHeader>
 
         {/* Body */}
         <div className="px-5 py-4">
@@ -211,7 +210,7 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
             </button>
           )}
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

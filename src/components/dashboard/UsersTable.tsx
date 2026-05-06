@@ -1,12 +1,12 @@
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { ActionMenu } from "@/components/shared/ActionMenu";
 import { useState, useMemo } from "react";
-import { Search, MoreHorizontal, Shield, ShieldOff, UsersRound } from "lucide-react";
+import { Search, Shield, ShieldOff, UsersRound } from "lucide-react";
 import type { User } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface UsersTableProps {
   users: User[];
@@ -51,27 +51,27 @@ export function UsersTable({ users, loading }: UsersTableProps) {
   }, [users, search, roleFilter]);
 
   return (
-    <div className="overflow-hidden rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel)] shadow-[var(--shadow-sm)] backdrop-blur-xl">
+    <div className="overflow-hidden rounded-[8px] bg-[var(--app-panel)] backdrop-blur-xl">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--app-border)] p-4">
-        <h3 className="text-sm font-medium text-[var(--app-text)]">User Management</h3>
+        <h3 className="text-sm font-normal text-[var(--app-text)]">User Management</h3>
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--app-text-dim)]" />
-            <Input
-              placeholder="Search users..."
-              className="h-9 w-48 rounded-full border-[var(--app-border)] bg-[var(--app-panel)] pl-8 text-xs text-[var(--app-text)] placeholder:text-[var(--app-text-dim)]"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-          </div>
-          <div className="flex gap-0.5 rounded-full border border-[var(--app-border)] bg-[var(--app-panel)] p-1">
+              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--app-text-dim)]" />
+              <Input
+                placeholder="Search users..."
+                className="h-9 w-48 rounded-[8px] border-0 bg-[var(--app-panel-2)] pl-8 text-xs text-[var(--app-text)] placeholder:text-[var(--app-text-dim)]"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+          <div className="flex gap-0.5 rounded-[8px] bg-[var(--app-panel-2)] p-1">
             {(["all", "admin", "user"] as const).map((r) => (
               <button
                 key={r}
                 onClick={() => setRoleFilter(r)}
                 className={cn(
-                  "rounded-full px-2.5 py-1.5 text-[11px] font-normal capitalize transition-colors",
+                  "rounded-[6px] px-2.5 py-1.5 text-[11px] font-normal capitalize transition-colors",
                   roleFilter === r
                     ? "bg-[var(--app-surface)] text-[var(--app-text)]"
                     : "text-[var(--app-text-muted)] hover:text-[var(--app-text)]"
@@ -100,7 +100,7 @@ export function UsersTable({ users, loading }: UsersTableProps) {
         ) : (
           <div className="divide-y divide-[var(--app-border)]">
             {/* Column headers */}
-            <div className="hidden gap-3 px-3 py-2 text-[11px] font-medium uppercase tracking-[0.12em] text-[var(--app-text-dim)] sm:grid sm:grid-cols-[1fr_90px_80px_40px]">
+            <div className="hidden gap-3 px-3 py-2 text-[11px] font-normal uppercase tracking-[0.12em] text-[var(--app-text-dim)] sm:grid sm:grid-cols-[1fr_90px_80px_40px]">
               <span>User</span>
               <span>Role</span>
               <span>Status</span>
@@ -118,7 +118,7 @@ export function UsersTable({ users, loading }: UsersTableProps) {
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-[var(--app-text)]">
+                    <p className="truncate text-sm font-normal text-[var(--app-text)]">
                       {user.name || "—"}
                     </p>
                     <p className="truncate text-xs text-[var(--app-text-muted)]">{user.email}</p>
@@ -152,13 +152,18 @@ export function UsersTable({ users, loading }: UsersTableProps) {
                   </Badge>
                 </div>
                 <div className="flex justify-end opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 rounded-full text-[var(--app-text-dim)] hover:bg-[var(--app-surface)] hover:text-[var(--app-text)]"
-                  >
-                    <MoreHorizontal className="w-3.5 h-3.5" />
-                  </Button>
+                  <ActionMenu
+                    items={[
+                      {
+                        label: user.status === "suspended" ? "Unsuspend user" : "Suspend user",
+                        onSelect: () => toast.info("User status actions are not wired yet"),
+                      },
+                      {
+                        label: user.role === "admin" ? "Remove admin role" : "Promote to admin",
+                        onSelect: () => toast.info("Role actions are not wired yet"),
+                      },
+                    ]}
+                  />
                 </div>
               </div>
             ))}

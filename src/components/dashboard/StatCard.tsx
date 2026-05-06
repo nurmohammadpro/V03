@@ -13,7 +13,7 @@ interface StatCardProps {
 function TrendBadge({ change }: { change: number }) {
   if (change === 0) {
     return (
-      <span className="inline-flex items-center gap-1 rounded-full border border-[var(--app-border)] bg-[var(--app-surface-subtle)] px-2.5 py-1 text-[11px] font-normal text-[var(--app-text-muted)]">
+      <span className="inline-flex items-center gap-1 rounded-[6px] bg-[var(--app-surface-subtle)] px-2.5 py-1 text-[11px] font-normal text-[var(--app-text-muted)]">
         <Minus className="w-3 h-3" />
         Flat
       </span>
@@ -21,9 +21,9 @@ function TrendBadge({ change }: { change: number }) {
   }
   const isUp = change > 0;
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-normal",
+      <span
+        className={cn(
+        "inline-flex items-center gap-1 rounded-[6px] px-2.5 py-1 text-[11px] font-normal",
         isUp
           ? "bg-[var(--app-success-soft)] text-[var(--app-success)]"
           : "bg-[var(--app-danger-soft)] text-[var(--app-danger)]"
@@ -39,10 +39,10 @@ function TrendBadge({ change }: { change: number }) {
 export function StatCard({ title, value, change, icon, loading, className }: StatCardProps) {
   if (loading) {
     return (
-      <div className={cn("animate-pulse rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel)] p-5 backdrop-blur-xl", className)}>
+      <div className={cn("animate-pulse rounded-[8px] bg-[var(--app-panel)] p-5 backdrop-blur-xl", className)}>
         <div className="flex items-center justify-between mb-4">
-          <div className="h-10 w-10 rounded-[8px] bg-[var(--app-surface)]" />
-          <div className="h-6 w-16 rounded-full bg-[var(--app-surface)]" />
+          <div className="h-10 w-10 rounded-[7px] bg-[var(--app-surface)]" />
+          <div className="h-6 w-16 rounded-[6px] bg-[var(--app-surface)]" />
         </div>
         <div className="mb-2 h-7 w-24 rounded bg-[var(--app-surface)]" />
         <div className="h-4 w-20 rounded bg-[var(--app-surface)]" />
@@ -53,18 +53,17 @@ export function StatCard({ title, value, change, icon, loading, className }: Sta
   return (
     <div
       className={cn(
-        "rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel)] p-5 shadow-[var(--shadow-sm)] backdrop-blur-xl transition-colors duration-200",
-        "hover:border-[var(--app-border-strong)] hover:bg-[var(--app-panel-2)]",
+        "rounded-[8px] bg-[var(--app-panel)] p-5 backdrop-blur-xl transition-colors duration-200 hover:bg-[var(--app-panel-2)]",
         className
       )}
     >
       <div className="flex items-center justify-between mb-4">
-        <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
+        <div className="flex h-9 w-9 items-center justify-center rounded-[7px] bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
           {icon}
         </div>
         {change !== undefined && <TrendBadge change={change} />}
       </div>
-      <p className="text-[28px] font-medium tracking-[-0.04em] text-[var(--app-text)]">{value}</p>
+      <p className="text-[22px] font-medium tracking-[-0.03em] text-[var(--app-text)]">{value}</p>
       <p className="mt-1 text-sm font-normal text-[var(--app-text-muted)]">{title}</p>
     </div>
   );

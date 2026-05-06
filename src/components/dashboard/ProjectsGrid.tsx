@@ -1,13 +1,13 @@
 import { useState, useMemo } from "react";
 import { useLocation } from "wouter";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { ActionMenu } from "@/components/shared/ActionMenu";
+import { ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { cn } from "@/lib/utils";
 import {
   Search,
   ArrowUpDown,
-  MoreHorizontal,
   ExternalLink,
   Trash2,
   Copy,
@@ -25,9 +25,9 @@ interface ProjectsGridProps {
 
 function ProjectCardSkeleton() {
   return (
-      <div className="animate-pulse rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel)] p-4 backdrop-blur-xl">
+      <div className="animate-pulse rounded-[8px] bg-[var(--app-panel)] p-4 backdrop-blur-xl">
         <div className="flex items-center gap-3 mb-3">
-        <div className="h-9 w-9 rounded-[8px] bg-[var(--app-surface)]" />
+        <div className="h-9 w-9 rounded-[7px] bg-[var(--app-surface)]" />
         <div className="space-y-1.5 flex-1">
           <div className="h-4 w-28 rounded bg-[var(--app-surface)]" />
           <div className="h-3 w-14 rounded bg-[var(--app-surface)]" />
@@ -41,76 +41,54 @@ function ProjectCardSkeleton() {
 function ProjectCard({ project }: { project: Project }) {
   const [, navigate] = useLocation();
   const deleteProject = useDeleteProject();
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   return (
     <div
-      className="group relative cursor-pointer rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel)] p-4 shadow-[var(--shadow-sm)] backdrop-blur-xl transition-colors duration-200 hover:border-[var(--app-border-strong)] hover:bg-[var(--app-panel-2)]"
+      className="group relative cursor-pointer rounded-[8px] bg-[var(--app-panel)] p-4 backdrop-blur-xl transition-colors duration-200 hover:bg-[var(--app-panel-2)]"
       onClick={() => navigate(`/workspace/${project.id}`)}
     >
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] bg-[var(--app-accent-soft)] text-sm font-medium text-[var(--app-accent)]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[7px] bg-[var(--app-accent-soft)] text-sm font-normal text-[var(--app-accent)]">
             {project.name[0].toUpperCase()}
           </div>
           <div className="min-w-0">
-            <p className="truncate text-[15px] font-medium tracking-[-0.02em] text-[var(--app-text)] transition-colors group-hover:text-[var(--app-accent)]">
+            <p className="truncate text-[14px] font-normal tracking-[-0.02em] text-[var(--app-text)] transition-colors group-hover:text-[var(--app-accent)]">
               {project.name}
             </p>
-            <Badge className="mt-1 border border-[var(--app-border)] bg-[var(--app-surface-subtle)] px-2 py-0.5 text-[10px] font-normal text-[var(--app-text-muted)]">
+            <Badge className="mt-1 rounded-[6px] border-0 bg-[var(--app-surface-subtle)] px-2 py-0.5 text-[10px] font-normal text-[var(--app-text-muted)]">
               {project.framework}
             </Badge>
           </div>
         </div>
-        <div className="relative shrink-0">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 rounded-full text-[var(--app-text-dim)] opacity-0 transition-opacity hover:bg-[var(--app-surface)] hover:text-[var(--app-text)] group-hover:opacity-100"
-            onClick={(e) => {
-              e.stopPropagation();
-              setMenuOpen(!menuOpen);
-            }}
-          >
-            <MoreHorizontal className="w-3.5 h-3.5" />
-          </Button>
-          {menuOpen && (
-            <>
-              <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-              <div className="absolute right-0 top-9 z-20 w-40 rounded-[10px] border border-[var(--app-border)] bg-[var(--app-panel-2)] py-1 shadow-[var(--shadow-md)] backdrop-blur-xl">
-                <button
-                  className="flex w-full items-center gap-2 px-3 py-2 text-xs text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface)]"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    navigate(`/workspace/${project.id}`);
-                    setMenuOpen(false);
-                  }}
-                >
-                  <ExternalLink className="w-3.5 h-3.5" /> Open
-                </button>
-                <button className="flex w-full items-center gap-2 px-3 py-2 text-xs text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface)]">
-                  <Copy className="w-3.5 h-3.5" /> Duplicate
-                </button>
-                <button className="flex w-full items-center gap-2 px-3 py-2 text-xs text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface)]">
-                  <Archive className="w-3.5 h-3.5" /> Archive
-                </button>
-                <div className="my-1 border-t border-[var(--app-border)]" />
-                <button
-                  className="flex w-full items-center gap-2 px-3 py-2 text-xs text-[var(--app-danger)] transition-colors hover:bg-[var(--app-danger-soft)]"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    deleteProject.mutate(project.id, {
-                      onSuccess: () => toast.success("Project deleted"),
-                      onError: () => toast.error("Failed to delete project"),
-                    });
-                    setMenuOpen(false);
-                  }}
-                >
-                  <Trash2 className="w-3.5 h-3.5" /> Delete
-                </button>
-              </div>
-            </>
-          )}
+        <div className="shrink-0">
+          <ActionMenu
+            className="opacity-0 transition-opacity group-hover:opacity-100"
+            items={[
+              {
+                label: "Open",
+                icon: <ExternalLink className="w-3.5 h-3.5" />,
+                onSelect: () => navigate(`/workspace/${project.id}`),
+              },
+              {
+                label: "Duplicate",
+                icon: <Copy className="w-3.5 h-3.5" />,
+                onSelect: () => toast.info("Duplicate action is not wired yet"),
+              },
+              {
+                label: "Archive",
+                icon: <Archive className="w-3.5 h-3.5" />,
+                onSelect: () => toast.info("Archive action is not wired yet"),
+              },
+              {
+                label: "Delete",
+                icon: <Trash2 className="w-3.5 h-3.5" />,
+                tone: "danger",
+                onSelect: () => setConfirmDeleteOpen(true),
+              },
+            ]}
+          />
         </div>
       </div>
 
@@ -122,6 +100,24 @@ function ProjectCard({ project }: { project: Project }) {
           year: "numeric",
         })}
       </p>
+      <ConfirmDialog
+        open={confirmDeleteOpen}
+        onOpenChange={setConfirmDeleteOpen}
+        title="Delete project"
+        description={`This will permanently remove "${project.name}" from the workspace list.`}
+        confirmLabel="Delete"
+        tone="danger"
+        loading={deleteProject.isPending}
+        onConfirm={() =>
+          deleteProject.mutate(project.id, {
+            onSuccess: () => {
+              toast.success("Project deleted");
+              setConfirmDeleteOpen(false);
+            },
+            onError: () => toast.error("Failed to delete project"),
+          })
+        }
+      />
     </div>
   );
 }
@@ -170,19 +166,19 @@ export function ProjectsGrid({ projects, loading }: ProjectsGridProps) {
           <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--app-text-dim)]" />
           <Input
             placeholder="Search projects..."
-            className="h-9 rounded-full border-[var(--app-border)] bg-[var(--app-panel)] pl-8 text-xs text-[var(--app-text)] placeholder:text-[var(--app-text-dim)]"
+            className="h-9 rounded-[8px] border-0 bg-[var(--app-panel)] pl-8 text-xs text-[var(--app-text)] placeholder:text-[var(--app-text-dim)]"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
 
-        <div className="flex gap-0.5 rounded-full border border-[var(--app-border)] bg-[var(--app-panel)] p-1">
+        <div className="flex gap-0.5 rounded-[8px] bg-[var(--app-panel)] p-1">
           {FRAMEWORKS.map((fw) => (
             <button
               key={fw}
               onClick={() => setFilter(fw)}
               className={cn(
-                "rounded-full px-2.5 py-1.5 text-[11px] font-normal transition-colors",
+                "rounded-[6px] px-2.5 py-1.5 text-[11px] font-normal transition-colors",
                 filter === fw
                   ? "bg-[var(--app-surface)] text-[var(--app-text)]"
                   : "text-[var(--app-text-muted)] hover:text-[var(--app-text)]"
@@ -205,7 +201,7 @@ export function ProjectsGrid({ projects, loading }: ProjectsGridProps) {
               setSortAsc(true);
             }
           }}
-          className="flex items-center gap-1 rounded-full border border-[var(--app-border)] bg-[var(--app-panel)] px-3 py-1.5 text-[11px] font-normal text-[var(--app-text-muted)] transition-colors hover:text-[var(--app-text)]"
+          className="flex items-center gap-1 rounded-[8px] bg-[var(--app-panel)] px-3 py-1.5 text-[11px] font-normal text-[var(--app-text-muted)] transition-colors hover:text-[var(--app-text)]"
         >
           <ArrowUpDown className="w-3 h-3" />
           {sortKey === "createdAt" ? (sortAsc ? "Oldest" : "Newest") : sortAsc ? "A-Z" : "Z-A"}
@@ -216,7 +212,7 @@ export function ProjectsGrid({ projects, loading }: ProjectsGridProps) {
       {filtered.length === 0 ? (
         <div className="py-16 text-center">
           <FolderKanban className="mx-auto mb-3 h-10 w-10 text-[var(--app-text-dim)]" />
-          <h3 className="mb-1 text-sm font-medium text-[var(--app-text-muted)]">
+          <h3 className="mb-1 text-sm font-normal text-[var(--app-text-muted)]">
             {search ? "No matching projects" : "No projects yet"}
           </h3>
           <p className="text-xs text-[var(--app-text-dim)]">
