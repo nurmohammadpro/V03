@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..800&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
@@ -38,47 +38,45 @@
   --color-surface-hover: var(--surface-hover);
   --color-surface-active: var(--surface-active);
   --color-surface-alt: var(--surface-alt);
-  --font-body: 'Inter', sans-serif;
+  --font-body: 'Outfit', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 }
 
 :root {
-  --radius: 0.65rem;
-
-  /* ── manus.im palette ── */
-  --background: #05070A;
-  --foreground: #E6EDF3;
-  --card: #0F141A;
-  --card-foreground: #E6EDF3;
-  --popover: #0F141A;
-  --popover-foreground: #E6EDF3;
-  --primary: #3B82F6;
-  --primary-foreground: #FFFFFF;
-  --secondary: #111827;
-  --secondary-foreground: #D1D5DB;
-  --muted: #111827;
-  --muted-foreground: #9BA7B4;
-  --accent: #3B82F6;
-  --accent-foreground: #FFFFFF;
-  --destructive: #EF4444;
-  --destructive-foreground: #FFFFFF;
-  --border: rgba(255, 255, 255, 0.06);
-  --input: #1F2937;
-  --ring: rgba(59, 130, 246, 0.4);
-  --surface: #0B0F14;
-  --surface-hover: #1F2937;
-  --surface-active: #374151;
-  --surface-alt: #111827;
-  --chart-1: #3B82F6;
-  --chart-2: #60A5FA;
-  --chart-3: #93C5FD;
-  --chart-4: #2563EB;
-  --chart-5: #1D4ED8;
-  --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.3);
-  --shadow-sm: 0 1px 3px rgb(0 0 0 / 0.4);
-  --shadow-md: 0 4px 6px rgb(0 0 0 / 0.5);
-  --shadow-lg: 0 10px 15px rgb(0 0 0 / 0.6);
-  --shadow-xl: 0 20px 25px rgb(0 0 0 / 0.7);
+  --radius: 0.72rem;
+  --background: #f4f7fb;
+  --foreground: #0f1724;
+  --card: rgba(255, 255, 255, 0.82);
+  --card-foreground: #0f1724;
+  --popover: #ffffff;
+  --popover-foreground: #0f1724;
+  --primary: #2f7bf6;
+  --primary-foreground: #ffffff;
+  --secondary: #eef3f8;
+  --secondary-foreground: #162233;
+  --muted: #edf2f7;
+  --muted-foreground: #6c798c;
+  --accent: #2f7bf6;
+  --accent-foreground: #ffffff;
+  --destructive: #dc5d57;
+  --destructive-foreground: #ffffff;
+  --border: rgba(15, 23, 36, 0.08);
+  --input: rgba(255, 255, 255, 0.92);
+  --ring: rgba(47, 123, 246, 0.22);
+  --surface: rgba(233, 239, 247, 0.96);
+  --surface-hover: rgba(222, 231, 242, 0.98);
+  --surface-active: rgba(210, 222, 238, 1);
+  --surface-alt: rgba(255, 255, 255, 0.72);
+  --chart-1: #2f7bf6;
+  --chart-2: #15a77d;
+  --chart-3: #f0a94b;
+  --chart-4: #7097d7;
+  --chart-5: #38588f;
+  --shadow-xs: 0 1px 2px rgb(15 23 36 / 0.04);
+  --shadow-sm: 0 0 0 rgb(15 23 36 / 0);
+  --shadow-md: 0 0 0 rgb(15 23 36 / 0);
+  --shadow-lg: 0 26px 70px rgb(15 23 36 / 0.1);
+  --shadow-xl: 0 40px 100px rgb(15 23 36 / 0.12);
   --duration-fast: 150ms;
   --duration-normal: 200ms;
   --duration-slow: 300ms;
@@ -90,6 +88,82 @@
   --z-modal: 60;
   --z-toast: 70;
   --z-tooltip: 80;
+  --app-bg: #f4f7fb;
+  --app-bg-alt: #eef3f8;
+  --app-panel: rgba(255, 255, 255, 0.78);
+  --app-panel-2: rgba(255, 255, 255, 0.94);
+  --app-surface: rgba(230, 237, 246, 0.98);
+  --app-surface-subtle: rgba(236, 241, 248, 0.92);
+  --app-border: rgba(15, 23, 36, 0.08);
+  --app-border-strong: rgba(15, 23, 36, 0.12);
+  --app-text: #0f1724;
+  --app-text-muted: #5f6d80;
+  --app-text-dim: #8b98a9;
+  --app-accent: #2f7bf6;
+  --app-accent-soft: rgba(47, 123, 246, 0.1);
+  --app-success: #18a874;
+  --app-success-soft: rgba(24, 168, 116, 0.12);
+  --app-warning: #d98222;
+  --app-warning-soft: rgba(217, 130, 34, 0.12);
+  --app-danger: #d85d57;
+  --app-danger-soft: rgba(216, 93, 87, 0.12);
+  --app-overlay: rgba(15, 23, 36, 0.24);
+}
+
+.dark {
+  --background: #06080c;
+  --foreground: #e9eff6;
+  --card: rgba(13, 18, 24, 0.9);
+  --card-foreground: #e9eff6;
+  --popover: #0c1218;
+  --popover-foreground: #e9eff6;
+  --primary: #4c89f5;
+  --primary-foreground: #ffffff;
+  --secondary: #10161e;
+  --secondary-foreground: #d8e1eb;
+  --muted: #10161e;
+  --muted-foreground: #8d9aac;
+  --accent: #4c89f5;
+  --accent-foreground: #ffffff;
+  --destructive: #dc625c;
+  --destructive-foreground: #ffffff;
+  --border: rgba(255, 255, 255, 0.06);
+  --input: #131a23;
+  --ring: rgba(76, 137, 245, 0.22);
+  --surface: #10161e;
+  --surface-hover: #17202b;
+  --surface-active: #1f2936;
+  --surface-alt: #0c1117;
+  --chart-1: #4c89f5;
+  --chart-2: #34b88a;
+  --chart-3: #efb35c;
+  --chart-4: #87a8df;
+  --chart-5: #5f7cad;
+  --shadow-xs: 0 1px 2px rgb(0 0 0 / 0.28);
+  --shadow-sm: 0 0 0 rgb(0 0 0 / 0);
+  --shadow-md: 0 0 0 rgb(0 0 0 / 0);
+  --shadow-lg: 0 26px 70px rgb(0 0 0 / 0.48);
+  --shadow-xl: 0 40px 100px rgb(0 0 0 / 0.55);
+  --app-bg: #06080c;
+  --app-bg-alt: #0a0f15;
+  --app-panel: rgba(11, 15, 21, 0.84);
+  --app-panel-2: rgba(15, 20, 27, 0.96);
+  --app-surface: rgba(19, 26, 35, 0.98);
+  --app-surface-subtle: rgba(16, 22, 30, 0.9);
+  --app-border: rgba(255, 255, 255, 0.06);
+  --app-border-strong: rgba(255, 255, 255, 0.1);
+  --app-text: #e9eff6;
+  --app-text-muted: #93a0b2;
+  --app-text-dim: #647385;
+  --app-accent: #4c89f5;
+  --app-accent-soft: rgba(76, 137, 245, 0.12);
+  --app-success: #31c28e;
+  --app-success-soft: rgba(49, 194, 142, 0.13);
+  --app-warning: #efb35c;
+  --app-warning-soft: rgba(239, 179, 92, 0.12);
+  --app-danger: #dc625c;
+  --app-danger-soft: rgba(220, 98, 92, 0.14);
+  --app-overlay: rgba(1, 4, 8, 0.64);
 }
 
 /* ── Vignette overlay for the entire app ── */
@@ -102,13 +176,13 @@ body::before {
   background:
     radial-gradient(
       ellipse 900px 600px at 50% 40%,
-      rgba(59, 130, 246, 0.03) 0%,
+      color-mix(in srgb, var(--app-accent) 14%, transparent) 0%,
       transparent 60%
     ),
     radial-gradient(
       ellipse 800px 800px at 50% 50%,
       transparent 0%,
-      rgba(0, 0, 0, 0.4) 100%
+      color-mix(in srgb, var(--background) 12%, transparent) 100%
     );
 }
 
@@ -118,16 +192,18 @@ body::before {
   }
 
   body {
+    min-height: 100dvh;
     font-weight: 400;
     @apply bg-background text-foreground;
     font-family: var(--font-body);
+    letter-spacing: -0.01em;
     scrollbar-width: thin;
-    scrollbar-color: rgba(255,255,255,0.06) transparent;
+    scrollbar-color: color-mix(in srgb, var(--app-text-dim) 42%, transparent) transparent;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-weight: 600;
-    letter-spacing: -0.01em;
+    font-weight: 500;
+    letter-spacing: -0.03em;
   }
 
   code, pre, kbd, samp {
@@ -155,11 +231,11 @@ body::before {
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: rgba(255,255,255,0.06);
+    background: color-mix(in srgb, var(--app-text-dim) 42%, transparent);
     border-radius: 2px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(255,255,255,0.1);
+    background: color-mix(in srgb, var(--app-text-dim) 56%, transparent);
   }
 }
 

@@ -1,102 +1,277 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import WorkspaceLayout from "@/components/workspace/WorkspaceLayout";
+import FileTree from "@/components/workspace/FileTree";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
+import { createChatMessage } from "@/lib/sse";
 import {
-  connectSSE,
-  createChatMessage,
-  getChatSSEUrl,
-  type ChatMessage,
-} from "@/lib/sse";
-import { ChevronDown, FolderTree, MessageSquare, Code2, Send, Terminal, Plus, PanelLeftClose, PanelLeft } from "lucide-react";
+  ArrowLeft,
+  ChevronDown,
+  Code2,
+  FolderTree,
+  MessageSquare,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Send,
+  Sparkles,
+} from "lucide-react";
 
-const FRAMEWORKS = ["Next.js", "MERN", "Laravel", "Django", "NestJS"];
+const FRAMEWORKS = ["Next.js", "MERN", "Laravel", "Django", "NestJS"] as const;
 
-// Mock responses for when backend is unavailable
 const MOCK_RESPONSES: Record<string, { text: string; files: any[] }> = {
   "Next.js": {
     text: "Generating a Next.js project with App Router, TypeScript, Tailwind CSS, and Prisma...\n\nCreating project structure...\nSetting up pages and API routes...\nConfiguring database schema...\nDone! Your Next.js project is ready.",
     files: [
-      { name: "src", path: "src", type: "directory", children: [
-        { name: "app", path: "src/app", type: "directory", children: [
-          { name: "layout.tsx", path: "src/app/layout.tsx", type: "file", content: "export default function RootLayout({ children }: { children: React.ReactNode }) {\n  return (\n    <html lang=\"en\">\n      <body>{children}</body>\n    </html>\n  );\n}", language: "tsx" },
-          { name: "page.tsx", path: "src/app/page.tsx", type: "file", content: "export default function Home() {\n  return <h1>Hello V03</h1>;\n}", language: "tsx" },
-        ]},
-        { name: "components", path: "src/components", type: "directory", children: [
-          { name: "Header.tsx", path: "src/components/Header.tsx", type: "file", content: "export default function Header() {\n  return <header>V03 App</header>;\n}", language: "tsx" },
-        ]},
-      ]},
-      { name: "package.json", path: "package.json", type: "file", content: JSON.stringify({ name: "v03-nextjs", version: "1.0.0", scripts: { dev: "next dev", build: "next build" } }, null, 2), language: "json" },
-      { name: "tsconfig.json", path: "tsconfig.json", type: "file", content: JSON.stringify({ compilerOptions: { target: "es2017", lib: ["dom", "dom.iterable", "esnext"], module: "esnext" } }, null, 2), language: "json" },
+      {
+        name: "src",
+        path: "src",
+        type: "directory",
+        children: [
+          {
+            name: "app",
+            path: "src/app",
+            type: "directory",
+            children: [
+              {
+                name: "layout.tsx",
+                path: "src/app/layout.tsx",
+                type: "file",
+                content:
+                  "export default function RootLayout({ children }: { children: React.ReactNode }) {\n  return (\n    <html lang=\"en\">\n      <body>{children}</body>\n    </html>\n  );\n}",
+                language: "tsx",
+              },
+              {
+                name: "page.tsx",
+                path: "src/app/page.tsx",
+                type: "file",
+                content: "export default function Home() {\n  return <h1>Hello V03</h1>;\n}",
+                language: "tsx",
+              },
+            ],
+          },
+          {
+            name: "components",
+            path: "src/components",
+            type: "directory",
+            children: [
+              {
+                name: "Header.tsx",
+                path: "src/components/Header.tsx",
+                type: "file",
+                content: "export default function Header() {\n  return <header>V03 App</header>;\n}",
+                language: "tsx",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        name: "package.json",
+        path: "package.json",
+        type: "file",
+        content: JSON.stringify(
+          { name: "v03-nextjs", version: "1.0.0", scripts: { dev: "next dev", build: "next build" } },
+          null,
+          2
+        ),
+        language: "json",
+      },
+      {
+        name: "tsconfig.json",
+        path: "tsconfig.json",
+        type: "file",
+        content: JSON.stringify(
+          { compilerOptions: { target: "es2017", lib: ["dom", "dom.iterable", "esnext"], module: "esnext" } },
+          null,
+          2
+        ),
+        language: "json",
+      },
     ],
   },
-  "MERN": {
+  MERN: {
     text: "Building a MERN stack app with Express, React, MongoDB, and Node.js...\n\nScaffolding backend...\nCreating React frontend with Vite...\nSetting up MongoDB models...\nDone! Your MERN app is ready to run.",
     files: [
-      { name: "server", path: "server", type: "directory", children: [
-        { name: "index.js", path: "server/index.js", type: "file", content: "const express = require(\"express\");\nconst app = express();\napp.use(express.json());\napp.listen(5000, () => console.log(\"Server running\"));", language: "js" },
-        { name: "models", path: "server/models", type: "directory", children: [
-          { name: "User.js", path: "server/models/User.js", type: "file", content: "const mongoose = require(\"mongoose\");\nconst userSchema = new mongoose.Schema({ name: String, email: String });\nmodule.exports = mongoose.model(\"User\", userSchema);", language: "js" },
-        ]},
-      ]},
-      { name: "client", path: "client", type: "directory", children: [
-        { name: "src", path: "client/src", type: "directory", children: [
-          { name: "App.jsx", path: "client/src/App.jsx", type: "file", content: "function App() { return <h1>MERN App</h1>; }\nexport default App;", language: "jsx" },
-        ]},
-      ]},
+      {
+        name: "server",
+        path: "server",
+        type: "directory",
+        children: [
+          {
+            name: "index.js",
+            path: "server/index.js",
+            type: "file",
+            content:
+              "const express = require(\"express\");\nconst app = express();\napp.use(express.json());\napp.listen(5000, () => console.log(\"Server running\"));",
+            language: "js",
+          },
+          {
+            name: "models",
+            path: "server/models",
+            type: "directory",
+            children: [
+              {
+                name: "User.js",
+                path: "server/models/User.js",
+                type: "file",
+                content:
+                  "const mongoose = require(\"mongoose\");\nconst userSchema = new mongoose.Schema({ name: String, email: String });\nmodule.exports = mongoose.model(\"User\", userSchema);",
+                language: "js",
+              },
+            ],
+          },
+        ],
+      },
+      {
+        name: "client",
+        path: "client",
+        type: "directory",
+        children: [
+          {
+            name: "src",
+            path: "client/src",
+            type: "directory",
+            children: [
+              {
+                name: "App.jsx",
+                path: "client/src/App.jsx",
+                type: "file",
+                content: "function App() { return <h1>MERN App</h1>; }\nexport default App;",
+                language: "jsx",
+              },
+            ],
+          },
+        ],
+      },
     ],
   },
-  "Laravel": {
+  Laravel: {
     text: "Scaffolding a Laravel application with Blade views, Eloquent ORM, and Sanctum auth...\n\nSetting up Laravel project...\nCreating models and migrations...\nConfiguring routes and controllers...\nDone! Laravel project generated.",
     files: [
-      { name: "app", path: "app", type: "directory", children: [
-        { name: "Models", path: "app/Models", type: "directory", children: [
-          { name: "User.php", path: "app/Models/User.php", type: "file", content: "<?php\nnamespace App\\Models;\nuse Illuminate\\Database\\Eloquent\\Model;\nclass User extends Model { protected $fillable = [\"name\", \"email\"]; }", language: "php" },
-        ]},
-        { name: "Http", path: "app/Http", type: "directory", children: [
-          { name: "Controllers", path: "app/Http/Controllers", type: "directory", children: [
-            { name: "HomeController.php", path: "app/Http/Controllers/HomeController.php", type: "file", content: "<?php\nnamespace App\\Http\\Controllers;\nclass HomeController extends Controller { public function index() { return view(\"welcome\"); } }", language: "php" },
-          ]},
-        ]},
-      ]},
-      { name: "resources", path: "resources", type: "directory", children: [
-        { name: "views", path: "resources/views", type: "directory", children: [
-          { name: "welcome.blade.php", path: "resources/views/welcome.blade.php", type: "file", content: "<!DOCTYPE html>\n<html>\n<head><title>Laravel</title></head>\n<body><h1>Welcome</h1></body>\n</html>", language: "php" },
-        ]},
-      ]},
+      {
+        name: "app",
+        path: "app",
+        type: "directory",
+        children: [
+          {
+            name: "Models",
+            path: "app/Models",
+            type: "directory",
+            children: [
+              {
+                name: "User.php",
+                path: "app/Models/User.php",
+                type: "file",
+                content:
+                  "<?php\nnamespace App\\Models;\nuse Illuminate\\Database\\Eloquent\\Model;\nclass User extends Model { protected $fillable = [\"name\", \"email\"]; }",
+                language: "php",
+              },
+            ],
+          },
+        ],
+      },
     ],
   },
-  "Django": {
+  Django: {
     text: "Creating a Django project with models, views, and templates...\n\nConfiguring Django settings...\nSetting up URL patterns...\nCreating database models...\nDone! Django project is ready.",
     files: [
-      { name: "myapp", path: "myapp", type: "directory", children: [
-        { name: "models.py", path: "myapp/models.py", type: "file", content: "from django.db import models\n\nclass Item(models.Model):\n    name = models.CharField(max_length=100)\n    created_at = models.DateTimeField(auto_now_add=True)", language: "py" },
-        { name: "views.py", path: "myapp/views.py", type: "file", content: "from django.shortcuts import render\nfrom .models import Item\n\ndef home(request):\n    items = Item.objects.all()\n    return render(request, \"home.html\", {\"items\": items})", language: "py" },
-        { name: "urls.py", path: "myapp/urls.py", type: "file", content: "from django.urls import path\nfrom . import views\n\nurlpatterns = [\n    path(\"\", views.home, name=\"home\"),\n]", language: "py" },
-      ]},
+      {
+        name: "myapp",
+        path: "myapp",
+        type: "directory",
+        children: [
+          {
+            name: "models.py",
+            path: "myapp/models.py",
+            type: "file",
+            content:
+              "from django.db import models\n\nclass Item(models.Model):\n    name = models.CharField(max_length=100)\n    created_at = models.DateTimeField(auto_now_add=True)",
+            language: "py",
+          },
+          {
+            name: "views.py",
+            path: "myapp/views.py",
+            type: "file",
+            content:
+              "from django.shortcuts import render\nfrom .models import Item\n\ndef home(request):\n    items = Item.objects.all()\n    return render(request, \"home.html\", {\"items\": items})",
+            language: "py",
+          },
+        ],
+      },
     ],
   },
-  "NestJS": {
+  NestJS: {
     text: "Bootstrapping a NestJS application with modules, controllers, and services...\n\nSetting up NestJS project...\nCreating modules and controllers...\nConfiguring dependency injection...\nDone! NestJS project is ready.",
     files: [
-      { name: "src", path: "src", type: "directory", children: [
-        { name: "app.module.ts", path: "src/app.module.ts", type: "file", content: "import { Module } from '@nestjs/common';\nimport { AppController } from './app.controller';\nimport { AppService } from './app.service';\n\n@Module({\n  imports: [],\n  controllers: [AppController],\n  providers: [AppService],\n})\nexport class AppModule {}", language: "ts" },
-        { name: "app.controller.ts", path: "src/app.controller.ts", type: "file", content: "import { Controller, Get } from '@nestjs/common';\nimport { AppService } from './app.service';\n\n@Controller()\nexport class AppController {\n  constructor(private readonly appService: AppService) {}\n  @Get()\n  getHello(): string { return this.appService.getHello(); }\n}", language: "ts" },
-        { name: "app.service.ts", path: "src/app.service.ts", type: "file", content: "import { Injectable } from '@nestjs/common';\n\n@Injectable()\nexport class AppService {\n  getHello(): string { return 'Hello NestJS!'; }\n}", language: "ts" },
-      ]},
+      {
+        name: "src",
+        path: "src",
+        type: "directory",
+        children: [
+          {
+            name: "app.module.ts",
+            path: "src/app.module.ts",
+            type: "file",
+            content:
+              "import { Module } from '@nestjs/common';\nimport { AppController } from './app.controller';\nimport { AppService } from './app.service';\n\n@Module({\n  imports: [],\n  controllers: [AppController],\n  providers: [AppService],\n})\nexport class AppModule {}",
+            language: "ts",
+          },
+          {
+            name: "app.controller.ts",
+            path: "src/app.controller.ts",
+            type: "file",
+            content:
+              "import { Controller, Get } from '@nestjs/common';\nimport { AppService } from './app.service';\n\n@Controller()\nexport class AppController {\n  constructor(private readonly appService: AppService) {}\n  @Get()\n  getHello(): string { return this.appService.getHello(); }\n}",
+            language: "ts",
+          },
+        ],
+      },
     ],
   },
 };
 
 function buildFileNodes(files: any[]): any[] {
-  return files.map((f: any) => {
-    if (f.type === "directory" && f.children) {
-      return { ...f, children: buildFileNodes(f.children) };
+  return files.map((file: any) => {
+    if (file.type === "directory" && file.children) {
+      return { ...file, children: buildFileNodes(file.children) };
     }
-    return f;
+    return file;
   });
+}
+
+function WorkspaceMessage({ role, content, isStreaming }: { role: "user" | "assistant" | "system"; content: string; isStreaming?: boolean }) {
+  const isUser = role === "user";
+  const isSystem = role === "system";
+
+  return (
+    <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
+      <div
+        className={`max-w-[88%] md:max-w-[78%] ${
+          isUser
+            ? "border border-[var(--app-border)] bg-[var(--app-surface)] text-[var(--app-text)]"
+            : isSystem
+            ? "border border-[var(--app-border)] bg-[var(--app-panel)] text-[var(--app-text-muted)]"
+            : "text-[var(--app-text)]"
+        } rounded-[16px] px-4 py-3 text-sm leading-7`}
+      >
+        {role === "assistant" && (
+          <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-[var(--app-text-dim)]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--app-accent)]" />
+            Builder
+          </div>
+        )}
+        <div className="whitespace-pre-wrap break-words">{content}</div>
+        {isStreaming && (
+          <span className="ml-1 inline-block h-4 w-1 rounded-full bg-[var(--app-accent)] align-middle animate-pulse" />
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default function Workspace() {
@@ -117,400 +292,452 @@ export default function Workspace() {
   const [input, setInput] = useState("");
   const [showFrameworkPicker, setShowFrameworkPicker] = useState(false);
   const [framework, setFramework] = useState(selectedFramework);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [codePanelOpen, setCodePanelOpen] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<"files" | "chat">("files");
 
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  useEffect(() => {
+    if (activeFileContent || files.length > 0) {
+      setCodePanelOpen(true);
+    }
+  }, [activeFileContent, files.length]);
+
+  const statusLabel = useMemo(() => {
+    if (isGenerating) return "Generating";
+    if (activeFileContent) return "Ready";
+    return "Idle";
+  }, [activeFileContent, isGenerating]);
+
   const sendMessage = useCallback(
     async (content: string) => {
       if (isGenerating) return;
-      const userMsg = createChatMessage("user", content);
-      addMessage(userMsg);
 
+      addMessage(createChatMessage("user", content));
       setIsGenerating(true);
-      const assistantMsg = createChatMessage("assistant", "");
-      addMessage(assistantMsg);
+      addMessage(createChatMessage("assistant", ""));
 
-      // SSE mode disabled — using mock responses for now
       try {
-        // For real backend, connect with:
-        // const url = getChatSSEUrl(projectId);
-        // sseCleanupRef.current = connectSSE(url, {
-        //   onTextDelta: (text) => appendToLastAssistantMessage(text),
-        //   onDone: (data) => {
-        //     updateLastAssistantMessage(
-        //       [...useWorkspaceStore.getState().messages].reverse().find(
-        //         (m: ChatMessage) => m.role === "assistant"
-        //       )?.content ?? ""
-        //     );
-        //     if (data.files) setFiles(buildFileNodes(data.files));
-        //   },
-        // });
         throw new Error("No SSE URL");
       } catch {
-        console.log("Backend unavailable, using mock response");
         const mock = MOCK_RESPONSES[framework] ?? MOCK_RESPONSES["Next.js"];
         const words = mock.text.split(" ");
+
         for (let i = 0; i < words.length; i++) {
-          await new Promise((r) => setTimeout(r, 30));
+          await new Promise((resolve) => setTimeout(resolve, 26));
           appendToLastAssistantMessage(words[i] + (i < words.length - 1 ? " " : ""));
         }
+
         updateLastAssistantMessage(mock.text);
         setFiles(buildFileNodes(mock.files));
       }
 
       setIsGenerating(false);
     },
-    [framework, isGenerating, addMessage, appendToLastAssistantMessage, updateLastAssistantMessage, setFiles, setIsGenerating]
+    [addMessage, appendToLastAssistantMessage, framework, isGenerating, setFiles, setIsGenerating, updateLastAssistantMessage]
   );
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  function handleSubmit(event: React.FormEvent) {
+    event.preventDefault();
     if (!input.trim() || isGenerating) return;
-    sendMessage(input);
+
+    sendMessage(input.trim());
     setInput("");
-    // Auto-collapse sidebar on first message
-    if (sidebarOpen) setSidebarOpen(false);
-  };
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
+  }
+
+  const promptHints = [
+    "Build a minimal B2B dashboard with usage analytics and billing health.",
+    "Create a project management app with team roles and Kanban views.",
+    "Generate a landing page plus admin console for a SaaS launch.",
+  ];
 
   return (
-    <div className="h-screen w-screen bg-[#05070A] text-[#E6EDF3] flex overflow-hidden">
-      {/* ===== Sidebar (260px, collapsible) ===== */}
-      <aside
-        className={`fixed left-0 top-0 h-full w-[260px] bg-[#0B0F14] border-r border-white/5 flex flex-col z-10 transition-transform duration-300 ease-in-out ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
-        }`}
-      >
-        {/* Project header */}
-        <div className="px-4 pt-5 pb-3 space-y-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-[#3B82F6] flex items-center justify-center text-white font-bold text-sm">
-                v
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-[#E6EDF3] truncate">v03.tech</p>
-                <p className="text-[11px] text-[#6B7280]">Workspace</p>
-              </div>
-            </div>
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="w-7 h-7 rounded-lg flex items-center justify-center text-[#6B7280] hover:text-[#E6EDF3] hover:bg-[#1F2937] transition-colors -mr-1"
-              title="Close sidebar"
-            >
-              <PanelLeftClose className="w-4 h-4" />
-            </button>
-          </div>
-          {/* Framework selector */}
-          <div className="relative">
-            <button
-              onClick={() => setShowFrameworkPicker(!showFrameworkPicker)}
-              className="w-full bg-[#111827] hover:bg-[#1F2937] rounded-lg px-3 py-2 text-sm text-[#E6EDF3] font-medium transition-colors text-left flex items-center justify-between"
-            >
-              <span>{framework}</span>
-              <ChevronDown className="w-3.5 h-3.5 text-[#6B7280]" />
-            </button>
-            {showFrameworkPicker && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-[#0F141A] border border-white/5 rounded-lg overflow-hidden z-20 shadow-xl">
-                {FRAMEWORKS.map((fw) => (
-                  <button
-                    key={fw}
-                    onClick={() => {
-                      setFramework(fw);
-                      setSelectedFramework(fw);
-                      setShowFrameworkPicker(false);
-                    }}
-                    className={`w-full px-3 py-2 text-sm text-left transition-colors ${
-                      fw === framework
-                        ? "bg-[#1F2937] text-[#E6EDF3]"
-                        : "text-[#9BA7B4] hover:bg-[#111827] hover:text-[#E6EDF3]"
-                    }`}
-                  >
-                    {fw}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
+    <div className="min-h-[100dvh] bg-[var(--app-bg)] text-[var(--app-text)]">
+      {sidebarOpen && (
+        <button
+          type="button"
+          className="fixed inset-0 z-30 bg-[var(--app-overlay)] lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+          aria-label="Close file panel"
+        />
+      )}
 
-        {/* Sidebar tabs */}
-        <div className="flex gap-0.5 mx-3 bg-[#111827] p-0.5 rounded-lg mb-3">
-          {[
-            { id: "files" as const, icon: FolderTree, label: "Files" },
-            { id: "chat" as const, icon: MessageSquare, label: "Chat" },
-          ].map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setSidebarTab(tab.id)}
-              className={`flex items-center gap-1.5 flex-1 justify-center px-2 py-1.5 text-[11px] font-medium rounded-md transition-colors ${
-                sidebarTab === tab.id
-                  ? "bg-[#1F2937] text-[#E6EDF3]"
-                  : "text-[#6B7280] hover:text-[#9BA7B4]"
-              }`}
-            >
-              <tab.icon className="w-3.5 h-3.5" />
-              {tab.label}
-            </button>
-          ))}
-        </div>
+      {codePanelOpen && (
+        <button
+          type="button"
+          className="fixed inset-0 z-30 bg-[var(--app-overlay)] xl:hidden"
+          onClick={() => setCodePanelOpen(false)}
+          aria-label="Close code panel"
+        />
+      )}
 
-        {/* Sidebar content */}
-        <div className="flex-1 overflow-y-auto px-3">
-          {sidebarTab === "files" && (
+      <div className="mx-auto flex min-h-[100dvh] w-full max-w-[1600px] flex-col px-3 py-3 sm:px-4">
+        <header className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-[var(--app-border)] bg-[color-mix(in_srgb,var(--app-bg)_78%,transparent)] px-4 py-3 backdrop-blur-xl">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9 rounded-full border border-[var(--app-border)] bg-[var(--app-panel)] text-[var(--app-text-muted)] hover:bg-[var(--app-panel-2)] hover:text-[var(--app-text)] lg:hidden"
+              onClick={() => setSidebarOpen(true)}
+              aria-label="Open file panel"
+            >
+              <PanelLeftOpen className="h-4 w-4" />
+            </Button>
+
+            <Link
+              href="/dashboard"
+              className="inline-flex items-center gap-2 rounded-full border border-[var(--app-border)] bg-[var(--app-panel)] px-3 py-2 text-sm text-[var(--app-text-muted)] transition-colors hover:bg-[var(--app-panel-2)] hover:text-[var(--app-text)]"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Dashboard
+            </Link>
+
             <div>
-              <p className="px-1 pb-1.5 text-[11px] font-medium text-[#6B7280] uppercase tracking-wider">
-                Project Files
-              </p>
-              {files.length > 0 ? (
-                <div className="text-xs text-[#9BA7B4] space-y-0.5">
-                  {renderFileList(files, 0)}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <FolderTree className="w-6 h-6 text-[#6B7280] mx-auto mb-2" />
-                  <p className="text-xs text-[#6B7280]">
-                    Generate something to see files
-                  </p>
+              <div className="flex items-center gap-2">
+                <h1 className="text-[19px] font-medium tracking-[-0.04em] sm:text-[22px]">Workspace</h1>
+                <Badge className="rounded-full border border-[var(--app-border)] bg-[var(--app-panel)] px-2 py-0.5 text-[10px] font-normal text-[var(--app-text-muted)]">
+                  {statusLabel}
+                </Badge>
+              </div>
+              <p className="text-xs text-[var(--app-text-dim)]">Prompt, files, and generated code in one loop.</p>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowFrameworkPicker((open) => !open)}
+                className="inline-flex h-9 items-center gap-2 rounded-full border border-[var(--app-border)] bg-[var(--app-panel)] px-3 text-sm text-[var(--app-text-muted)] transition-colors hover:bg-[var(--app-panel-2)] hover:text-[var(--app-text)]"
+              >
+                <span>{framework}</span>
+                <ChevronDown className="h-4 w-4" />
+              </button>
+              {showFrameworkPicker && (
+                <div className="absolute right-0 top-11 z-40 min-w-[180px] overflow-hidden rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel-2)] backdrop-blur-xl">
+                  {FRAMEWORKS.map((fw) => (
+                    <button
+                      key={fw}
+                      type="button"
+                      onClick={() => {
+                        setFramework(fw);
+                        setSelectedFramework(fw);
+                        setShowFrameworkPicker(false);
+                      }}
+                      className={`flex w-full items-center justify-between px-3 py-2 text-sm transition-colors ${
+                        fw === framework
+                          ? "bg-[var(--app-surface)] text-[var(--app-text)]"
+                          : "text-[var(--app-text-muted)] hover:bg-[var(--app-surface-subtle)] hover:text-[var(--app-text)]"
+                      }`}
+                    >
+                      {fw}
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
-          )}
-          {sidebarTab === "chat" && (
-            <div>
-              <p className="px-1 pb-1.5 text-[11px] font-medium text-[#6B7280] uppercase tracking-wider">
-                Conversation
-              </p>
-              <div className="text-xs text-[#6B7280] text-center py-8">
-                <MessageSquare className="w-6 h-6 mx-auto mb-2 opacity-50" />
-                {messages.length} message{messages.length !== 1 ? "s" : ""}
-              </div>
-            </div>
-          )}
-        </div>
 
-        {/* User footer */}
-        <div className="px-3 py-3 border-t border-white/5">
-          <div className="flex items-center gap-3">
-            <Avatar size="sm">
-              <AvatarFallback className="bg-[#1F2937] text-[#9BA7B4]">
-                {user?.email?.[0]?.toUpperCase() || "U"}
-              </AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 flex-1">
-              <p className="text-[13px] font-medium text-[#E6EDF3] truncate">
-                {user?.email?.split("@")[0] || "Guest"}
-              </p>
-              <p className="text-[11px] text-[#6B7280] truncate">
-                {user?.email || "guest@v03.tech"}
-              </p>
-            </div>
-          </div>
-        </div>
-      </aside>
+            <ThemeToggle />
 
-      {/* ===== Floating toggle button (when sidebar collapsed) ===== */}
-      {!sidebarOpen && (
-        <button
-          onClick={() => setSidebarOpen(true)}
-          className="fixed left-3 top-4 z-20 w-8 h-8 rounded-lg bg-[#0F141A] border border-white/5 flex items-center justify-center text-[#6B7280] hover:text-[#E6EDF3] hover:bg-[#1F2937] transition-colors"
-          title="Open sidebar"
-        >
-          <PanelLeft className="w-4 h-4" />
-        </button>
-      )}
-
-      {/* ===== Main Content (Chat) ===== */}
-      <main className={`${sidebarOpen ? 'ml-[260px]' : 'ml-0'} mr-[500px] flex-1 flex flex-col min-w-0 relative z-[1] transition-[margin] duration-300 ease-in-out`}>
-        {/* Chat area */}
-        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
-          {messages.length === 0 && (
-            <div className="flex-1 flex items-center justify-center min-h-[60vh]">
-              <div className="text-center space-y-3 max-w-md">
-                <div className="w-12 h-12 rounded-xl bg-[#3B82F6]/10 flex items-center justify-center mx-auto">
-                  <Code2 className="w-6 h-6 text-[#3B82F6]" />
-                </div>
-                <h2 className="text-base font-semibold text-[#E6EDF3]">Start building</h2>
-                <p className="text-sm text-[#6B7280]">
-                  Describe the app you want to build or pick a framework to get started.
-                </p>
-                <Badge className="bg-[#111827] text-[#6B7280] border-0 text-xs">
-                  Using {framework}
-                </Badge>
-              </div>
-            </div>
-          )}
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+            <Button
+              type="button"
+              variant="outline"
+              className="h-9 rounded-full border-[var(--app-border)] bg-[var(--app-panel)] px-3 text-[var(--app-text-muted)] hover:bg-[var(--app-surface)] hover:text-[var(--app-text)] xl:hidden"
+              onClick={() => setCodePanelOpen(true)}
             >
-              <div
-                className={`max-w-[75%] px-4 py-3 rounded-xl text-sm leading-relaxed whitespace-pre-wrap break-words ${
-                  msg.role === "user"
-                    ? "bg-[#3B82F6]/10 text-[#E6EDF3] border border-white/5"
-                    : msg.role === "system"
-                    ? "bg-[#22C55E]/5 text-[#D1D5DB] border border-white/5"
-                    : "bg-transparent text-[#D1D5DB]"
-                }`}
-              >
-                {msg.role === "assistant" && (
-                  <p className="text-[13px] font-semibold text-[#3B82F6] mb-2">manus</p>
-                )}
-                {msg.content}
-                {msg.isStreaming && (
-                  <span className="inline-block w-2 h-4 bg-[#3B82F6] ml-0.5 animate-pulse rounded-sm" />
-                )}
-              </div>
-            </div>
-          ))}
-          <div ref={chatEndRef} />
-        </div>
+              <Code2 className="h-4 w-4" />
+              Code
+            </Button>
+          </div>
+        </header>
 
-        {/* Prompt input */}
-        <div className="px-4 pb-4 pt-2">
-          <form
-            onSubmit={handleSubmit}
-            className="flex items-end gap-2 bg-[#0F141A] border border-white/5 rounded-xl px-4 py-3 focus-within:border-[#3B82F6]/30 transition-colors"
+        <div className="grid flex-1 gap-3 xl:grid-cols-[240px_minmax(0,1fr)_520px]">
+          <aside
+            className={`fixed inset-y-[78px] left-3 z-40 w-[240px] rounded-[18px] border border-[var(--app-border)] bg-[var(--app-panel)] backdrop-blur-xl transition-transform lg:left-4 xl:static xl:inset-auto xl:z-auto xl:w-auto ${
+              sidebarOpen ? "translate-x-0" : "-translate-x-[115%] xl:translate-x-0"
+            }`}
           >
-            <textarea
-              ref={inputRef}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Describe the app you want to build..."
-              disabled={isGenerating}
-              rows={1}
-              className="flex-1 bg-transparent text-sm text-[#E6EDF3] placeholder:text-[#6B7280] resize-none outline-none font-body leading-5 max-h-32"
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSubmit(e);
-                }
-              }}
-              onInput={(e) => {
-                const el = e.currentTarget;
-                el.style.height = "auto";
-                el.style.height = Math.min(el.scrollHeight, 128) + "px";
-              }}
-            />
-            <button
-              type="submit"
-              disabled={isGenerating || !input.trim()}
-              className="w-8 h-8 rounded-lg bg-[#3B82F6] text-white flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#2563EB] transition-colors shrink-0"
-            >
-              <Send className="w-4 h-4" />
-            </button>
-          </form>
-        </div>
-      </main>
-
-      {/* ===== Code Panel (500px fixed) ===== */}
-      <aside className="fixed right-0 top-0 h-full w-[500px] bg-[#020617] border-l border-white/5 flex flex-col z-10">
-        {/* Panel header */}
-        <div className="px-4 py-3 border-b border-white/5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-md bg-[#3B82F6]/10 flex items-center justify-center">
-                <Code2 className="w-3.5 h-3.5 text-[#3B82F6]" />
+            <div className="flex h-full flex-col">
+              <div className="flex items-center justify-between border-b border-[var(--app-border)] px-4 py-3">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.12em] text-[var(--app-text-dim)]">Project context</p>
+                  <p className="mt-1 text-sm font-medium text-[var(--app-text)]">{framework}</p>
+                </div>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8 rounded-full text-[var(--app-text-muted)] hover:bg-[var(--app-surface)] hover:text-[var(--app-text)] xl:hidden"
+                  onClick={() => setSidebarOpen(false)}
+                  aria-label="Close side panel"
+                >
+                  <PanelLeftClose className="h-4 w-4" />
+                </Button>
               </div>
-              <div>
-                <p className="text-sm font-semibold text-[#E6EDF3]">Code</p>
-                <p className="text-[11px] text-[#6B7280]">
-                  {activeFilePath
-                    ? activeFilePath
-                    : "No file selected"}
-                </p>
+
+              <div className="border-b border-[var(--app-border)] px-3 py-2">
+                <div className="flex gap-1">
+                  {[
+                    { id: "files" as const, label: "Files", icon: FolderTree },
+                    { id: "chat" as const, label: "Chat", icon: MessageSquare },
+                  ].map((tab) => (
+                    <button
+                      key={tab.id}
+                      type="button"
+                      onClick={() => setSidebarTab(tab.id)}
+                      className={`inline-flex flex-1 items-center justify-center gap-1.5 rounded-full px-3 py-2 text-[11px] font-normal transition-colors ${
+                        sidebarTab === tab.id
+                          ? "bg-[var(--app-surface)] text-[var(--app-text)]"
+                          : "text-[var(--app-text-muted)] hover:text-[var(--app-text)]"
+                      }`}
+                    >
+                      <tab.icon className="h-3.5 w-3.5" />
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto px-3 py-3">
+                {sidebarTab === "files" ? (
+                  files.length > 0 ? (
+                    <FileTree />
+                  ) : (
+                    <div className="py-8 text-center">
+                      <FolderTree className="mx-auto h-6 w-6 text-[var(--app-text-dim)]" />
+                      <p className="mt-3 text-xs text-[var(--app-text-muted)]">
+                        Generate a project to populate the file tree.
+                      </p>
+                    </div>
+                  )
+                ) : (
+                  <div className="space-y-4">
+                    <div className="rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel-2)] px-3 py-3">
+                      <p className="text-[11px] uppercase tracking-[0.12em] text-[var(--app-text-dim)]">Conversation</p>
+                      <p className="mt-2 text-sm text-[var(--app-text-muted)]">
+                        {messages.length} message{messages.length === 1 ? "" : "s"} in this session.
+                      </p>
+                    </div>
+                    <div className="space-y-2">
+                      {messages.slice(-4).map((msg) => (
+                        <div key={msg.id} className="border-b border-[var(--app-border)] pb-2 text-xs text-[var(--app-text-muted)]">
+                          <div className="mb-1 uppercase tracking-[0.1em] text-[var(--app-text-dim)]">{msg.role}</div>
+                          <div className="line-clamp-3">{msg.content}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t border-[var(--app-border)] px-3 py-3">
+                <div className="flex items-center gap-3">
+                  <Avatar size="sm">
+                    <AvatarFallback className="bg-[var(--app-surface)] text-[var(--app-text-muted)]">
+                      {user?.email?.[0]?.toUpperCase() || "U"}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <p className="truncate text-[13px] font-medium text-[var(--app-text)]">
+                      {user?.email?.split("@")[0] || "Guest"}
+                    </p>
+                    <p className="truncate text-[11px] text-[var(--app-text-dim)]">
+                      {user?.email || "guest@v03.tech"}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
-            {activeFileContent && (
-              <Badge className="text-[10px] px-1.5 py-0 bg-[#111827] text-[#6B7280] border-0">
-                <Terminal className="w-3 h-3 mr-0.5" />
-                {activeFilePath?.split(".").pop()?.toUpperCase() || "CODE"}
-              </Badge>
-            )}
-          </div>
-        </div>
+          </aside>
 
-        {/* Code editor */}
-        <div className="flex-1 overflow-hidden">
-          {activeFileContent ? (
-            <WorkspaceLayout />
-          ) : (
-            <div className="h-full flex items-center justify-center">
-              <div className="text-center space-y-2">
-                <Code2 className="w-8 h-8 text-[#6B7280] mx-auto" />
-                <p className="text-xs text-[#6B7280]">
-                  Select a file or generate code to see it here
-                </p>
+          <section className="flex min-h-0 flex-col rounded-[18px] border border-[var(--app-border)] bg-[var(--app-panel)] backdrop-blur-xl">
+            <div className="border-b border-[var(--app-border)] px-4 py-4 sm:px-5">
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.12em] text-[var(--app-text-dim)]">Prompt loop</p>
+                  <h2 className="mt-2 text-[24px] font-medium tracking-[-0.04em] text-[var(--app-text)]">
+                    Build from one instruction.
+                  </h2>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <Badge className="rounded-full border border-[var(--app-border)] bg-[var(--app-panel-2)] px-2.5 py-1 text-[11px] font-normal text-[var(--app-text-muted)]">
+                    {files.length} root items
+                  </Badge>
+                  <Badge className="rounded-full border border-[var(--app-border)] bg-[var(--app-panel-2)] px-2.5 py-1 text-[11px] font-normal text-[var(--app-text-muted)]">
+                    {framework}
+                  </Badge>
+                </div>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {promptHints.map((hint) => (
+                  <button
+                    key={hint}
+                    type="button"
+                    onClick={() => setInput(hint)}
+                    className="rounded-full border border-[var(--app-border)] bg-[var(--app-panel-2)] px-3 py-1.5 text-left text-xs text-[var(--app-text-muted)] transition-colors hover:bg-[var(--app-surface)] hover:text-[var(--app-text)]"
+                  >
+                    {hint}
+                  </button>
+                ))}
               </div>
             </div>
-          )}
+
+            <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-5">
+              {messages.length === 0 ? (
+                <div className="flex min-h-full items-center justify-center">
+                  <div className="max-w-[560px]">
+                    <p className="text-xs uppercase tracking-[0.12em] text-[var(--app-text-dim)]">Session ready</p>
+                    <h3 className="mt-3 text-[34px] font-medium tracking-[-0.05em] text-[var(--app-text)]">
+                      Describe the app, then keep refining.
+                    </h3>
+                    <p className="mt-4 text-sm leading-7 text-[var(--app-text-muted)]">
+                      This workspace is intentionally flatter and more product-like. Prompt, code, and file context stay connected without dashboard-style cards getting in the way.
+                    </p>
+                    <div className="mt-6 flex flex-wrap gap-3">
+                      <div className="inline-flex items-center gap-2 border-b border-[var(--app-border)] pb-2 text-sm text-[var(--app-text-muted)]">
+                        <Sparkles className="h-4 w-4 text-[var(--app-accent)]" />
+                        Prompt-to-structure
+                      </div>
+                      <div className="inline-flex items-center gap-2 border-b border-[var(--app-border)] pb-2 text-sm text-[var(--app-text-muted)]">
+                        <Code2 className="h-4 w-4 text-[var(--app-accent)]" />
+                        File-aware output
+                      </div>
+                      <div className="inline-flex items-center gap-2 border-b border-[var(--app-border)] pb-2 text-sm text-[var(--app-text-muted)]">
+                        <Code2 className="h-4 w-4 text-[var(--app-accent)]" />
+                        Ready for preview loop
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-5">
+                  {messages.map((msg) => (
+                    <WorkspaceMessage
+                      key={msg.id}
+                      role={msg.role}
+                      content={msg.content}
+                      isStreaming={msg.isStreaming}
+                    />
+                  ))}
+                  <div ref={chatEndRef} />
+                </div>
+              )}
+            </div>
+
+            <div className="border-t border-[var(--app-border)] px-4 py-4 sm:px-5">
+              <form onSubmit={handleSubmit} className="space-y-3">
+                <div className="rounded-[16px] border border-[var(--app-border)] bg-[var(--app-panel-2)] px-4 py-3">
+                  <textarea
+                    ref={textareaRef}
+                    value={input}
+                    onChange={(event) => setInput(event.target.value)}
+                    placeholder="Describe the app you want to build..."
+                    disabled={isGenerating}
+                    rows={1}
+                    className="max-h-40 w-full resize-none bg-transparent text-sm leading-7 text-[var(--app-text)] outline-none placeholder:text-[var(--app-text-dim)]"
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter" && !event.shiftKey) {
+                        event.preventDefault();
+                        handleSubmit(event);
+                      }
+                    }}
+                    onInput={(event) => {
+                      const el = event.currentTarget;
+                      el.style.height = "auto";
+                      el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+                    }}
+                  />
+                </div>
+
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <p className="text-xs text-[var(--app-text-dim)]">
+                    Use specific product intent, stack, and UI constraints for better output.
+                  </p>
+                  <Button
+                    type="submit"
+                    disabled={isGenerating || !input.trim()}
+                    className="rounded-full bg-[var(--app-accent)] px-4 text-white hover:bg-[color-mix(in_srgb,var(--app-accent)_88%,white)] disabled:opacity-40"
+                  >
+                    <Send className="h-4 w-4" />
+                    {isGenerating ? "Generating" : "Send prompt"}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </section>
+
+          <aside
+            className={`fixed inset-y-[78px] right-3 z-40 w-[min(520px,calc(100vw-24px))] rounded-[18px] border border-[var(--app-border)] bg-[var(--app-panel)] backdrop-blur-xl transition-transform xl:static xl:inset-auto xl:z-auto xl:w-auto ${
+              codePanelOpen ? "translate-x-0" : "translate-x-[110%] xl:translate-x-0"
+            }`}
+          >
+            <div className="flex h-full min-h-0 flex-col">
+              <div className="border-b border-[var(--app-border)] px-4 py-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-xs uppercase tracking-[0.12em] text-[var(--app-text-dim)]">Output</p>
+                    <p className="mt-1 text-sm font-medium text-[var(--app-text)]">
+                      {activeFilePath || "No file selected"}
+                    </p>
+                  </div>
+                    <div className="flex items-center gap-2">
+                    <Badge className="rounded-full border border-[var(--app-border)] bg-[var(--app-panel)] px-2 py-0.5 text-[10px] font-normal text-[var(--app-text-muted)]">
+                      code + preview
+                    </Badge>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 rounded-full text-[var(--app-text-muted)] hover:bg-[var(--app-surface)] hover:text-[var(--app-text)] xl:hidden"
+                      onClick={() => setCodePanelOpen(false)}
+                    >
+                      <PanelLeftClose className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              <div className="border-b border-[var(--app-border)] px-4 py-2 text-xs text-[var(--app-text-dim)]">
+                {activeFileContent
+                  ? "Code and preview stay visible together in this output surface."
+                  : "Generate or select a file to inspect code and reserve preview runtime."}
+              </div>
+
+              <div className="min-h-0 flex-1">
+                {activeFileContent || files.length > 0 ? (
+                  <WorkspaceLayout />
+                ) : (
+                  <div className="flex h-full items-center justify-center px-6">
+                    <div className="max-w-[320px] border-b border-[var(--app-border)] pb-5 text-center">
+                      <Code2 className="mx-auto h-8 w-8 text-[var(--app-text-dim)]" />
+                      <p className="mt-3 text-sm text-[var(--app-text-muted)]">
+                        Generate a project first. The right panel is reserved for the real IDE code view and runtime preview surface.
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="border-t border-[var(--app-border)] px-4 py-2.5 text-xs text-[var(--app-text-muted)]">
+                <div className="flex items-center gap-2">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--app-success)]" />
+                  {isGenerating ? "Generating output" : activeFileContent ? "Output ready" : "Awaiting prompt"}
+                </div>
+              </div>
+            </div>
+          </aside>
         </div>
-
-        {/* Status footer */}
-        <div className="px-4 py-2.5 border-t border-white/5 text-xs text-[#22C55E] flex items-center gap-1.5">
-          <div className="w-1.5 h-1.5 rounded-full bg-[#22C55E]" />
-          {isGenerating ? "Generating..." : activeFileContent ? "Ready" : "Waiting for input"}
-        </div>
-      </aside>
+      </div>
     </div>
-  );
-}
-
-// Render file tree items
-function renderFileList(files: any[], depth: number): React.ReactNode {
-  return files.map((node: any, i: number) => {
-    if (node.type === "directory") {
-      return (
-        <FileDir key={node.path || i} node={node} depth={depth} />
-      );
-    }
-    return <FileItem key={node.path || i} node={node} depth={depth} />;
-  });
-}
-
-function FileDir({ node, depth }: { node: any; depth: number }) {
-  const [open, setOpen] = useState(true);
-  return (
-    <div>
-      <button
-        onClick={() => setOpen(!open)}
-        className="flex items-center gap-1.5 w-full px-2 py-1 rounded-md text-[#9BA7B4] hover:text-[#E6EDF3] hover:bg-[#111827] transition-colors text-left"
-        style={{ paddingLeft: depth * 14 + 8 }}
-      >
-        <span className="text-[10px]">{open ? "▼" : "▶"}</span>
-        <span className="text-xs truncate">{node.name}</span>
-      </button>
-      {open && node.children && (
-        <div>{renderFileList(node.children, depth + 1)}</div>
-      )}
-    </div>
-  );
-}
-
-function FileItem({ node, depth }: { node: any; depth: number }) {
-  const setActiveFile = useWorkspaceStore((s) => s.setActiveFile);
-  const activeFilePath = useWorkspaceStore((s) => s.activeFilePath);
-  const isActive = activeFilePath === node.path;
-
-  return (
-    <button
-      onClick={() => setActiveFile(node.path)}
-      className={`flex items-center gap-1.5 w-full px-2 py-1 rounded-md text-xs text-left transition-colors ${
-        isActive
-          ? "bg-[#1F2937] text-[#E6EDF3]"
-          : "text-[#6B7280] hover:text-[#9BA7B4] hover:bg-[#111827]"
-      }`}
-      style={{ paddingLeft: depth * 14 + 8 }}
-    >
-      <span className="text-[10px] opacity-50">📄</span>
-      <span className="truncate">{node.name}</span>
-    </button>
   );
 }

@@ -4,22 +4,52 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useCreateProject } from "@/hooks/useProjects";
 import { toast } from "sonner";
-import { X, Sparkles } from "lucide-react";
+import {
+  BarChart3,
+  Blocks,
+  FileText,
+  Globe,
+  Hexagon,
+  Layers3,
+  Package2,
+  Sparkles,
+  X,
+} from "lucide-react";
 
 const TEMPLATES = [
-  { name: "E-commerce Store", frameworks: ["React", "Next.js"], icon: "🛒", desc: "Product catalog, cart, checkout" },
-  { name: "Admin Dashboard", frameworks: ["React", "Vue"], icon: "📊", desc: "Analytics, tables, CRUD" },
-  { name: "Blog Engine", frameworks: ["Next.js", "Svelte"], icon: "✍️", desc: "Markdown, CMS, RSS" },
-  { name: "API Boilerplate", frameworks: ["Node.js", "Python"], icon: "🔌", desc: "REST, auth, database" },
+  {
+    name: "E-commerce Store",
+    frameworks: ["React", "Next.js"],
+    icon: Globe,
+    desc: "Product catalog, cart, checkout",
+  },
+  {
+    name: "Admin Dashboard",
+    frameworks: ["React", "Vue"],
+    icon: BarChart3,
+    desc: "Analytics, tables, CRUD",
+  },
+  {
+    name: "Blog Engine",
+    frameworks: ["Next.js", "Svelte"],
+    icon: FileText,
+    desc: "Markdown, CMS, RSS",
+  },
+  {
+    name: "API Boilerplate",
+    frameworks: ["Node.js", "Python"],
+    icon: Layers3,
+    desc: "REST, auth, database",
+  },
 ];
 
 const FRAMEWORKS = [
-  { id: "React", icon: "⚛️" },
-  { id: "Next.js", icon: "▲" },
-  { id: "Vue", icon: "💚" },
-  { id: "Svelte", icon: "🧡" },
-  { id: "Python", icon: "🐍" },
-  { id: "Node.js", icon: "📦" },
+  { id: "React", icon: Blocks },
+  { id: "Next.js", icon: Hexagon },
+  { id: "Vue", icon: Globe },
+  { id: "Svelte", icon: Sparkles },
+  { id: "Python", icon: FileText },
+  { id: "Node.js", icon: Package2 },
 ];
 
 interface CreateProjectDialogProps {
@@ -64,14 +94,14 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
-      <div className="relative bg-[#0B0F14] border border-white/5 rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+      <div className="relative mx-4 w-full max-w-lg overflow-hidden rounded-[18px] border border-[var(--app-border)] bg-[var(--app-panel-2)] backdrop-blur-xl">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-white/5">
+        <div className="flex items-center justify-between border-b border-[var(--app-border)] px-5 py-4">
           <div>
-            <h2 className="text-sm font-semibold text-[#E6EDF3]">
+            <h2 className="text-sm font-medium text-[var(--app-text)]">
               {step === "template" ? "New Project" : "Configure Project"}
             </h2>
-            <p className="text-xs text-[#6B7280] mt-0.5">
+            <p className="mt-0.5 text-xs text-[var(--app-text-muted)]">
               {step === "template"
                 ? "Start from a template or configure manually"
                 : "Name your project and pick a framework"}
@@ -79,7 +109,7 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
           </div>
           <button
             onClick={handleClose}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-[#6B7280] hover:text-[#E6EDF3] hover:bg-[#1F2937] transition-colors"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-[var(--app-text-dim)] transition-colors hover:bg-[var(--app-surface)] hover:text-[var(--app-text)]"
           >
             <X className="w-4 h-4" />
           </button>
@@ -93,41 +123,43 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
                 <button
                   key={t.name}
                   onClick={() => handleSelectTemplate(t)}
-                  className="flex flex-col items-start gap-2 p-3.5 rounded-xl border border-white/5 hover:border-[#3B82F6]/30 hover:bg-[#111827] transition-all text-left group"
+                  className="group flex flex-col items-start gap-2 border-b border-[var(--app-border)] px-1 py-3 text-left transition-colors hover:border-[var(--app-border-strong)]"
                 >
-                  <span className="text-xl">{t.icon}</span>
+                  <span className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
+                    <t.icon className="h-4 w-4" />
+                  </span>
                   <div>
-                    <p className="text-sm font-medium text-[#E6EDF3] group-hover:text-[#3B82F6] transition-colors">
+                    <p className="text-sm font-medium text-[var(--app-text)] transition-colors group-hover:text-[var(--app-accent)]">
                       {t.name}
                     </p>
-                    <p className="text-[11px] text-[#6B7280] mt-0.5">{t.desc}</p>
+                    <p className="mt-0.5 text-[11px] text-[var(--app-text-muted)]">{t.desc}</p>
                   </div>
                 </button>
               ))}
               <button
                 onClick={() => setStep("configure")}
-                className="flex flex-col items-center justify-center gap-1.5 col-span-2 p-3.5 rounded-xl border border-dashed border-white/5 hover:border-[#3B82F6]/30 hover:bg-[#111827] transition-all"
+                className="col-span-2 flex items-center justify-center gap-2 rounded-[14px] border border-dashed border-[var(--app-border)] px-3 py-4 text-[var(--app-text-muted)] transition-colors hover:bg-[var(--app-surface-subtle)] hover:text-[var(--app-text)]"
               >
-                <Sparkles className="w-5 h-5 text-[#6B7280]" />
-                <p className="text-xs text-[#6B7280]">Configure manually</p>
+                <Sparkles className="h-4 w-4" />
+                <p className="text-xs">Configure manually</p>
               </button>
             </div>
           ) : (
             <div className="space-y-4">
               <div>
-                <label className="text-xs font-medium text-[#9BA7B4] mb-1.5 block">
+                <label className="mb-1.5 block text-xs font-medium text-[var(--app-text-muted)]">
                   Project Name
                 </label>
                 <Input
                   placeholder="My Awesome App"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="h-9 text-sm bg-[#111827] border-white/5 text-[#E6EDF3] placeholder:text-[#6B7280] focus:border-[#3B82F6]/40"
+                  className="h-10 rounded-[12px] border-[var(--app-border)] bg-[var(--app-panel)] text-sm text-[var(--app-text)] placeholder:text-[var(--app-text-dim)] focus-visible:border-[var(--app-accent)]"
                   autoFocus
                 />
               </div>
               <div>
-                <label className="text-xs font-medium text-[#9BA7B4] mb-1.5 block">
+                <label className="mb-1.5 block text-xs font-medium text-[var(--app-text-muted)]">
                   Framework
                 </label>
                 <div className="grid grid-cols-3 gap-2">
@@ -135,13 +167,13 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
                     <button
                       key={fw.id}
                       onClick={() => setFramework(fw.id)}
-                      className={`flex flex-col items-center gap-1 p-3 rounded-xl border transition-all ${
+                      className={`flex flex-col items-center gap-1 rounded-[14px] border p-3 transition-colors ${
                         framework === fw.id
-                          ? "border-[#3B82F6]/40 bg-[#3B82F6]/10 text-[#E6EDF3]"
-                          : "border-white/5 bg-[#111827] text-[#6B7280] hover:border-white/10 hover:text-[#9BA7B4]"
+                          ? "border-[var(--app-accent)] bg-[var(--app-accent-soft)] text-[var(--app-text)]"
+                          : "border-[var(--app-border)] bg-[var(--app-panel)] text-[var(--app-text-muted)] hover:border-[var(--app-border-strong)] hover:text-[var(--app-text)]"
                       }`}
                     >
-                      <span className="text-lg">{fw.icon}</span>
+                      <fw.icon className="h-4 w-4" />
                       <span className="text-[10px] font-medium">{fw.id}</span>
                     </button>
                   ))}
@@ -152,12 +184,12 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-white/5">
+        <div className="flex items-center justify-end gap-2 border-t border-[var(--app-border)] px-5 py-3">
           {step === "configure" && (
             <button
               onClick={() => setStep("template")}
               disabled={createProject.isPending}
-              className="px-3 py-1.5 text-xs font-medium text-[#6B7280] hover:text-[#9BA7B4] transition-colors"
+              className="px-3 py-1.5 text-xs font-medium text-[var(--app-text-muted)] transition-colors hover:text-[var(--app-text)]"
             >
               ← Back
             </button>
@@ -165,7 +197,7 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
           <button
             onClick={handleClose}
             disabled={createProject.isPending}
-            className="px-3 py-1.5 text-xs font-medium text-[#6B7280] hover:text-[#9BA7B4] transition-colors"
+            className="px-3 py-1.5 text-xs font-medium text-[var(--app-text-muted)] transition-colors hover:text-[var(--app-text)]"
           >
             Cancel
           </button>
@@ -173,7 +205,7 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
             <button
               onClick={handleCreate}
               disabled={!name.trim() || createProject.isPending}
-              className="px-4 py-1.5 text-xs font-medium rounded-lg bg-[#3B82F6] text-white hover:bg-[#2563EB] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="rounded-full bg-[var(--app-accent)] px-4 py-1.5 text-xs font-medium text-white transition-colors hover:bg-[color-mix(in_srgb,var(--app-accent)_88%,white)] disabled:cursor-not-allowed disabled:opacity-40"
             >
               {createProject.isPending ? "Creating..." : "Create Project"}
             </button>

@@ -31,28 +31,28 @@ export function TrendChart({
   loading,
   formatValue,
 }: TrendChartProps) {
-  const gridColor = "rgba(255,255,255,0.04)";
-  const tickColor = "#6B7280";
-  const tooltipBg = "#0F141A";
-  const tooltipBorder = "rgba(255,255,255,0.06)";
+  const gridColor = "var(--app-border)";
+  const tickColor = "var(--app-text-dim)";
+  const tooltipBg = "var(--app-panel-2)";
+  const tooltipBorder = "var(--app-border)";
 
   if (loading) {
     return (
-      <div className="rounded-xl border border-white/5 bg-[#0F141A]">
+      <div className="rounded-[18px] border border-[var(--app-border)] bg-[var(--app-panel)] shadow-[var(--shadow-sm)] backdrop-blur-xl">
         <div className="px-4 pt-4 pb-2">
-          <div className="h-3.5 w-28 bg-[#1F2937] rounded animate-pulse" />
+          <div className="h-3.5 w-28 animate-pulse rounded bg-[var(--app-surface)]" />
         </div>
         <div className="animate-pulse" style={{ height }}>
-          <div className="h-full w-full bg-[#111827] mx-4 rounded-lg" />
+          <div className="mx-4 h-full w-full rounded-[12px] bg-[var(--app-surface)]" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="rounded-xl border border-white/5 bg-[#0F141A] overflow-hidden">
+    <div className="overflow-hidden rounded-[18px] border border-[var(--app-border)] bg-[var(--app-panel)] shadow-[var(--shadow-sm)] backdrop-blur-xl">
       <div className="px-4 pt-4 pb-1">
-        <p className="text-xs font-medium text-[#6B7280]">{title}</p>
+        <p className="text-xs font-medium uppercase tracking-[0.12em] text-[var(--app-text-dim)]">{title}</p>
       </div>
       <ResponsiveContainer width="100%" height={height}>
         {variant === "area" ? (
@@ -84,7 +84,7 @@ export function TrendChart({
                 border: `1px solid ${tooltipBorder}`,
                 borderRadius: "8px",
                 fontSize: "12px",
-                color: "#E6EDF3",
+                color: "var(--app-text)",
               }}
               formatter={(val) =>
                 formatValue && typeof val === "number"
@@ -122,7 +122,7 @@ export function TrendChart({
                 border: `1px solid ${tooltipBorder}`,
                 borderRadius: "8px",
                 fontSize: "12px",
-                color: "#E6EDF3",
+                color: "var(--app-text)",
               }}
             />
             <Bar dataKey="value" fill={color} radius={[3, 3, 0, 0]} />
@@ -149,7 +149,7 @@ export function TrendChart({
                 border: `1px solid ${tooltipBorder}`,
                 borderRadius: "8px",
                 fontSize: "12px",
-                color: "#E6EDF3",
+                color: "var(--app-text)",
               }}
             />
             <Line type="monotone" dataKey="value" stroke={color} strokeWidth={2} dot={false} />

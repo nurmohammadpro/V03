@@ -21,15 +21,15 @@ const STATUS_STYLES: Record<string, string> = {
 
 function TableRowSkeleton() {
   return (
-    <div className="animate-pulse flex items-center gap-4 py-3 px-4">
-      <div className="w-7 h-7 rounded-full bg-[#1F2937]" />
+      <div className="flex animate-pulse items-center gap-4 px-4 py-3">
+      <div className="h-7 w-7 rounded-full bg-[var(--app-surface)]" />
       <div className="flex-1 space-y-1">
-        <div className="h-3.5 w-32 bg-[#1F2937] rounded" />
-        <div className="h-3 w-24 bg-[#1F2937] rounded" />
+        <div className="h-3.5 w-32 rounded bg-[var(--app-surface)]" />
+        <div className="h-3 w-24 rounded bg-[var(--app-surface)]" />
       </div>
-      <div className="h-5 w-14 bg-[#1F2937] rounded-full" />
-      <div className="h-5 w-14 bg-[#1F2937] rounded-full" />
-      <div className="h-7 w-7 bg-[#1F2937] rounded" />
+      <div className="h-5 w-14 rounded-full bg-[var(--app-surface)]" />
+      <div className="h-5 w-14 rounded-full bg-[var(--app-surface)]" />
+      <div className="h-7 w-7 rounded bg-[var(--app-surface)]" />
     </div>
   );
 }
@@ -51,30 +51,30 @@ export function UsersTable({ users, loading }: UsersTableProps) {
   }, [users, search, roleFilter]);
 
   return (
-    <div className="rounded-xl border border-white/5 bg-[#0F141A] overflow-hidden">
+    <div className="overflow-hidden rounded-[18px] border border-[var(--app-border)] bg-[var(--app-panel)] shadow-[var(--shadow-sm)] backdrop-blur-xl">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-white/5">
-        <h3 className="text-sm font-semibold text-[#E6EDF3]">User Management</h3>
-        <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--app-border)] p-4">
+        <h3 className="text-sm font-medium text-[var(--app-text)]">User Management</h3>
+        <div className="flex flex-wrap items-center gap-2">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#6B7280]" />
+            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--app-text-dim)]" />
             <Input
               placeholder="Search users..."
-              className="pl-8 w-48 h-8 text-xs bg-[#111827] border-white/5 text-[#E6EDF3] placeholder:text-[#6B7280]"
+              className="h-9 w-48 rounded-full border-[var(--app-border)] bg-[var(--app-panel)] pl-8 text-xs text-[var(--app-text)] placeholder:text-[var(--app-text-dim)]"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
           </div>
-          <div className="flex gap-0.5 bg-[#111827] p-0.5 rounded-lg">
+          <div className="flex gap-0.5 rounded-full border border-[var(--app-border)] bg-[var(--app-panel)] p-1">
             {(["all", "admin", "user"] as const).map((r) => (
               <button
                 key={r}
                 onClick={() => setRoleFilter(r)}
                 className={cn(
-                  "px-2.5 py-1 text-[11px] font-medium rounded-md transition-colors capitalize",
+                  "rounded-full px-2.5 py-1.5 text-[11px] font-normal capitalize transition-colors",
                   roleFilter === r
-                    ? "bg-[#1F2937] text-[#E6EDF3]"
-                    : "text-[#6B7280] hover:text-[#9BA7B4]"
+                    ? "bg-[var(--app-surface)] text-[var(--app-text)]"
+                    : "text-[var(--app-text-muted)] hover:text-[var(--app-text)]"
                 )}
               >
                 {r}
@@ -91,16 +91,16 @@ export function UsersTable({ users, loading }: UsersTableProps) {
             {Array.from({ length: 5 }).map((_, i) => <TableRowSkeleton key={i} />)}
           </div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-12">
-            <UsersRound className="w-10 h-10 text-[#6B7280] mx-auto mb-3" />
-            <p className="text-sm text-[#6B7280]">
+          <div className="py-12 text-center">
+            <UsersRound className="mx-auto mb-3 h-10 w-10 text-[var(--app-text-dim)]" />
+            <p className="text-sm text-[var(--app-text-muted)]">
               {search ? "No users match your search" : "No users yet"}
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-white/5">
+          <div className="divide-y divide-[var(--app-border)]">
             {/* Column headers */}
-            <div className="grid grid-cols-[1fr_90px_80px_40px] gap-3 px-3 py-2 text-[11px] font-medium text-[#6B7280] uppercase tracking-wider">
+            <div className="hidden gap-3 px-3 py-2 text-[11px] font-medium uppercase tracking-[0.12em] text-[var(--app-text-dim)] sm:grid sm:grid-cols-[1fr_90px_80px_40px]">
               <span>User</span>
               <span>Role</span>
               <span>Status</span>
@@ -109,39 +109,41 @@ export function UsersTable({ users, loading }: UsersTableProps) {
             {filtered.map((user) => (
               <div
                 key={user.id}
-                className="grid grid-cols-[1fr_90px_80px_40px] gap-3 items-center px-3 py-2.5 hover:bg-[#111827] rounded-lg transition-colors group"
+                className="group grid gap-3 rounded-[14px] px-3 py-3 transition-colors hover:bg-[var(--app-surface-subtle)] sm:grid-cols-[1fr_90px_80px_40px] sm:items-center"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <Avatar size="sm">
-                    <AvatarFallback className="bg-[#1F2937] text-[#9BA7B4] text-xs">
+                    <AvatarFallback className="bg-[var(--app-surface)] text-xs text-[var(--app-text-muted)]">
                       {(user.name || user.email)[0].toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0">
-                    <p className="text-sm font-medium text-[#E6EDF3] truncate">
+                    <p className="truncate text-sm font-medium text-[var(--app-text)]">
                       {user.name || "—"}
                     </p>
-                    <p className="text-xs text-[#6B7280] truncate">{user.email}</p>
+                    <p className="truncate text-xs text-[var(--app-text-muted)]">{user.email}</p>
                   </div>
                 </div>
-                <div>
+                <div className="flex items-center gap-2 sm:block">
+                  <span className="text-[11px] uppercase tracking-[0.12em] text-[var(--app-text-dim)] sm:hidden">Role</span>
                   {user.role === "admin" ? (
-                    <Badge className="bg-[#3B82F6]/10 text-[#3B82F6] border-0 text-[11px] font-medium px-1.5 py-0.5">
+                    <Badge className="border-0 bg-[var(--app-accent-soft)] px-2 py-0.5 text-[11px] font-normal text-[var(--app-accent)]">
                       <Shield className="w-3 h-3 mr-0.5 inline" /> Admin
                     </Badge>
                   ) : (
                     <Badge
                       variant="outline"
-                      className="text-[#6B7280] border-white/5 text-[11px] font-medium px-1.5 py-0.5"
+                      className="border-[var(--app-border)] px-2 py-0.5 text-[11px] font-normal text-[var(--app-text-muted)]"
                     >
                       <ShieldOff className="w-3 h-3 mr-0.5 inline" /> User
                     </Badge>
                   )}
                 </div>
-                <div>
+                <div className="flex items-center gap-2 sm:block">
+                  <span className="text-[11px] uppercase tracking-[0.12em] text-[var(--app-text-dim)] sm:hidden">Status</span>
                   <Badge
                     className={cn(
-                      "text-[11px] font-medium px-1.5 py-0.5 border",
+                      "border px-2 py-0.5 text-[11px] font-normal",
                       STATUS_STYLES[user.status] || ""
                     )}
                     variant="outline"
@@ -149,11 +151,11 @@ export function UsersTable({ users, loading }: UsersTableProps) {
                     {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
                   </Badge>
                 </div>
-                <div className="flex justify-end opacity-0 group-hover:opacity-100 transition-opacity">
+                <div className="flex justify-end opacity-100 transition-opacity sm:opacity-0 sm:group-hover:opacity-100">
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="w-7 h-7 text-[#6B7280] hover:text-[#E6EDF3] hover:bg-[#1F2937]"
+                    className="h-8 w-8 rounded-full text-[var(--app-text-dim)] hover:bg-[var(--app-surface)] hover:text-[var(--app-text)]"
                   >
                     <MoreHorizontal className="w-3.5 h-3.5" />
                   </Button>
