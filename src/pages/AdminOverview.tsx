@@ -9,31 +9,73 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
-  Users,
+  LayoutDashboard,
   FolderKanban,
-  Zap,
-  DollarSign,
-  Activity,
+  Settings,
   RefreshCw,
   Download,
   UserPlus,
   Gauge,
+  Activity,
+  BarChart3,
+  Shield,
+  HardDrive,
+  Users,
 } from "lucide-react";
 import { useAdminStats, useAdminUsers, useActivityFeed } from "@/hooks/useDashboardData";
 import { cn } from "@/lib/utils";
 
-const NAV_ITEMS = [
+const NAV_SECTIONS = [
   {
-    label: "Projects",
-    href: "/dashboard",
-    active: false,
-    icon: <FolderKanban className="w-5 h-5" />,
+    title: "Main",
+    items: [
+      {
+        label: "Projects",
+        href: "/dashboard",
+        active: false,
+        icon: <FolderKanban className="w-4 h-4" />,
+      },
+    ],
   },
   {
-    label: "Admin",
-    href: "/admin/overview",
-    active: true,
-    icon: <Gauge className="w-5 h-5" />,
+    title: "Admin",
+    items: [
+      {
+        label: "Overview",
+        href: "/admin/overview",
+        active: true,
+        icon: <Gauge className="w-4 h-4" />,
+      },
+      {
+        label: "Users",
+        href: "/admin/users",
+        active: false,
+        icon: <Users className="w-4 h-4" />,
+      },
+      {
+        label: "Analytics",
+        href: "/admin/analytics",
+        active: false,
+        icon: <BarChart3 className="w-4 h-4" />,
+      },
+      {
+        label: "Activity",
+        href: "/admin/activity",
+        active: false,
+        icon: <Activity className="w-4 h-4" />,
+      },
+    ],
+  },
+  {
+    title: "System",
+    items: [
+      {
+        label: "Settings",
+        href: "/settings",
+        active: false,
+        icon: <Settings className="w-4 h-4" />,
+      },
+    ],
   },
 ];
 
@@ -50,63 +92,72 @@ export default function AdminOverview() {
   const [dateRange] = useState<"7d" | "30d" | "90d">("30d");
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-[#05070A] text-[#E6EDF3] relative">
+      {/* Body vignette is handled by body::before in CSS */}
+
       <Sidebar
-        navItems={NAV_ITEMS}
+        navSections={NAV_SECTIONS}
         userFooter={
-          <div className="flex items-center gap-3 px-3 py-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-3 py-1">
             <Avatar size="sm">
-              <AvatarFallback>{user?.email?.[0]?.toUpperCase() || "A"}</AvatarFallback>
+              <AvatarFallback className="bg-[#1F2937] text-[#9BA7B4]">
+                {user?.email?.[0]?.toUpperCase() || "A"}
+              </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
-              <p className="truncate font-medium text-foreground">{user?.email || "Admin"}</p>
-              <Badge className="mt-0.5 text-[10px] px-1.5 py-0 bg-primary/10 text-primary border-0">
-                Admin
-              </Badge>
+              <p className="text-[13px] font-medium text-[#E6EDF3] truncate">
+                {user?.email?.split("@")[0] || "Admin"}
+              </p>
+              <p className="text-[11px] text-[#6B7280] truncate">
+                {user?.email || "admin@v03.tech"}
+              </p>
             </div>
+            <Badge className="text-[10px] px-1.5 py-0 bg-[#3B82F6]/10 text-[#3B82F6] border-0 font-medium">
+              Admin
+            </Badge>
           </div>
         }
       />
 
-      <main className="flex-1 overflow-y-auto">
-        <div className="max-w-6xl mx-auto p-6 lg:p-8 space-y-8">
+      {/* Main — offset by 260px sidebar */}
+      <main className="ml-[260px] min-h-screen overflow-y-auto relative z-[1]">
+        <div className="max-w-[1200px] mx-auto px-8 py-8 space-y-8">
           {/* ── Header ── */}
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-foreground tracking-tight">
+              <h1 className="text-xl font-semibold text-[#E6EDF3] tracking-tight">
                 Admin Overview
               </h1>
-              <p className="text-muted-foreground mt-1">
+              <p className="text-sm text-[#9BA7B4] mt-0.5">
                 Platform analytics and management
               </p>
             </div>
             <div className="flex items-center gap-2">
-              <div className="flex gap-1 bg-muted p-0.5 rounded-lg text-xs">
+              <div className="flex gap-1 bg-[#111827] p-0.5 rounded-lg">
                 {(["7d", "30d", "90d"] as const).map((range) => (
                   <button
                     key={range}
-                    onClick={() => {}}
                     className={cn(
-                      "px-3 py-1.5 font-medium rounded-md transition-colors",
+                      "px-3 py-1.5 text-xs font-medium rounded-md transition-colors duration-200",
                       dateRange === range
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground"
+                        ? "bg-[#1F2937] text-[#E6EDF3]"
+                        : "text-[#6B7280] hover:text-[#9BA7B4]"
                     )}
                   >
                     {range}
                   </button>
                 ))}
               </div>
-              <Button variant="outline" size="sm">
-                <RefreshCw className="w-4 h-4 mr-1.5" />
+              <Button variant="outline" size="sm" className="text-[#9BA7B4] border-white/5 hover:bg-[#1F2937]">
+                <RefreshCw className="w-3.5 h-3.5 mr-1.5" />
                 Refresh
               </Button>
-              <Button variant="outline" size="sm">
-                <Download className="w-4 h-4 mr-1.5" />
+              <Button variant="outline" size="sm" className="text-[#9BA7B4] border-white/5 hover:bg-[#1F2937]">
+                <Download className="w-3.5 h-3.5 mr-1.5" />
                 Export
               </Button>
-              <Button size="sm">
-                <UserPlus className="w-4 h-4 mr-1.5" />
+              <Button size="sm" className="bg-[#3B82F6] hover:bg-[#2563EB] text-white">
+                <UserPlus className="w-3.5 h-3.5 mr-1.5" />
                 Invite
               </Button>
             </div>
@@ -119,49 +170,49 @@ export default function AdminOverview() {
               value={stats.totalUsers.toLocaleString()}
               change={stats.userGrowth}
               loading={loading}
-              icon={<Users className="w-5 h-5" />}
+              icon={<Users className="w-4 h-4" />}
             />
             <StatCard
               title="Total Projects"
               value={stats.totalProjects.toLocaleString()}
               change={stats.projectGrowth}
               loading={loading}
-              icon={<FolderKanban className="w-5 h-5" />}
+              icon={<FolderKanban className="w-4 h-4" />}
             />
             <StatCard
               title="Generations Today"
               value={stats.generationsToday.toLocaleString()}
               change={stats.generationGrowth}
               loading={loading}
-              icon={<Zap className="w-5 h-5" />}
+              icon={<Activity className="w-4 h-4" />}
             />
             <StatCard
               title="Revenue"
               value={formatCurrency(stats.revenue)}
               change={stats.revenueGrowth}
               loading={loading}
-              icon={<DollarSign className="w-5 h-5" />}
+              icon={<BarChart3 className="w-4 h-4" />}
             />
           </div>
 
           {/* ── Secondary Stats ── */}
           <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
-            <div className="rounded-xl border border-border bg-card p-4">
-              <p className="text-xs text-muted-foreground mb-1">Active Users</p>
-              <p className="text-xl font-bold text-foreground">{stats.activeUsers}</p>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-4">
-              <p className="text-xs text-muted-foreground mb-1">API Uptime</p>
-              <p className="text-xl font-bold text-green-500">{stats.apiUptime}%</p>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-4">
-              <p className="text-xs text-muted-foreground mb-1">Error Rate</p>
-              <p className="text-xl font-bold text-foreground">{stats.errorRate}%</p>
-            </div>
-            <div className="rounded-xl border border-border bg-card p-4">
-              <p className="text-xs text-muted-foreground mb-1">Queue Depth</p>
-              <p className="text-xl font-bold text-foreground">{stats.queueDepth}</p>
-            </div>
+            {[
+              { label: "Active Users", value: stats.activeUsers, color: "" },
+              { label: "API Uptime", value: `${stats.apiUptime}%`, color: "text-[#22C55E]" },
+              { label: "Error Rate", value: `${stats.errorRate}%`, color: "" },
+              { label: "Queue Depth", value: stats.queueDepth, color: "" },
+            ].map((s) => (
+              <div
+                key={s.label}
+                className="rounded-xl border border-white/5 bg-[#0F141A] p-4"
+              >
+                <p className="text-xs text-[#6B7280] mb-1">{s.label}</p>
+                <p className={cn("text-lg font-semibold text-[#E6EDF3]", s.color)}>
+                  {s.value}
+                </p>
+              </div>
+            ))}
           </div>
 
           {/* ── Charts Row ── */}
@@ -170,7 +221,7 @@ export default function AdminOverview() {
               title="Revenue (30 days)"
               data={stats.revenueTrend}
               variant="area"
-              color="hsl(142, 76%, 36%)"
+              color="#22C55E"
               formatValue={(v) => `$${v}`}
               loading={loading}
             />
@@ -178,7 +229,7 @@ export default function AdminOverview() {
               title="User Growth (30 days)"
               data={stats.userTrend}
               variant="bar"
-              color="hsl(221, 83%, 53%)"
+              color="#3B82F6"
               loading={loading}
             />
           </div>

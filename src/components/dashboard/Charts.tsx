@@ -11,7 +11,6 @@ import {
   LineChart,
   Line,
 } from "recharts";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 interface TrendChartProps {
   data: { date: string; value: number }[];
@@ -23,130 +22,140 @@ interface TrendChartProps {
   formatValue?: (v: number) => string;
 }
 
-function ChartSkeleton({ height }: { height: number }) {
-  return (
-    <div className="animate-pulse" style={{ height }}>
-      <div className="h-full w-full bg-muted rounded-lg" />
-    </div>
-  );
-}
-
 export function TrendChart({
   data,
   title,
   variant = "area",
-  color = "var(--color-primary, hsl(221, 83%, 53%))",
-  height = 250,
+  color = "#3B82F6",
+  height = 220,
   loading,
   formatValue,
 }: TrendChartProps) {
+  const gridColor = "rgba(255,255,255,0.04)";
+  const tickColor = "#6B7280";
+  const tooltipBg = "#0F141A";
+  const tooltipBorder = "rgba(255,255,255,0.06)";
+
+  if (loading) {
+    return (
+      <div className="rounded-xl border border-white/5 bg-[#0F141A]">
+        <div className="px-4 pt-4 pb-2">
+          <div className="h-3.5 w-28 bg-[#1F2937] rounded animate-pulse" />
+        </div>
+        <div className="animate-pulse" style={{ height }}>
+          <div className="h-full w-full bg-[#111827] mx-4 rounded-lg" />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">{title}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {loading ? (
-          <ChartSkeleton height={height} />
+    <div className="rounded-xl border border-white/5 bg-[#0F141A] overflow-hidden">
+      <div className="px-4 pt-4 pb-1">
+        <p className="text-xs font-medium text-[#6B7280]">{title}</p>
+      </div>
+      <ResponsiveContainer width="100%" height={height}>
+        {variant === "area" ? (
+          <AreaChart data={data} margin={{ top: 8, right: 12, left: -20, bottom: 4 }}>
+            <defs>
+              <linearGradient id={`cg-${title.replace(/\s/g, "")}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={color} stopOpacity={0.15} />
+                <stop offset="100%" stopColor={color} stopOpacity={0} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid stroke={gridColor} strokeDasharray="3 3" />
+            <XAxis
+              dataKey="date"
+              tick={{ fontSize: 10, fill: tickColor }}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(v) => v.slice(5)}
+            />
+            <YAxis
+              tick={{ fontSize: 10, fill: tickColor }}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={formatValue}
+              width={40}
+            />
+            <RechartTooltip
+              contentStyle={{
+                background: tooltipBg,
+                border: `1px solid ${tooltipBorder}`,
+                borderRadius: "8px",
+                fontSize: "12px",
+                color: "#E6EDF3",
+              }}
+              formatter={(val) =>
+                formatValue && typeof val === "number"
+                  ? String(formatValue(val))
+                  : String(val ?? "")
+              }
+            />
+            <Area
+              type="monotone"
+              dataKey="value"
+              stroke={color}
+              strokeWidth={2}
+              fill={`url(#cg-${title.replace(/\s/g, "")})`}
+            />
+          </AreaChart>
+        ) : variant === "bar" ? (
+          <BarChart data={data} margin={{ top: 8, right: 12, left: -20, bottom: 4 }}>
+            <CartesianGrid stroke={gridColor} strokeDasharray="3 3" />
+            <XAxis
+              dataKey="date"
+              tick={{ fontSize: 10, fill: tickColor }}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(v) => v.slice(5)}
+            />
+            <YAxis
+              tick={{ fontSize: 10, fill: tickColor }}
+              tickLine={false}
+              axisLine={false}
+              width={40}
+            />
+            <RechartTooltip
+              contentStyle={{
+                background: tooltipBg,
+                border: `1px solid ${tooltipBorder}`,
+                borderRadius: "8px",
+                fontSize: "12px",
+                color: "#E6EDF3",
+              }}
+            />
+            <Bar dataKey="value" fill={color} radius={[3, 3, 0, 0]} />
+          </BarChart>
         ) : (
-          <ResponsiveContainer width="100%" height={height}>
-            {variant === "area" ? (
-              <AreaChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-                <defs>
-                  <linearGradient id={`gradient-${title}`} x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={color} stopOpacity={0.2} />
-                    <stop offset="100%" stopColor={color} stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border, hsl(214, 32%, 91%))" strokeOpacity={0.5} />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fontSize: 11, fill: "var(--color-muted-foreground, hsl(215, 20%, 65%))" }}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(v) => v.slice(5)}
-                />
-                <YAxis
-                  tick={{ fontSize: 11, fill: "var(--color-muted-foreground, hsl(215, 20%, 65%))" }}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={formatValue}
-                  width={45}
-                />
-                <RechartTooltip
-                  contentStyle={{
-                    background: "var(--color-card, hsl(0, 0%, 100%))",
-                    border: "1px solid var(--color-border, hsl(214, 32%, 91%))",
-                    borderRadius: "8px",
-                    fontSize: "12px",
-                  }}
-                  formatter={(val) => (formatValue && typeof val === 'number' ? String(formatValue(val)) : String(val ?? ''))}
-                  labelFormatter={(label) => label}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="value"
-                  stroke={color}
-                  strokeWidth={2}
-                  fill={`url(#gradient-${title})`}
-                />
-              </AreaChart>
-            ) : variant === "bar" ? (
-              <BarChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" strokeOpacity={0.5} />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(v) => v.slice(5)}
-                />
-                <YAxis
-                  tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
-                  tickLine={false}
-                  axisLine={false}
-                  width={45}
-                />
-                <RechartTooltip
-                  contentStyle={{
-                    background: "var(--color-card)",
-                    border: "1px solid var(--color-border)",
-                    borderRadius: "8px",
-                    fontSize: "12px",
-                  }}
-                />
-                <Bar dataKey="value" fill={color} radius={[4, 4, 0, 0]} />
-              </BarChart>
-            ) : (
-              <LineChart data={data} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border)" strokeOpacity={0.5} />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(v) => v.slice(5)}
-                />
-                <YAxis
-                  tick={{ fontSize: 11, fill: "var(--color-muted-foreground)" }}
-                  tickLine={false}
-                  axisLine={false}
-                  width={45}
-                />
-                <RechartTooltip
-                  contentStyle={{
-                    background: "var(--color-card)",
-                    border: "1px solid var(--color-border)",
-                    borderRadius: "8px",
-                    fontSize: "12px",
-                  }}
-                />
-                <Line type="monotone" dataKey="value" stroke={color} strokeWidth={2} dot={false} />
-              </LineChart>
-            )}
-          </ResponsiveContainer>
+          <LineChart data={data} margin={{ top: 8, right: 12, left: -20, bottom: 4 }}>
+            <CartesianGrid stroke={gridColor} strokeDasharray="3 3" />
+            <XAxis
+              dataKey="date"
+              tick={{ fontSize: 10, fill: tickColor }}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(v) => v.slice(5)}
+            />
+            <YAxis
+              tick={{ fontSize: 10, fill: tickColor }}
+              tickLine={false}
+              axisLine={false}
+              width={40}
+            />
+            <RechartTooltip
+              contentStyle={{
+                background: tooltipBg,
+                border: `1px solid ${tooltipBorder}`,
+                borderRadius: "8px",
+                fontSize: "12px",
+                color: "#E6EDF3",
+              }}
+            />
+            <Line type="monotone" dataKey="value" stroke={color} strokeWidth={2} dot={false} />
+          </LineChart>
         )}
-      </CardContent>
-    </Card>
+      </ResponsiveContainer>
+    </div>
   );
 }
