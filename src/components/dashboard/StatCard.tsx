@@ -39,9 +39,9 @@ function TrendBadge({ change }: { change: number }) {
 export function StatCard({ title, value, change, icon, loading, className }: StatCardProps) {
   if (loading) {
     return (
-      <div className={cn("animate-pulse rounded-[18px] border border-[var(--app-border)] bg-[var(--app-panel)] p-5 backdrop-blur-xl", className)}>
+      <div className={cn("animate-pulse rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel)] p-5 backdrop-blur-xl", className)}>
         <div className="flex items-center justify-between mb-4">
-          <div className="h-10 w-10 rounded-[12px] bg-[var(--app-surface)]" />
+          <div className="h-10 w-10 rounded-[8px] bg-[var(--app-surface)]" />
           <div className="h-6 w-16 rounded-full bg-[var(--app-surface)]" />
         </div>
         <div className="mb-2 h-7 w-24 rounded bg-[var(--app-surface)]" />
@@ -53,13 +53,13 @@ export function StatCard({ title, value, change, icon, loading, className }: Sta
   return (
     <div
       className={cn(
-        "rounded-[18px] border border-[var(--app-border)] bg-[var(--app-panel)] p-5 shadow-[var(--shadow-sm)] backdrop-blur-xl transition-colors duration-200",
+        "rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel)] p-5 shadow-[var(--shadow-sm)] backdrop-blur-xl transition-colors duration-200",
         "hover:border-[var(--app-border-strong)] hover:bg-[var(--app-panel-2)]",
         className
       )}
     >
       <div className="flex items-center justify-between mb-4">
-        <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
+        <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
           {icon}
         </div>
         {change !== undefined && <TrendBadge change={change} />}

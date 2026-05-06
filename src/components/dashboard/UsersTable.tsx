@@ -51,7 +51,7 @@ export function UsersTable({ users, loading }: UsersTableProps) {
   }, [users, search, roleFilter]);
 
   return (
-    <div className="overflow-hidden rounded-[18px] border border-[var(--app-border)] bg-[var(--app-panel)] shadow-[var(--shadow-sm)] backdrop-blur-xl">
+    <div className="overflow-hidden rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel)] shadow-[var(--shadow-sm)] backdrop-blur-xl">
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--app-border)] p-4">
         <h3 className="text-sm font-medium text-[var(--app-text)]">User Management</h3>
@@ -109,7 +109,7 @@ export function UsersTable({ users, loading }: UsersTableProps) {
             {filtered.map((user) => (
               <div
                 key={user.id}
-                className="group grid gap-3 rounded-[14px] px-3 py-3 transition-colors hover:bg-[var(--app-surface-subtle)] sm:grid-cols-[1fr_90px_80px_40px] sm:items-center"
+                className="group grid gap-3 rounded-[10px] px-3 py-3 transition-colors hover:bg-[var(--app-surface-subtle)] sm:grid-cols-[1fr_90px_80px_40px] sm:items-center"
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <Avatar size="sm">

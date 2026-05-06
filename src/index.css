@@ -43,7 +43,7 @@
 }
 
 :root {
-  --radius: 0.72rem;
+  --radius: 0.56rem;
   --background: #f4f7fb;
   --foreground: #0f1724;
   --card: rgba(255, 255, 255, 0.82);

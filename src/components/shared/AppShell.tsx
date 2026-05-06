@@ -56,9 +56,9 @@ export function AppShell({
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <div className="flex items-center justify-between rounded-[16px] border border-[var(--app-border)] bg-[var(--app-panel-2)] px-4 py-3">
+        <div className="flex items-center justify-between rounded-[12px] border border-[var(--app-border)] bg-[var(--app-panel-2)] px-4 py-3">
           <Link href="/" className="flex items-center gap-3">
-            <span className="flex h-10 w-16 items-center justify-center overflow-hidden rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel)] px-2">
+            <span className="flex h-10 w-16 items-center justify-center overflow-hidden rounded-[10px] border border-[var(--app-border)] bg-[var(--app-panel)] px-2">
               <img src="/v03.svg" alt="v03" className="h-4 w-auto" />
             </span>
             <div>
@@ -96,14 +96,14 @@ export function AppShell({
                       key={item.href}
                       href={item.href}
                       className={cn(
-                        "flex items-center gap-3 rounded-[14px] px-3 py-3 transition-colors",
+                        "flex items-center gap-3 rounded-[10px] px-3 py-3 transition-colors",
                         active
                           ? "bg-[var(--app-surface)] text-[var(--app-text)]"
                           : "text-[var(--app-text-muted)] hover:bg-[var(--app-surface-subtle)] hover:text-[var(--app-text)]"
                       )}
                       onClick={() => setSidebarOpen(false)}
                     >
-                      <span className="flex h-9 w-9 items-center justify-center rounded-[12px] border border-[var(--app-border)] bg-[var(--app-panel-2)]">
+                      <span className="flex h-9 w-9 items-center justify-center rounded-[8px] border border-[var(--app-border)] bg-[var(--app-panel-2)]">
                         {item.icon}
                       </span>
                       <span className="min-w-0">
@@ -123,7 +123,7 @@ export function AppShell({
         </nav>
 
         {userFooter && (
-          <div className="rounded-[16px] border border-[var(--app-border)] bg-[var(--app-panel-2)] p-3">
+          <div className="rounded-[12px] border border-[var(--app-border)] bg-[var(--app-panel-2)] p-3">
             {userFooter}
           </div>
         )}
@@ -131,7 +131,7 @@ export function AppShell({
 
       <main className="min-h-screen lg:pl-[288px]">
         <div className="mx-auto flex min-h-screen w-full max-w-[1440px] flex-col px-4 pb-6 pt-4 sm:px-6 lg:px-8">
-          <header className="sticky top-0 z-20 mb-6 flex flex-wrap items-start justify-between gap-4 rounded-[18px] border border-[var(--app-border)] bg-[color-mix(in_srgb,var(--app-bg)_78%,transparent)] px-4 py-4 backdrop-blur-xl sm:px-5">
+          <header className="sticky top-0 z-20 mb-6 flex flex-wrap items-start justify-between gap-4 rounded-[14px] border border-[var(--app-border)] bg-[color-mix(in_srgb,var(--app-bg)_78%,transparent)] px-4 py-4 backdrop-blur-xl sm:px-5">
             <div className="flex items-start gap-3">
               <Button
                 type="button"

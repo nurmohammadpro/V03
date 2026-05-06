@@ -94,7 +94,7 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={handleClose} />
-      <div className="relative mx-4 w-full max-w-lg overflow-hidden rounded-[18px] border border-[var(--app-border)] bg-[var(--app-panel-2)] backdrop-blur-xl">
+      <div className="relative mx-4 w-full max-w-lg overflow-hidden rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel-2)] backdrop-blur-xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-[var(--app-border)] px-5 py-4">
           <div>
@@ -125,7 +125,7 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
                   onClick={() => handleSelectTemplate(t)}
                   className="group flex flex-col items-start gap-2 border-b border-[var(--app-border)] px-1 py-3 text-left transition-colors hover:border-[var(--app-border-strong)]"
                 >
-                  <span className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-[8px] bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
                     <t.icon className="h-4 w-4" />
                   </span>
                   <div>
@@ -138,7 +138,7 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
               ))}
               <button
                 onClick={() => setStep("configure")}
-                className="col-span-2 flex items-center justify-center gap-2 rounded-[14px] border border-dashed border-[var(--app-border)] px-3 py-4 text-[var(--app-text-muted)] transition-colors hover:bg-[var(--app-surface-subtle)] hover:text-[var(--app-text)]"
+                className="col-span-2 flex items-center justify-center gap-2 rounded-[10px] border border-dashed border-[var(--app-border)] px-3 py-4 text-[var(--app-text-muted)] transition-colors hover:bg-[var(--app-surface-subtle)] hover:text-[var(--app-text)]"
               >
                 <Sparkles className="h-4 w-4" />
                 <p className="text-xs">Configure manually</p>
@@ -154,7 +154,7 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
                   placeholder="My Awesome App"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  className="h-10 rounded-[12px] border-[var(--app-border)] bg-[var(--app-panel)] text-sm text-[var(--app-text)] placeholder:text-[var(--app-text-dim)] focus-visible:border-[var(--app-accent)]"
+                  className="h-10 rounded-[8px] border-[var(--app-border)] bg-[var(--app-panel)] text-sm text-[var(--app-text)] placeholder:text-[var(--app-text-dim)] focus-visible:border-[var(--app-accent)]"
                   autoFocus
                 />
               </div>
@@ -167,7 +167,7 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
                     <button
                       key={fw.id}
                       onClick={() => setFramework(fw.id)}
-                      className={`flex flex-col items-center gap-1 rounded-[14px] border p-3 transition-colors ${
+                      className={`flex flex-col items-center gap-1 rounded-[10px] border p-3 transition-colors ${
                         framework === fw.id
                           ? "border-[var(--app-accent)] bg-[var(--app-accent-soft)] text-[var(--app-text)]"
                           : "border-[var(--app-border)] bg-[var(--app-panel)] text-[var(--app-text-muted)] hover:border-[var(--app-border-strong)] hover:text-[var(--app-text)]"

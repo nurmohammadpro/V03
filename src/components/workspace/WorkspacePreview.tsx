@@ -76,7 +76,7 @@ export default function WorkspacePreview() {
   if (previewModel.mode === "html") {
     return (
       <div className="h-full bg-[var(--app-bg-alt)] p-3">
-        <div className="h-full overflow-hidden rounded-[14px] border border-[var(--app-border)] bg-white">
+        <div className="h-full overflow-hidden rounded-[10px] border border-[var(--app-border)] bg-white">
           <iframe
             title="HTML preview"
             srcDoc={previewModel.srcDoc}

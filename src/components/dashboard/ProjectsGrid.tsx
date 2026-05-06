@@ -25,9 +25,9 @@ interface ProjectsGridProps {
 
 function ProjectCardSkeleton() {
   return (
-      <div className="animate-pulse rounded-[18px] border border-[var(--app-border)] bg-[var(--app-panel)] p-4 backdrop-blur-xl">
+      <div className="animate-pulse rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel)] p-4 backdrop-blur-xl">
         <div className="flex items-center gap-3 mb-3">
-        <div className="h-9 w-9 rounded-[12px] bg-[var(--app-surface)]" />
+        <div className="h-9 w-9 rounded-[8px] bg-[var(--app-surface)]" />
         <div className="space-y-1.5 flex-1">
           <div className="h-4 w-28 rounded bg-[var(--app-surface)]" />
           <div className="h-3 w-14 rounded bg-[var(--app-surface)]" />
@@ -45,12 +45,12 @@ function ProjectCard({ project }: { project: Project }) {
 
   return (
     <div
-      className="group relative cursor-pointer rounded-[18px] border border-[var(--app-border)] bg-[var(--app-panel)] p-4 shadow-[var(--shadow-sm)] backdrop-blur-xl transition-colors duration-200 hover:border-[var(--app-border-strong)] hover:bg-[var(--app-panel-2)]"
+      className="group relative cursor-pointer rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel)] p-4 shadow-[var(--shadow-sm)] backdrop-blur-xl transition-colors duration-200 hover:border-[var(--app-border-strong)] hover:bg-[var(--app-panel-2)]"
       onClick={() => navigate(`/workspace/${project.id}`)}
     >
       <div className="flex items-start justify-between">
         <div className="flex items-center gap-3 min-w-0">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[var(--app-accent-soft)] text-sm font-medium text-[var(--app-accent)]">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[8px] bg-[var(--app-accent-soft)] text-sm font-medium text-[var(--app-accent)]">
             {project.name[0].toUpperCase()}
           </div>
           <div className="min-w-0">
@@ -77,7 +77,7 @@ function ProjectCard({ project }: { project: Project }) {
           {menuOpen && (
             <>
               <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} />
-              <div className="absolute right-0 top-9 z-20 w-40 rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel-2)] py-1 shadow-[var(--shadow-md)] backdrop-blur-xl">
+              <div className="absolute right-0 top-9 z-20 w-40 rounded-[10px] border border-[var(--app-border)] bg-[var(--app-panel-2)] py-1 shadow-[var(--shadow-md)] backdrop-blur-xl">
                 <button
                   className="flex w-full items-center gap-2 px-3 py-2 text-xs text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface)]"
                   onClick={(e) => {

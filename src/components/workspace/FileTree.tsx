@@ -32,7 +32,7 @@ function TreeNode({ node, depth }: TreeNodeProps) {
       <button
         type="button"
         onClick={() => setActiveFile(node.path)}
-        className={`flex w-full items-center gap-2 rounded-[12px] py-1.5 pr-2 text-left text-[13px] transition-colors ${
+        className={`flex w-full items-center gap-2 rounded-[8px] py-1.5 pr-2 text-left text-[13px] transition-colors ${
           isActive
             ? "bg-[var(--app-surface)] text-[var(--app-text)]"
             : "text-[var(--app-text-muted)] hover:bg-[var(--app-surface-subtle)] hover:text-[var(--app-text)]"
@@ -50,7 +50,7 @@ function TreeNode({ node, depth }: TreeNodeProps) {
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
-        className="flex w-full items-center gap-2 rounded-[12px] py-1.5 pr-2 text-left text-[13px] font-medium text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-subtle)]"
+        className="flex w-full items-center gap-2 rounded-[8px] py-1.5 pr-2 text-left text-[13px] font-medium text-[var(--app-text)] transition-colors hover:bg-[var(--app-surface-subtle)]"
         style={{ paddingLeft: depth * 16 + 6 }}
       >
         <ChevronRight

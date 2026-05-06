@@ -38,19 +38,19 @@ export function TrendChart({
 
   if (loading) {
     return (
-      <div className="rounded-[18px] border border-[var(--app-border)] bg-[var(--app-panel)] shadow-[var(--shadow-sm)] backdrop-blur-xl">
+      <div className="rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel)] shadow-[var(--shadow-sm)] backdrop-blur-xl">
         <div className="px-4 pt-4 pb-2">
           <div className="h-3.5 w-28 animate-pulse rounded bg-[var(--app-surface)]" />
         </div>
         <div className="animate-pulse" style={{ height }}>
-          <div className="mx-4 h-full w-full rounded-[12px] bg-[var(--app-surface)]" />
+          <div className="mx-4 h-full w-full rounded-[8px] bg-[var(--app-surface)]" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded-[18px] border border-[var(--app-border)] bg-[var(--app-panel)] shadow-[var(--shadow-sm)] backdrop-blur-xl">
+    <div className="overflow-hidden rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel)] shadow-[var(--shadow-sm)] backdrop-blur-xl">
       <div className="px-4 pt-4 pb-1">
         <p className="text-xs font-medium uppercase tracking-[0.12em] text-[var(--app-text-dim)]">{title}</p>
       </div>

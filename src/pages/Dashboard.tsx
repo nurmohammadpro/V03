@@ -101,7 +101,7 @@ export default function Dashboard() {
     >
       <div className="space-y-6">
         <section className="grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
-          <div className="rounded-[22px] border border-[var(--app-border)] bg-[var(--app-panel)] p-6 shadow-[var(--shadow-md)] backdrop-blur-xl">
+          <div className="rounded-[16px] border border-[var(--app-border)] bg-[var(--app-panel)] p-6 shadow-[var(--shadow-md)] backdrop-blur-xl">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="text-[11px] uppercase tracking-[0.14em] text-[var(--app-text-dim)]">
@@ -134,21 +134,21 @@ export default function Dashboard() {
             </div>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-[16px] border border-[var(--app-border)] bg-[var(--app-panel-2)] p-4">
+              <div className="rounded-[12px] border border-[var(--app-border)] bg-[var(--app-panel-2)] p-4">
                 <p className="text-[11px] uppercase tracking-[0.12em] text-[var(--app-text-dim)]">Today</p>
                 <p className="mt-3 text-[28px] font-medium tracking-[-0.04em] text-[var(--app-text)]">
                   {userStats.generationsToday}
                 </p>
                 <p className="mt-1 text-sm text-[var(--app-text-muted)]">active generations</p>
               </div>
-              <div className="rounded-[16px] border border-[var(--app-border)] bg-[var(--app-panel-2)] p-4">
+              <div className="rounded-[12px] border border-[var(--app-border)] bg-[var(--app-panel-2)] p-4">
                 <p className="text-[11px] uppercase tracking-[0.12em] text-[var(--app-text-dim)]">Projects</p>
                 <p className="mt-3 text-[28px] font-medium tracking-[-0.04em] text-[var(--app-text)]">
                   {userStats.projectsCount}
                 </p>
                 <p className="mt-1 text-sm text-[var(--app-text-muted)]">in your workspace</p>
               </div>
-              <div className="rounded-[16px] border border-[var(--app-border)] bg-[var(--app-panel-2)] p-4">
+              <div className="rounded-[12px] border border-[var(--app-border)] bg-[var(--app-panel-2)] p-4">
                 <p className="text-[11px] uppercase tracking-[0.12em] text-[var(--app-text-dim)]">Storage</p>
                 <p className="mt-3 text-[28px] font-medium tracking-[-0.04em] text-[var(--app-text)]">
                   {userStats.storageUsed}MB
@@ -159,7 +159,7 @@ export default function Dashboard() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
-            <div className="rounded-[18px] border border-[var(--app-border)] bg-[var(--app-panel)] p-5 shadow-[var(--shadow-sm)] backdrop-blur-xl">
+            <div className="rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel)] p-5 shadow-[var(--shadow-sm)] backdrop-blur-xl">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-medium text-[var(--app-text)]">Generation allowance</p>
                 <span className="text-xs text-[var(--app-text-muted)]">
@@ -179,7 +179,7 @@ export default function Dashboard() {
               </p>
             </div>
 
-            <div className="rounded-[18px] border border-[var(--app-border)] bg-[var(--app-panel)] p-5 shadow-[var(--shadow-sm)] backdrop-blur-xl">
+            <div className="rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel)] p-5 shadow-[var(--shadow-sm)] backdrop-blur-xl">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <p className="text-sm font-medium text-[var(--app-text)]">Recommended next action</p>
@@ -187,7 +187,7 @@ export default function Dashboard() {
                     Continue from a real project context to keep prompt, code, and preview aligned.
                   </p>
                 </div>
-                <div className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
+                <div className="flex h-10 w-10 items-center justify-center rounded-[8px] bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
                   <Sparkles className="h-4 w-4" />
                 </div>
               </div>
@@ -197,7 +197,7 @@ export default function Dashboard() {
 
         {!statsLoading && (
           <section className="grid gap-4 md:grid-cols-3">
-            <div className="rounded-[18px] border border-[var(--app-border)] bg-[var(--app-panel)] p-5 shadow-[var(--shadow-sm)] backdrop-blur-xl">
+            <div className="rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel)] p-5 shadow-[var(--shadow-sm)] backdrop-blur-xl">
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-2 text-sm text-[var(--app-text-muted)]">
                   <Zap className="h-4 w-4 text-[var(--app-accent)]" />
@@ -217,7 +217,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="rounded-[18px] border border-[var(--app-border)] bg-[var(--app-panel)] p-5 shadow-[var(--shadow-sm)] backdrop-blur-xl">
+            <div className="rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel)] p-5 shadow-[var(--shadow-sm)] backdrop-blur-xl">
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-2 text-sm text-[var(--app-text-muted)]">
                   <HardDrive className="h-4 w-4 text-[var(--app-success)]" />
@@ -237,7 +237,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            <div className="rounded-[18px] border border-[var(--app-border)] bg-[var(--app-panel)] p-5 shadow-[var(--shadow-sm)] backdrop-blur-xl">
+            <div className="rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel)] p-5 shadow-[var(--shadow-sm)] backdrop-blur-xl">
               <div className="flex items-center justify-between">
                 <span className="flex items-center gap-2 text-sm text-[var(--app-text-muted)]">
                   <FolderKanban className="h-4 w-4 text-[var(--app-warning)]" />
@@ -256,7 +256,7 @@ export default function Dashboard() {
         )}
 
         {projects.length === 0 && !projectsLoading && (
-          <section className="rounded-[22px] border border-[var(--app-border)] bg-[var(--app-panel)] p-6 shadow-[var(--shadow-sm)] backdrop-blur-xl">
+          <section className="rounded-[16px] border border-[var(--app-border)] bg-[var(--app-panel)] p-6 shadow-[var(--shadow-sm)] backdrop-blur-xl">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div className="max-w-[56ch]">
                 <p className="text-[11px] uppercase tracking-[0.14em] text-[var(--app-text-dim)]">

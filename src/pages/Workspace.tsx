@@ -257,7 +257,7 @@ function WorkspaceMessage({ role, content, isStreaming }: { role: "user" | "assi
             : isSystem
             ? "border border-[var(--app-border)] bg-[var(--app-panel)] text-[var(--app-text-muted)]"
             : "text-[var(--app-text)]"
-        } rounded-[16px] px-4 py-3 text-sm leading-7`}
+        } rounded-[12px] px-4 py-3 text-sm leading-7`}
       >
         {role === "assistant" && (
           <div className="mb-2 flex items-center gap-2 text-[11px] uppercase tracking-[0.14em] text-[var(--app-text-dim)]">
@@ -385,7 +385,7 @@ export default function Workspace() {
       )}
 
       <div className="flex min-h-[100dvh] w-full flex-col px-3 py-3 sm:px-4">
-        <header className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-[var(--app-border)] bg-[color-mix(in_srgb,var(--app-bg)_78%,transparent)] px-4 py-3 backdrop-blur-xl">
+        <header className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-[var(--app-border)] bg-[color-mix(in_srgb,var(--app-bg)_78%,transparent)] px-4 py-3 backdrop-blur-xl">
           <div className="flex items-center gap-2 sm:gap-3">
             <Button
               type="button"
@@ -428,7 +428,7 @@ export default function Workspace() {
                 <ChevronDown className="h-4 w-4" />
               </button>
               {showFrameworkPicker && (
-                <div className="absolute right-0 top-11 z-40 min-w-[180px] overflow-hidden rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel-2)] backdrop-blur-xl">
+                <div className="absolute right-0 top-11 z-40 min-w-[180px] overflow-hidden rounded-[10px] border border-[var(--app-border)] bg-[var(--app-panel-2)] backdrop-blur-xl">
                   {FRAMEWORKS.map((fw) => (
                     <button
                       key={fw}
@@ -473,7 +473,7 @@ export default function Workspace() {
           }`}
         >
           <aside
-            className={`fixed inset-y-[78px] left-3 z-40 w-[240px] rounded-[18px] border border-[var(--app-border)] bg-[var(--app-panel)] backdrop-blur-xl transition-transform lg:left-4 ${
+            className={`fixed inset-y-[78px] left-3 z-40 w-[240px] rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel)] backdrop-blur-xl transition-transform lg:left-4 ${
               sidebarOpen ? "translate-x-0" : "-translate-x-[115%]"
             } ${
               sidebarOpen ? "xl:relative xl:inset-auto xl:left-auto xl:z-auto xl:w-auto xl:translate-x-0" : "xl:hidden"
@@ -534,7 +534,7 @@ export default function Workspace() {
                   )
                 ) : (
                   <div className="space-y-4">
-                    <div className="rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel-2)] px-3 py-3">
+                    <div className="rounded-[10px] border border-[var(--app-border)] bg-[var(--app-panel-2)] px-3 py-3">
                       <p className="text-[11px] uppercase tracking-[0.12em] text-[var(--app-text-dim)]">Conversation</p>
                       <p className="mt-2 text-sm text-[var(--app-text-muted)]">
                         {messages.length} message{messages.length === 1 ? "" : "s"} in this session.
@@ -572,7 +572,7 @@ export default function Workspace() {
             </div>
           </aside>
 
-          <section className="flex min-h-0 flex-col rounded-[18px] border border-[var(--app-border)] bg-[var(--app-panel)] backdrop-blur-xl">
+          <section className="flex min-h-0 flex-col rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel)] backdrop-blur-xl">
             <div className="border-b border-[var(--app-border)] px-4 py-4 sm:px-5">
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
@@ -648,7 +648,7 @@ export default function Workspace() {
 
             <div className="border-t border-[var(--app-border)] px-4 py-4 sm:px-5">
               <form onSubmit={handleSubmit} className="space-y-3">
-                <div className="rounded-[16px] border border-[var(--app-border)] bg-[var(--app-panel-2)] px-4 py-3">
+                <div className="rounded-[12px] border border-[var(--app-border)] bg-[var(--app-panel-2)] px-4 py-3">
                   <textarea
                     ref={textareaRef}
                     value={input}
@@ -689,7 +689,7 @@ export default function Workspace() {
           </section>
 
           <aside
-            className={`fixed inset-y-[78px] right-3 z-40 w-[min(720px,calc(100vw-24px))] rounded-[18px] border border-[var(--app-border)] bg-[var(--app-panel)] backdrop-blur-xl transition-transform xl:static xl:inset-auto xl:z-auto xl:w-auto ${
+            className={`fixed inset-y-[78px] right-3 z-40 w-[min(720px,calc(100vw-24px))] rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel)] backdrop-blur-xl transition-transform xl:static xl:inset-auto xl:z-auto xl:w-auto ${
               codePanelOpen ? "translate-x-0" : "translate-x-[110%] xl:translate-x-0"
             }`}
           >

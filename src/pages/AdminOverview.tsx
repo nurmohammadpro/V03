@@ -132,7 +132,7 @@ export default function AdminOverview() {
     >
       <div className="space-y-6">
         <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
-          <div className="rounded-[22px] border border-[var(--app-border)] bg-[var(--app-panel)] p-6 shadow-[var(--shadow-md)] backdrop-blur-xl">
+          <div className="rounded-[16px] border border-[var(--app-border)] bg-[var(--app-panel)] p-6 shadow-[var(--shadow-md)] backdrop-blur-xl">
             <div className="flex flex-wrap items-start justify-between gap-4">
               <div>
                 <p className="text-[11px] uppercase tracking-[0.14em] text-[var(--app-text-dim)]">
@@ -146,27 +146,27 @@ export default function AdminOverview() {
                 </p>
               </div>
 
-              <div className="flex h-12 w-12 items-center justify-center rounded-[14px] bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
+              <div className="flex h-12 w-12 items-center justify-center rounded-[10px] bg-[var(--app-accent-soft)] text-[var(--app-accent)]">
                 <BellRing className="h-5 w-5" />
               </div>
             </div>
 
             <div className="mt-6 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-[16px] border border-[var(--app-border)] bg-[var(--app-panel-2)] p-4">
+              <div className="rounded-[12px] border border-[var(--app-border)] bg-[var(--app-panel-2)] p-4">
                 <p className="text-[11px] uppercase tracking-[0.12em] text-[var(--app-text-dim)]">Live users</p>
                 <p className="mt-3 text-[28px] font-medium tracking-[-0.04em] text-[var(--app-text)]">
                   {stats.activeUsers}
                 </p>
                 <p className="mt-1 text-sm text-[var(--app-text-muted)]">currently active</p>
               </div>
-              <div className="rounded-[16px] border border-[var(--app-border)] bg-[var(--app-panel-2)] p-4">
+              <div className="rounded-[12px] border border-[var(--app-border)] bg-[var(--app-panel-2)] p-4">
                 <p className="text-[11px] uppercase tracking-[0.12em] text-[var(--app-text-dim)]">Queue depth</p>
                 <p className="mt-3 text-[28px] font-medium tracking-[-0.04em] text-[var(--app-text)]">
                   {stats.queueDepth}
                 </p>
                 <p className="mt-1 text-sm text-[var(--app-text-muted)]">jobs waiting for workers</p>
               </div>
-              <div className="rounded-[16px] border border-[var(--app-border)] bg-[var(--app-panel-2)] p-4">
+              <div className="rounded-[12px] border border-[var(--app-border)] bg-[var(--app-panel-2)] p-4">
                 <p className="text-[11px] uppercase tracking-[0.12em] text-[var(--app-text-dim)]">API uptime</p>
                 <p className="mt-3 text-[28px] font-medium tracking-[-0.04em] text-[var(--app-text)]">
                   {stats.apiUptime}%
@@ -177,13 +177,13 @@ export default function AdminOverview() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
-            <div className="rounded-[18px] border border-[var(--app-border)] bg-[var(--app-panel)] p-5 shadow-[var(--shadow-sm)] backdrop-blur-xl">
+            <div className="rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel)] p-5 shadow-[var(--shadow-sm)] backdrop-blur-xl">
               <p className="text-sm font-medium text-[var(--app-text)]">Operational summary</p>
               <p className="mt-2 text-sm text-[var(--app-text-muted)]">
                 Usage is trending upward while the error rate remains contained. This dashboard is tuned for intervention, not decoration.
               </p>
             </div>
-            <div className="rounded-[18px] border border-[var(--app-border)] bg-[var(--app-panel)] p-5 shadow-[var(--shadow-sm)] backdrop-blur-xl">
+            <div className="rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel)] p-5 shadow-[var(--shadow-sm)] backdrop-blur-xl">
               <p className="text-sm font-medium text-[var(--app-text)]">Current risk</p>
               <p className="mt-2 text-[28px] font-medium tracking-[-0.04em] text-[var(--app-text)]">
                 {stats.errorRate}%
@@ -233,7 +233,7 @@ export default function AdminOverview() {
           ].map((s) => (
             <div
               key={s.label}
-              className="rounded-[18px] border border-[var(--app-border)] bg-[var(--app-panel)] p-4 shadow-[var(--shadow-sm)] backdrop-blur-xl"
+              className="rounded-[14px] border border-[var(--app-border)] bg-[var(--app-panel)] p-4 shadow-[var(--shadow-sm)] backdrop-blur-xl"
             >
               <p className="mb-1 text-xs uppercase tracking-[0.12em] text-[var(--app-text-dim)]">{s.label}</p>
               <p className={cn("text-[24px] font-medium tracking-[-0.04em] text-[var(--app-text)]", s.color)}>
