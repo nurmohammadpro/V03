@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogOverlay, DialogPortal } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogOverlay, DialogPortal, DialogClose } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { Loader2 } from 'lucide-react';
+import { Loader2, X } from 'lucide-react';
 import { getLoginUrl } from '@/const';
 
 interface AuthModalProps {
@@ -52,11 +52,20 @@ export function AuthModal({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogPortal>
         <DialogOverlay className="bg-[radial-gradient(circle_at_top,_rgba(76,137,245,0.18),_transparent_34%),radial-gradient(circle_at_80%_20%,_rgba(49,194,142,0.08),_transparent_24%),rgba(1,4,8,0.68)] backdrop-blur-md" />
-        <DialogContent className="w-full max-w-md overflow-hidden rounded-[14px] border border-white/10 bg-[linear-gradient(180deg,rgba(12,16,22,0.94),rgba(8,11,16,0.96))] shadow-[var(--shadow-xl)] backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-[var(--duration-slow)]">
+        <DialogContent showCloseButton={false} className="w-full max-w-md overflow-hidden rounded-[14px] border border-white/10 bg-[linear-gradient(180deg,rgba(12,16,22,0.94),rgba(8,11,16,0.96))] shadow-[var(--shadow-xl)] backdrop-blur-2xl animate-in fade-in zoom-in-95 duration-[var(--duration-slow)]">
           <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top,_rgba(76,137,245,0.16),_transparent_36%),radial-gradient(circle_at_80%_18%,_rgba(49,194,142,0.07),_transparent_24%)]" />
           <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.03)_1px,transparent_1px)] bg-[size:28px_28px] opacity-[0.10] [mask-image:radial-gradient(circle_at_center,black_35%,transparent_82%)]" />
           <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-white/12" />
           <div className="relative">
+          <DialogClose asChild>
+            <button
+              type="button"
+              className="absolute right-0 top-0 inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-white/10 bg-white/5 text-white/55 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20"
+              aria-label="Close authentication modal"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </DialogClose>
           <DialogHeader>
             <DialogTitle className="font-heading text-2xl font-normal text-center">
               <span className="bg-gradient-to-r from-white/80 to-cyan-300 bg-clip-text text-transparent">
