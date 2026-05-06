@@ -18,7 +18,7 @@ function formatCurrency(v: number) {
 }
 
 export default function AdminOverview() {
-  const { stats, loading } = useAdminStats();
+  const { stats, loading, bootstrap, totalAdmins } = useAdminStats();
   const { users, loading: usersLoading } = useAdminUsers();
   const { activities, loading: activitiesLoading } = useActivityFeed();
 
@@ -46,11 +46,11 @@ export default function AdminOverview() {
 
             <div className="mt-6 grid gap-3 sm:grid-cols-3">
               <div className="rounded-[8px] bg-[var(--app-panel-2)] p-4">
-                <p className="text-[11px] uppercase tracking-[0.12em] text-[var(--app-text-dim)]">Live users</p>
+                <p className="text-[11px] uppercase tracking-[0.12em] text-[var(--app-text-dim)]">Active subscriptions</p>
                 <p className="mt-3 text-[22px] font-medium tracking-[-0.03em] text-[var(--app-text)]">
-                  {stats.activeUsers}
+                  {stats.activeSubscriptions}
                 </p>
-                <p className="mt-1 text-sm text-[var(--app-text-muted)]">currently active</p>
+                <p className="mt-1 text-sm text-[var(--app-text-muted)]">seeded paid or trial plans</p>
               </div>
               <div className="rounded-[8px] bg-[var(--app-panel-2)] p-4">
                 <p className="text-[11px] uppercase tracking-[0.12em] text-[var(--app-text-dim)]">Queue depth</p>
@@ -73,7 +73,7 @@ export default function AdminOverview() {
             <div className="rounded-[8px] bg-[var(--app-panel)] p-5 backdrop-blur-xl">
               <p className="text-sm font-normal text-[var(--app-text)]">Operational summary</p>
               <p className="mt-2 text-sm text-[var(--app-text-muted)]">
-                Usage is trending up while the error rate remains contained.
+                {bootstrap?.actor.email || "Admin actor"} currently has {totalAdmins} active admin assignment{totalAdmins === 1 ? "" : "s"} across the system.
               </p>
             </div>
             <div className="rounded-[8px] bg-[var(--app-panel)] p-5 backdrop-blur-xl">
@@ -120,8 +120,8 @@ export default function AdminOverview() {
         <section className="grid gap-4 grid-cols-2 sm:grid-cols-4">
           {[
             { label: "Active Users", value: stats.activeUsers, color: "" },
+            { label: "Suspended", value: stats.suspendedUsers, color: "" },
             { label: "API Uptime", value: `${stats.apiUptime}%`, color: "text-[var(--app-success)]" },
-            { label: "Error Rate", value: `${stats.errorRate}%`, color: "" },
             { label: "Queue Depth", value: stats.queueDepth, color: "" },
           ].map((s) => (
             <div

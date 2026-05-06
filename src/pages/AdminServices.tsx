@@ -1,9 +1,23 @@
 import { AdminShell } from "@/components/admin/AdminShell";
-import { useAdminAuditLogs, useServiceIntegrations } from "@/hooks/useDashboardData";
+import { useAdminAuditLogs, useServiceIntegrations, useUpdateServiceIntegration } from "@/hooks/useDashboardData";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export default function AdminServices() {
   const { services } = useServiceIntegrations();
   const { logs } = useAdminAuditLogs();
+  const updateService = useUpdateServiceIntegration();
+
+  async function handleToggleService(serviceId: string, status: string) {
+    const nextStatus = status === "active" ? "degraded" : "active";
+
+    try {
+      await updateService.mutateAsync({ serviceId, body: { status: nextStatus } });
+      toast.success(`Service moved to ${nextStatus}.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update service.");
+    }
+  }
 
   return (
     <AdminShell title="Other Services" subtitle="Supporting infrastructure, secrets, and operational safeguards.">
@@ -24,7 +38,18 @@ export default function AdminServices() {
                     <p className="text-sm text-[var(--app-text)]">{service.name}</p>
                     <p className="mt-1 text-sm text-[var(--app-text-muted)]">{service.note}</p>
                   </div>
-                  <span className="text-xs text-[var(--app-text-dim)]">{service.status}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-[var(--app-text-dim)]">{service.status}</span>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleToggleService(service.id, service.status)}
+                      className="rounded-[8px] border-0 bg-[var(--app-panel-2)] text-[var(--app-text-muted)] hover:bg-[var(--app-surface)] hover:text-[var(--app-text)]"
+                    >
+                      {service.status === "active" ? "Degrade" : "Activate"}
+                    </Button>
+                  </div>
                 </div>
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   <div>

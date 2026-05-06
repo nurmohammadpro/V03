@@ -1,4 +1,4 @@
-import type { AdminPermission, AdminRole, AiRoutingRule, ServiceIntegration } from "@/lib/types";
+import type { AdminPermission, AdminRole, AiRoutingRule, AuthActor, ServiceIntegration } from "@/lib/types";
 
 const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3001";
 
@@ -50,34 +50,13 @@ export const api = {
     request<{
       ok: boolean;
       token: string;
-      user: {
-        userId: string;
-        email: string;
-        fullName: string | null;
-        plan: string;
-        status: string;
-        isAdmin: boolean;
-        roleKeys: string[];
-        permissionKeys: string[];
-      };
+      user: AuthActor;
     }>("/api/auth/verify-otp", {
       method: "POST",
       body: { email, code },
     }),
 
-  getMe: () =>
-    request<{
-      user: {
-        userId: string;
-        email: string;
-        fullName: string | null;
-        plan: string;
-        status: string;
-        isAdmin: boolean;
-        roleKeys: string[];
-        permissionKeys: string[];
-      };
-    }>("/api/auth/me"),
+  getMe: () => request<{ user: AuthActor }>("/api/auth/me"),
 
   // Projects
   getProjects: () =>
@@ -97,16 +76,7 @@ export const api = {
   // Admin
   getAdminBootstrap: () =>
     request<{
-      actor: {
-        userId: string;
-        email: string;
-        fullName: string | null;
-        plan: string;
-        status: string;
-        isAdmin: boolean;
-        roleKeys: string[];
-        permissionKeys: string[];
-      };
+      actor: AuthActor;
       summary: {
         totalUsers: number;
         totalProjects: number;
@@ -162,6 +132,19 @@ export const api = {
       }>;
     }>("/api/admin/plans"),
 
+  updateAdminPlan: (id: string, body: { status?: string; name?: string; description?: string }) =>
+    request<{
+      plan: {
+        id: string;
+        status: string;
+        name: string;
+        description: string | null;
+      };
+    }>(`/api/admin/plans/${id}`, {
+      method: "PATCH",
+      body,
+    }),
+
   getAiProviders: () =>
     request<{
       providers: Array<{
@@ -192,11 +175,85 @@ export const api = {
   getAiRoutingRules: () =>
     request<{ rules: AiRoutingRule[] }>("/api/admin/ai/routing-rules"),
 
+  updateAiProvider: (id: string, body: { status?: string; weight?: number }) =>
+    request<{
+      provider: {
+        id: string;
+        status: string;
+        weight: number;
+      };
+    }>(`/api/admin/ai/providers/${id}`, {
+      method: "PATCH",
+      body,
+    }),
+
+  updateAiRoutingRule: (id: string, body: { isActive?: boolean; priority?: number }) =>
+    request<{
+      rule: {
+        id: string;
+        isActive: boolean;
+        priority: number;
+      };
+    }>(`/api/admin/ai/routing-rules/${id}`, {
+      method: "PUT",
+      body,
+    }),
+
   getServiceIntegrations: () =>
     request<{ services: ServiceIntegration[] }>("/api/admin/services"),
 
+  updateServiceIntegration: (id: string, body: { status?: string; note?: string }) =>
+    request<{
+      service: {
+        id: string;
+        status: string;
+      };
+    }>(`/api/admin/services/${id}`, {
+      method: "PATCH",
+      body,
+    }),
+
   getAdminRbac: () =>
     request<{ roles: AdminRole[]; permissions: AdminPermission[] }>("/api/admin/rbac/roles"),
+
+  updateAdminUserStatus: (id: string, status: string) =>
+    request<{
+      user: {
+        id: string;
+        status: string;
+      };
+    }>(`/api/admin/users/${id}/status`, {
+      method: "PATCH",
+      body: { status },
+    }),
+
+  updateAdminUserPlan: (id: string, planKey: string, billingCycle = "monthly") =>
+    request<{
+      user: {
+        id: string;
+        plan: string;
+      };
+      subscription: {
+        id: string;
+        status: string;
+        billingCycle: string;
+      };
+    }>(`/api/admin/users/${id}/plan`, {
+      method: "PATCH",
+      body: { planKey, billingCycle, status: "active" },
+    }),
+
+  assignAdminRole: (id: string, roleId: string) =>
+    request<{
+      assignment: {
+        id: string;
+        userId: string;
+        roleId: string;
+      };
+    }>(`/api/admin/users/${id}/roles`, {
+      method: "POST",
+      body: { roleId },
+    }),
 
   // Health
   health: () => request<{ status: string; service: string; version: string }>("/api/health"),

@@ -6,6 +6,17 @@ export type FeatureType = "boolean" | "limit" | "text";
 export type ProviderStatus = "active" | "degraded" | "disabled";
 export type ServiceStatus = "active" | "degraded" | "disabled";
 
+export interface AuthActor {
+  userId: string;
+  email: string;
+  fullName: string | null;
+  plan: string;
+  status: string;
+  isAdmin: boolean;
+  roleKeys: string[];
+  permissionKeys: string[];
+}
+
 export interface User {
   id: string;
   email: string;

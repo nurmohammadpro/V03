@@ -19,6 +19,7 @@ interface AdminShellProps {
 export function AdminShell({ title, subtitle, children, badge, headerActions }: AdminShellProps) {
   const { user } = useAuth();
   const [dateRange] = useState<"7d" | "30d" | "90d">("30d");
+  const primaryRole = user?.roleKeys?.[0]?.replace(/_/g, " ") ?? "admin";
 
   return (
     <AppShell
@@ -81,14 +82,14 @@ export function AdminShell({ title, subtitle, children, badge, headerActions }: 
           </Avatar>
           <div className="min-w-0 flex-1">
             <p className="truncate text-[13px] font-normal text-[var(--app-text)]">
-              {user?.email?.split("@")[0] || "Admin"}
+              {user?.fullName || user?.email?.split("@")[0] || "Admin"}
             </p>
             <p className="truncate text-[11px] text-[var(--app-text-dim)]">
               {user?.email || "admin@v03.tech"}
             </p>
           </div>
           <Badge className="rounded-[6px] border-0 bg-[var(--app-accent-soft)] px-2 py-0.5 text-[10px] font-normal text-[var(--app-accent)]">
-            Admin
+            {primaryRole}
           </Badge>
         </div>
       }

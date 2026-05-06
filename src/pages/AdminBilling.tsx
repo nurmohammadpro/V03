@@ -1,9 +1,23 @@
 import { AdminShell } from "@/components/admin/AdminShell";
-import { useAdminStats, useSubscriptionPlans } from "@/hooks/useDashboardData";
+import { useAdminStats, useSubscriptionPlans, useUpdateAdminPlan } from "@/hooks/useDashboardData";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export default function AdminBilling() {
   const { stats } = useAdminStats();
   const { plans } = useSubscriptionPlans();
+  const updatePlan = useUpdateAdminPlan();
+
+  async function handleTogglePlanStatus(planId: string, status: string) {
+    const nextStatus = status === "active" ? "archived" : "active";
+
+    try {
+      await updatePlan.mutateAsync({ planId, body: { status: nextStatus } });
+      toast.success(`Plan moved to ${nextStatus}.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update plan.");
+    }
+  }
 
   return (
     <AdminShell title="Subscriptions" subtitle="Plans, pricing, feature packaging, and payer-side health.">
@@ -42,7 +56,18 @@ export default function AdminBilling() {
                     <p className="text-sm text-[var(--app-text)]">{plan.name}</p>
                     <p className="mt-1 text-sm text-[var(--app-text-muted)]">{plan.description}</p>
                   </div>
-                  <span className="text-xs text-[var(--app-text-dim)]">{plan.status}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-[var(--app-text-dim)]">{plan.status}</span>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleTogglePlanStatus(plan.id, plan.status)}
+                      className="rounded-[8px] border-0 bg-[var(--app-panel)] text-[var(--app-text-muted)] hover:bg-[var(--app-surface)] hover:text-[var(--app-text)]"
+                    >
+                      {plan.status === "active" ? "Archive" : "Activate"}
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="mt-4 grid gap-4 xl:grid-cols-[0.95fr_1.05fr]">

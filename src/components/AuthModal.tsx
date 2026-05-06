@@ -4,8 +4,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { Eye, EyeOff, Loader2, X } from 'lucide-react';
+import { Loader2, X } from 'lucide-react';
 import { getLoginUrl } from '@/const';
+import { toast } from 'sonner';
+import api from '@/lib/api';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -30,8 +32,9 @@ export function AuthModal({
 }: AuthModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('signin');
-  const [showSignInPassword, setShowSignInPassword] = useState(false);
-  const [showSignUpPassword, setShowSignUpPassword] = useState(false);
+  const [email, setEmail] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [otpRequested, setOtpRequested] = useState(false);
 
   const handleOAuthSignIn = (_provider?: string) => {
     if (onProviderSignIn) {
@@ -41,6 +44,45 @@ export function AuthModal({
     }
     setIsLoading(true);
     window.location.href = getLoginUrl();
+  };
+
+  const handleSendOtp = async () => {
+    if (!email.trim()) {
+      toast.error('Enter your email first.');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      await api.sendOtp(email.trim());
+      setOtpRequested(true);
+      toast.success('OTP sent. Check the gateway log or email provider integration.');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not send OTP.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!email.trim() || !otpCode.trim()) {
+      toast.error('Email and OTP code are required.');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const res = await api.verifyOtp(email.trim(), otpCode.trim());
+      localStorage.setItem('v03_token', res.token);
+      localStorage.setItem('v03-user', JSON.stringify(res.user));
+      toast.success('Signed in successfully.');
+      onClose();
+      window.location.href = res.user.isAdmin ? '/admin/overview' : '/dashboard';
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not verify OTP.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const tabClass = "data-[state=active]:bg-white/10 data-[state=active]:text-white text-white/50 font-light";
@@ -133,23 +175,36 @@ export function AuthModal({
                     <Input
                       type="email"
                       placeholder="Email"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
                       className="bg-black/40 border border-white/10 text-white placeholder-white/30 focus:border-white/20"
                     />
-                    <PasswordField
-                      visible={showSignInPassword}
-                      onToggle={() => setShowSignInPassword((value) => !value)}
-                      placeholder="Password"
-                    />
+                    {otpRequested ? (
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="6-digit OTP"
+                        value={otpCode}
+                        onChange={(event) => setOtpCode(event.target.value)}
+                        className="bg-black/40 border border-white/10 text-white placeholder-white/30 focus:border-white/20"
+                      />
+                    ) : null}
                     <Button
-                      disabled
-                      className="w-full bg-white/5 text-white/30 cursor-not-allowed font-light"
+                      onClick={otpRequested ? handleVerifyOtp : handleSendOtp}
+                      disabled={isLoading}
+                      className="w-full bg-white/10 hover:bg-white/15 text-white font-light border border-white/10"
                     >
-                      Sign In
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          {otpRequested ? 'Verifying...' : 'Sending OTP...'}
+                        </>
+                      ) : otpRequested ? 'Verify OTP' : 'Send OTP'}
                     </Button>
                   </div>
 
                   <p className="text-xs text-white/30 text-center font-light">
-                    Email/password coming soon. Use GitHub, Google, or Apple for now.
+                    Use gateway OTP sign-in for now. Password auth is still disabled.
                   </p>
                 </>
               )}
@@ -193,23 +248,36 @@ export function AuthModal({
                     <Input
                       type="email"
                       placeholder="Email"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
                       className="bg-black/40 border border-white/10 text-white placeholder-white/30 focus:border-white/20"
                     />
-                    <PasswordField
-                      visible={showSignUpPassword}
-                      onToggle={() => setShowSignUpPassword((value) => !value)}
-                      placeholder="Password"
-                    />
+                    {otpRequested ? (
+                      <Input
+                        type="text"
+                        inputMode="numeric"
+                        placeholder="6-digit OTP"
+                        value={otpCode}
+                        onChange={(event) => setOtpCode(event.target.value)}
+                        className="bg-black/40 border border-white/10 text-white placeholder-white/30 focus:border-white/20"
+                      />
+                    ) : null}
                     <Button
-                      disabled
-                      className="w-full bg-white/5 text-white/30 cursor-not-allowed font-light"
+                      onClick={otpRequested ? handleVerifyOtp : handleSendOtp}
+                      disabled={isLoading}
+                      className="w-full bg-white/10 hover:bg-white/15 text-white font-light border border-white/10"
                     >
-                      Sign Up
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          {otpRequested ? 'Verifying...' : 'Sending OTP...'}
+                        </>
+                      ) : otpRequested ? 'Verify OTP' : 'Send OTP'}
                     </Button>
                   </div>
 
                   <p className="text-xs text-white/30 text-center font-light">
-                    Email/password coming soon. Use GitHub, Google, or Apple for now.
+                    New accounts can also start through the same OTP flow.
                   </p>
                 </>
               )}
@@ -223,34 +291,6 @@ export function AuthModal({
         </DialogContent>
       </DialogPortal>
     </Dialog>
-  );
-}
-
-function PasswordField({
-  visible,
-  onToggle,
-  placeholder,
-}: {
-  visible: boolean;
-  onToggle: () => void;
-  placeholder: string;
-}) {
-  return (
-    <div className="relative">
-      <Input
-        type={visible ? "text" : "password"}
-        placeholder={placeholder}
-        className="bg-black/40 border border-white/10 pr-10 text-white placeholder-white/30 focus:border-white/20"
-      />
-      <button
-        type="button"
-        onClick={onToggle}
-        className="absolute right-0 top-0 inline-flex h-9 w-9 items-center justify-center text-white/40 transition-colors hover:text-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20"
-        aria-label={visible ? "Hide password" : "Show password"}
-      >
-        {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-      </button>
-    </div>
   );
 }
 

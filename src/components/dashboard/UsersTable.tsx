@@ -11,6 +11,11 @@ import { toast } from "sonner";
 interface UsersTableProps {
   users: User[];
   loading?: boolean;
+  onViewProfile?: (user: User) => void;
+  onToggleStatus?: (user: User) => void;
+  onUpgradePlan?: (user: User) => void;
+  onDowngradePlan?: (user: User) => void;
+  onAssignAdminRole?: (user: User) => void;
 }
 
 const STATUS_STYLES: Record<string, string> = {
@@ -34,7 +39,15 @@ function TableRowSkeleton() {
   );
 }
 
-export function UsersTable({ users, loading }: UsersTableProps) {
+export function UsersTable({
+  users,
+  loading,
+  onViewProfile,
+  onToggleStatus,
+  onUpgradePlan,
+  onDowngradePlan,
+  onAssignAdminRole,
+}: UsersTableProps) {
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<"all" | "admin" | "user">("all");
 
@@ -161,24 +174,31 @@ export function UsersTable({ users, loading }: UsersTableProps) {
                     items={[
                       {
                         label: "View profile",
-                        onSelect: () => toast.info("Profile panel wiring is queued for API integration"),
+                        onSelect: () => (onViewProfile ? onViewProfile(user) : toast.info("Profile panel wiring is queued for API integration")),
                       },
                       {
                         label: user.status === "suspended" ? "Unsuspend user" : "Suspend user",
-                        onSelect: () => toast.info("User status actions are not wired yet"),
+                        onSelect: () => (onToggleStatus ? onToggleStatus(user) : toast.info("User status actions are not wired yet")),
                       },
                       {
                         label: "Upgrade plan",
-                        onSelect: () => toast.info("Plan change actions are not wired yet"),
+                        onSelect: () => (onUpgradePlan ? onUpgradePlan(user) : toast.info("Plan change actions are not wired yet")),
                       },
                       {
                         label: "Downgrade plan",
-                        onSelect: () => toast.info("Plan change actions are not wired yet"),
+                        onSelect: () => (onDowngradePlan ? onDowngradePlan(user) : toast.info("Plan change actions are not wired yet")),
                       },
-                      {
-                        label: user.role === "admin" ? "Remove admin role" : "Promote to admin",
-                        onSelect: () => toast.info("Role actions are not wired yet"),
-                      },
+                      ...(user.role === "admin"
+                        ? []
+                        : [
+                            {
+                              label: "Assign admin role",
+                              onSelect: () =>
+                                onAssignAdminRole
+                                  ? onAssignAdminRole(user)
+                                  : toast.info("Role actions are not wired yet"),
+                            },
+                          ]),
                     ]}
                   />
                 </div>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
   Activity,
   AdminAuditLog,
@@ -329,17 +329,32 @@ const MOCK_ACTIVITIES: Activity[] = [
 ];
 
 export function useAdminStats() {
-  const [loading] = useState(false);
-  const [error] = useState<string | null>(null);
+  const query = useQuery({
+    queryKey: ["admin-bootstrap"],
+    queryFn: async () => {
+      try {
+        return await api.getAdminBootstrap();
+      } catch {
+        return null;
+      }
+    },
+    staleTime: 30_000,
+  });
+
+  const bootstrap = query.data;
+  const totalUsers = bootstrap?.summary.totalUsers ?? 1234;
+  const totalProjects = bootstrap?.summary.totalProjects ?? 456;
+  const activeSubscriptions = bootstrap?.summary.activeSubscriptions ?? 384;
+  const totalAdmins = bootstrap?.summary.totalAdmins ?? 2;
 
   const stats: AdminStats = {
-    totalUsers: 1234,
-    totalProjects: 456,
+    totalUsers,
+    totalProjects,
     generationsToday: 89,
     revenue: 12430,
-    activeUsers: 892,
-    suspendedUsers: 28,
-    activeSubscriptions: 384,
+    activeUsers: Math.max(0, Math.round(totalUsers * 0.72)),
+    suspendedUsers: Math.max(0, Math.round(totalUsers * 0.02)),
+    activeSubscriptions,
     errorRate: 0.8,
     apiUptime: 99.97,
     queueDepth: 3,
@@ -351,7 +366,7 @@ export function useAdminStats() {
     revenueTrend: generateTrend("revenue", 30, 400, 200),
   };
 
-  return { stats, loading, error };
+  return { stats, loading: query.isLoading, error: query.error instanceof Error ? query.error.message : null, bootstrap, totalAdmins };
 }
 
 export function useAdminUsers() {
@@ -531,6 +546,96 @@ export function useAdminRbac() {
     permissions: query.data?.permissions ?? MOCK_PERMISSIONS,
     loading: query.isLoading,
   };
+}
+
+export function useUpdateAdminUserStatus() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ userId, status }: { userId: string; status: string }) =>
+      api.updateAdminUserStatus(userId, status),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+      qc.invalidateQueries({ queryKey: ["admin-bootstrap"] });
+    },
+  });
+}
+
+export function useUpdateAdminUserPlan() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ userId, planKey }: { userId: string; planKey: string }) =>
+      api.updateAdminUserPlan(userId, planKey),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+      qc.invalidateQueries({ queryKey: ["admin-plans"] });
+    },
+  });
+}
+
+export function useAssignAdminRole() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ userId, roleId }: { userId: string; roleId: string }) =>
+      api.assignAdminRole(userId, roleId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-users"] });
+      qc.invalidateQueries({ queryKey: ["admin-rbac"] });
+      qc.invalidateQueries({ queryKey: ["admin-bootstrap"] });
+    },
+  });
+}
+
+export function useUpdateAdminPlan() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ planId, body }: { planId: string; body: { status?: string; name?: string; description?: string } }) =>
+      api.updateAdminPlan(planId, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-plans"] });
+      qc.invalidateQueries({ queryKey: ["admin-bootstrap"] });
+    },
+  });
+}
+
+export function useUpdateAiProvider() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ providerId, body }: { providerId: string; body: { status?: string; weight?: number } }) =>
+      api.updateAiProvider(providerId, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-ai-providers"] });
+      qc.invalidateQueries({ queryKey: ["admin-bootstrap"] });
+    },
+  });
+}
+
+export function useUpdateAiRoutingRule() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ ruleId, body }: { ruleId: string; body: { isActive?: boolean; priority?: number } }) =>
+      api.updateAiRoutingRule(ruleId, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-ai-routing-rules"] });
+    },
+  });
+}
+
+export function useUpdateServiceIntegration() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ serviceId, body }: { serviceId: string; body: { status?: string; note?: string } }) =>
+      api.updateServiceIntegration(serviceId, body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-services"] });
+    },
+  });
 }
 
 export function useAdminAuditLogs() {

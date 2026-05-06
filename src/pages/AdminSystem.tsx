@@ -1,10 +1,43 @@
 import { AdminShell } from "@/components/admin/AdminShell";
-import { useAiProviders, useAiRoutingRules, useAdminStats } from "@/hooks/useDashboardData";
+import { useAiProviders, useAiRoutingRules, useAdminStats, useUpdateAiProvider, useUpdateAiRoutingRule } from "@/hooks/useDashboardData";
+import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export default function AdminSystem() {
   const { stats } = useAdminStats();
   const { providers } = useAiProviders();
   const { rules } = useAiRoutingRules();
+  const updateProvider = useUpdateAiProvider();
+  const updateRule = useUpdateAiRoutingRule();
+
+  async function handleToggleProvider(providerId: string, status: string) {
+    const nextStatus = status === "active" ? "disabled" : "active";
+
+    try {
+      await updateProvider.mutateAsync({ providerId, body: { status: nextStatus } });
+      toast.success(`Provider moved to ${nextStatus}.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update provider.");
+    }
+  }
+
+  async function handleAdjustWeight(providerId: string, nextWeight: number) {
+    try {
+      await updateProvider.mutateAsync({ providerId, body: { weight: nextWeight } });
+      toast.success(`Provider weight set to ${nextWeight}.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update weight.");
+    }
+  }
+
+  async function handleToggleRule(ruleId: string, isActive: boolean) {
+    try {
+      await updateRule.mutateAsync({ ruleId, body: { isActive: !isActive } });
+      toast.success(`Routing rule ${!isActive ? "enabled" : "disabled"}.`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not update routing rule.");
+    }
+  }
 
   return (
     <AdminShell title="AI Management" subtitle="Providers, models, routing policy, and cost-quality control.">
@@ -35,12 +68,34 @@ export default function AdminSystem() {
                       <p className="text-sm text-[var(--app-text)]">{provider.name}</p>
                       <p className="mt-1 text-sm text-[var(--app-text-muted)]">{provider.baseUrl}</p>
                     </div>
-                    <span className="text-xs text-[var(--app-text-dim)]">{provider.status}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-[var(--app-text-dim)]">{provider.status}</span>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleToggleProvider(provider.id, provider.status)}
+                        className="rounded-[8px] border-0 bg-[var(--app-panel)] text-[var(--app-text-muted)] hover:bg-[var(--app-surface)] hover:text-[var(--app-text)]"
+                      >
+                        {provider.status === "active" ? "Disable" : "Enable"}
+                      </Button>
+                    </div>
                   </div>
                   <div className="mt-4 grid gap-3 sm:grid-cols-4">
                     <div>
                       <p className="text-[11px] uppercase tracking-[0.12em] text-[var(--app-text-dim)]">Weight</p>
-                      <p className="mt-2 text-sm text-[var(--app-text)]">{provider.weight}%</p>
+                      <div className="mt-2 flex items-center gap-2">
+                        <p className="text-sm text-[var(--app-text)]">{provider.weight}%</p>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleAdjustWeight(provider.id, Math.min(100, provider.weight + 5))}
+                          className="h-7 rounded-[7px] border-0 bg-[var(--app-panel)] px-2 text-[11px] text-[var(--app-text-muted)] hover:bg-[var(--app-surface)] hover:text-[var(--app-text)]"
+                        >
+                          +5
+                        </Button>
+                      </div>
                     </div>
                     <div>
                       <p className="text-[11px] uppercase tracking-[0.12em] text-[var(--app-text-dim)]">Health</p>
@@ -81,7 +136,18 @@ export default function AdminSystem() {
                 <div key={rule.id} className="rounded-[8px] bg-[var(--app-panel-2)] p-4">
                   <div className="flex items-center justify-between gap-3">
                     <p className="text-sm text-[var(--app-text)]">{rule.name}</p>
-                    <span className="text-xs text-[var(--app-text-dim)]">P{rule.priority}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-[var(--app-text-dim)]">P{rule.priority}</span>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleToggleRule(rule.id, rule.isActive)}
+                        className="rounded-[8px] border-0 bg-[var(--app-panel)] text-[var(--app-text-muted)] hover:bg-[var(--app-surface)] hover:text-[var(--app-text)]"
+                      >
+                        {rule.isActive ? "Disable" : "Enable"}
+                      </Button>
+                    </div>
                   </div>
                   <p className="mt-2 text-sm leading-6 text-[var(--app-text-muted)]">{rule.matchSummary}</p>
                   <div className="mt-3 space-y-1 text-sm text-[var(--app-text-muted)]">
