@@ -1,87 +1,197 @@
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { useState } from "react";
+import { useAuth } from "@/_core/hooks/useAuth";
 import { Sidebar } from "@/components/shared/Sidebar";
-
-const STATS = [
-  { label: "Total Users", value: "1,234", change: "+12%", icon: "👥" },
-  { label: "Total Projects", value: "456", change: "+8%", icon: "📁" },
-  { label: "Generations Today", value: "89", change: "+23%", icon: "⚡" },
-  { label: "Revenue", value: "$12,430", change: "+15%", icon: "💰" },
-];
+import { StatCard } from "@/components/dashboard/StatCard";
+import { TrendChart } from "@/components/dashboard/Charts";
+import { UsersTable } from "@/components/dashboard/UsersTable";
+import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import {
+  Users,
+  FolderKanban,
+  Zap,
+  DollarSign,
+  Activity,
+  RefreshCw,
+  Download,
+  UserPlus,
+  Gauge,
+} from "lucide-react";
+import { useAdminStats, useAdminUsers, useActivityFeed } from "@/hooks/useDashboardData";
+import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
   {
     label: "Projects",
     href: "/dashboard",
     active: false,
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-      </svg>
-    ),
+    icon: <FolderKanban className="w-5 h-5" />,
   },
   {
     label: "Admin",
     href: "/admin/overview",
     active: true,
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-      </svg>
-    ),
+    icon: <Gauge className="w-5 h-5" />,
   },
 ];
 
+function formatCurrency(v: number) {
+  if (v >= 1000) return `$${(v / 1000).toFixed(1)}k`;
+  return `$${v}`;
+}
+
 export default function AdminOverview() {
+  const { user } = useAuth();
+  const { stats, loading } = useAdminStats();
+  const { users, loading: usersLoading } = useAdminUsers();
+  const { activities, loading: activitiesLoading } = useActivityFeed();
+  const [dateRange] = useState<"7d" | "30d" | "90d">("30d");
+
   return (
     <div className="min-h-screen bg-background flex">
-      <Sidebar navItems={NAV_ITEMS} />
-
-      <main className="flex-1 p-8">
-        <div className="max-w-5xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground">Admin Overview</h1>
-            <p className="text-muted-foreground mt-1">Platform analytics and metrics</p>
+      <Sidebar
+        navItems={NAV_ITEMS}
+        userFooter={
+          <div className="flex items-center gap-3 px-3 py-2 text-sm text-muted-foreground">
+            <Avatar size="sm">
+              <AvatarFallback>{user?.email?.[0]?.toUpperCase() || "A"}</AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-medium text-foreground">{user?.email || "Admin"}</p>
+              <Badge className="mt-0.5 text-[10px] px-1.5 py-0 bg-primary/10 text-primary border-0">
+                Admin
+              </Badge>
+            </div>
           </div>
+        }
+      />
 
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {STATS.map((stat) => (
-              <Card key={stat.label}>
-                <CardContent className="pt-6">
-                  <div className="flex items-center justify-between mb-4">
-                    <span className="text-2xl">{stat.icon}</span>
-                    <span className="text-xs font-medium text-green-500 bg-green-500/10 px-2 py-1 rounded-full">
-                      {stat.change}
-                    </span>
-                  </div>
-                  <p className="text-2xl font-bold text-foreground">{stat.value}</p>
-                  <p className="text-sm text-muted-foreground mt-1">{stat.label}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-
-          <Card className="mt-8">
-            <CardHeader>
-              <CardTitle>Recent Activity</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {[
-                  { color: "bg-green-500", text: "New user registered", time: "2 minutes ago" },
-                  { color: "bg-blue-500", text: 'Project created: "E-commerce App"', time: "15 minutes ago" },
-                  { color: "bg-purple-500", text: "Generation completed (React + Tailwind)", time: "1 hour ago" },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-4 py-3 border-b border-border last:border-0">
-                    <div className={`w-2 h-2 rounded-full ${item.color}`} />
-                    <div className="flex-1">
-                      <p className="text-sm text-foreground">{item.text}</p>
-                      <p className="text-xs text-muted-foreground">{item.time}</p>
-                    </div>
-                  </div>
+      <main className="flex-1 overflow-y-auto">
+        <div className="max-w-6xl mx-auto p-6 lg:p-8 space-y-8">
+          {/* ── Header ── */}
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground tracking-tight">
+                Admin Overview
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                Platform analytics and management
+              </p>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="flex gap-1 bg-muted p-0.5 rounded-lg text-xs">
+                {(["7d", "30d", "90d"] as const).map((range) => (
+                  <button
+                    key={range}
+                    onClick={() => {}}
+                    className={cn(
+                      "px-3 py-1.5 font-medium rounded-md transition-colors",
+                      dateRange === range
+                        ? "bg-background text-foreground shadow-sm"
+                        : "text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    {range}
+                  </button>
                 ))}
               </div>
-            </CardContent>
-          </Card>
+              <Button variant="outline" size="sm">
+                <RefreshCw className="w-4 h-4 mr-1.5" />
+                Refresh
+              </Button>
+              <Button variant="outline" size="sm">
+                <Download className="w-4 h-4 mr-1.5" />
+                Export
+              </Button>
+              <Button size="sm">
+                <UserPlus className="w-4 h-4 mr-1.5" />
+                Invite
+              </Button>
+            </div>
+          </div>
+
+          {/* ── Stats Grid ── */}
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <StatCard
+              title="Total Users"
+              value={stats.totalUsers.toLocaleString()}
+              change={stats.userGrowth}
+              loading={loading}
+              icon={<Users className="w-5 h-5" />}
+            />
+            <StatCard
+              title="Total Projects"
+              value={stats.totalProjects.toLocaleString()}
+              change={stats.projectGrowth}
+              loading={loading}
+              icon={<FolderKanban className="w-5 h-5" />}
+            />
+            <StatCard
+              title="Generations Today"
+              value={stats.generationsToday.toLocaleString()}
+              change={stats.generationGrowth}
+              loading={loading}
+              icon={<Zap className="w-5 h-5" />}
+            />
+            <StatCard
+              title="Revenue"
+              value={formatCurrency(stats.revenue)}
+              change={stats.revenueGrowth}
+              loading={loading}
+              icon={<DollarSign className="w-5 h-5" />}
+            />
+          </div>
+
+          {/* ── Secondary Stats ── */}
+          <div className="grid gap-4 grid-cols-2 sm:grid-cols-4">
+            <div className="rounded-xl border border-border bg-card p-4">
+              <p className="text-xs text-muted-foreground mb-1">Active Users</p>
+              <p className="text-xl font-bold text-foreground">{stats.activeUsers}</p>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-4">
+              <p className="text-xs text-muted-foreground mb-1">API Uptime</p>
+              <p className="text-xl font-bold text-green-500">{stats.apiUptime}%</p>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-4">
+              <p className="text-xs text-muted-foreground mb-1">Error Rate</p>
+              <p className="text-xl font-bold text-foreground">{stats.errorRate}%</p>
+            </div>
+            <div className="rounded-xl border border-border bg-card p-4">
+              <p className="text-xs text-muted-foreground mb-1">Queue Depth</p>
+              <p className="text-xl font-bold text-foreground">{stats.queueDepth}</p>
+            </div>
+          </div>
+
+          {/* ── Charts Row ── */}
+          <div className="grid gap-6 md:grid-cols-2">
+            <TrendChart
+              title="Revenue (30 days)"
+              data={stats.revenueTrend}
+              variant="area"
+              color="hsl(142, 76%, 36%)"
+              formatValue={(v) => `$${v}`}
+              loading={loading}
+            />
+            <TrendChart
+              title="User Growth (30 days)"
+              data={stats.userTrend}
+              variant="bar"
+              color="hsl(221, 83%, 53%)"
+              loading={loading}
+            />
+          </div>
+
+          {/* ── Users Table ── */}
+          <UsersTable users={users} loading={usersLoading} />
+
+          {/* ── Activity Feed ── */}
+          <ActivityFeed
+            activities={activities}
+            loading={activitiesLoading}
+            title="Platform Activity"
+          />
         </div>
       </main>
     </div>

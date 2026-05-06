@@ -1,42 +1,38 @@
 import { useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Sidebar } from "@/components/shared/Sidebar";
-
-const MOCK_PROJECTS = [
-  { id: "1", name: "My First App", framework: "React", createdAt: "2026-05-01" },
-  { id: "2", name: "Blog Engine", framework: "Next.js", createdAt: "2026-05-03" },
-  { id: "3", name: "Admin Panel", framework: "Vue", createdAt: "2026-05-04" },
-];
+import { ProjectsGrid } from "@/components/dashboard/ProjectsGrid";
+import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
+import { CreateProjectDialog } from "@/components/dashboard/CreateProjectDialog";
+import { StatCard } from "@/components/dashboard/StatCard";
+import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { useProjects } from "@/hooks/useProjects";
+import { useActivityFeed, useUserStats } from "@/hooks/useDashboardData";
+import { FolderKanban, Gauge, Zap, HardDrive, Plus, Sparkles } from "lucide-react";
 
 const NAV_ITEMS = [
   {
     label: "Projects",
     href: "/dashboard",
     active: true,
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-      </svg>
-    ),
+    icon: <FolderKanban className="w-5 h-5" />,
   },
   {
     label: "Admin",
     href: "/admin/overview",
     active: false,
-    icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-      </svg>
-    ),
+    icon: <Gauge className="w-5 h-5" />,
   },
 ];
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const [projects] = useState(MOCK_PROJECTS);
+  const { data: projects = [], isLoading: projectsLoading } = useProjects();
+  const { activities, loading: activitiesLoading } = useActivityFeed();
+  const { stats: userStats, loading: statsLoading } = useUserStats();
+  const [createOpen, setCreateOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -47,57 +43,154 @@ export default function Dashboard() {
             <Avatar size="sm">
               <AvatarFallback>{user?.email?.[0]?.toUpperCase() || "U"}</AvatarFallback>
             </Avatar>
-            <span className="truncate">{user?.email || "Guest"}</span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-medium text-foreground">{user?.email || "Guest"}</p>
+              <Badge variant="outline" className="mt-0.5 text-[10px] px-1.5 py-0">
+                Pro
+              </Badge>
+            </div>
           </div>
         }
       />
 
-      <main className="flex-1 p-8">
-        <div className="max-w-5xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
+      <main className="flex-1 overflow-y-auto">
+        <div className="max-w-6xl mx-auto p-6 lg:p-8 space-y-8">
+          {/* ── Header ── */}
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Projects</h1>
-              <p className="text-muted-foreground mt-1">Manage your v03 projects</p>
+              <h1 className="text-3xl font-bold text-foreground tracking-tight">
+                Dashboard
+              </h1>
+              <p className="text-muted-foreground mt-1">
+                Welcome back{user?.email ? `, ${user.email.split("@")[0]}` : ""} 👋
+              </p>
             </div>
-            <Button>Create New Project</Button>
+            <Button onClick={() => setCreateOpen(true)} className="gap-1.5">
+              <Plus className="w-4 h-4" />
+              Create New Project
+            </Button>
           </div>
 
-          {projects.length === 0 ? (
-            <div className="text-center py-20">
-              <div className="text-6xl mb-4">🚀</div>
-              <h3 className="text-xl font-semibold text-foreground mb-2">No projects yet</h3>
-              <p className="text-muted-foreground mb-6">Create your first project to get started</p>
-              <Button>Create New Project</Button>
+          {/* ── Usage Stats ── */}
+          {!statsLoading && (
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="rounded-xl border border-border bg-card p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                    <Zap className="w-3.5 h-3.5" /> Daily Generations
+                  </span>
+                  <span className="text-xs font-medium text-foreground">
+                    {userStats.generationsToday} / {userStats.dailyLimit}
+                  </span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-primary rounded-full transition-all"
+                    style={{
+                      width: `${Math.min(
+                        100,
+                        (userStats.generationsToday / userStats.dailyLimit) * 100
+                      )}%`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-border bg-card p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                    <HardDrive className="w-3.5 h-3.5" /> Storage
+                  </span>
+                  <span className="text-xs font-medium text-foreground">
+                    {userStats.storageUsed}MB / {userStats.storageLimit}MB
+                  </span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-amber-500 rounded-full transition-all"
+                    style={{
+                      width: `${Math.min(
+                        100,
+                        (userStats.storageUsed / userStats.storageLimit) * 100
+                      )}%`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-border bg-card p-4 space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                    <FolderKanban className="w-3.5 h-3.5" /> Total Projects
+                  </span>
+                  <span className="text-xs font-medium text-foreground">
+                    {userStats.projectsCount}
+                  </span>
+                </div>
+                <div className="h-2 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-violet-500 rounded-full transition-all"
+                    style={{
+                      width: `${Math.min(100, (userStats.projectsCount / 20) * 100)}%`,
+                    }}
+                  />
+                </div>
+              </div>
             </div>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {projects.map((project) => (
-                <Card
-                  key={project.id}
-                  className="hover:shadow-[var(--shadow-lg)] hover:border-primary/50 transition-all cursor-pointer"
-                >
-                  <CardHeader>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center text-primary font-bold">
-                        {project.name[0]}
-                      </div>
-                      <div>
-                        <CardTitle>{project.name}</CardTitle>
-                        <p className="text-xs text-muted-foreground">{project.framework}</p>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-xs text-muted-foreground">
-                      Created {project.createdAt}
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
+          )}
+
+          {/* ── Welcome / Onboarding Banner ── */}
+          {projects.length === 0 && !projectsLoading && (
+            <div className="relative overflow-hidden rounded-xl border border-border bg-gradient-to-br from-primary/5 via-background to-background p-6 lg:p-8">
+              <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-primary/10 to-transparent rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
+              <div className="relative">
+                <Sparkles className="w-8 h-8 text-primary mb-3" />
+                <h2 className="text-xl font-bold text-foreground mb-1">
+                  Welcome to v03
+                </h2>
+                <p className="text-sm text-muted-foreground max-w-lg mb-4">
+                  Create your first project to start building with AI. Choose a template
+                  or start from scratch — we'll generate the code for you.
+                </p>
+                <div className="flex gap-3">
+                  <Button onClick={() => setCreateOpen(true)} className="gap-1.5">
+                    <Plus className="w-4 h-4" />
+                    Create Project
+                  </Button>
+                  <Button variant="outline" onClick={() => setCreateOpen(true)}>
+                    Browse Templates
+                  </Button>
+                </div>
+              </div>
             </div>
+          )}
+
+          {/* ── Projects Grid ── */}
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-foreground">Your Projects</h2>
+              {projects.length > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {projects.length} project{projects.length !== 1 ? "s" : ""}
+                </p>
+              )}
+            </div>
+            <ProjectsGrid projects={projects} loading={projectsLoading} />
+          </div>
+
+          {/* ── Activity Feed ── */}
+          {activities.length > 0 && (
+            <ActivityFeed
+              activities={activities}
+              loading={activitiesLoading}
+              title="Recent Activity"
+            />
           )}
         </div>
       </main>
+
+      {/* ── Create Project Dialog ── */}
+      <CreateProjectDialog open={createOpen} onOpenChange={setCreateOpen} />
     </div>
   );
 }
