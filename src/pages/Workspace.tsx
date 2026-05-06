@@ -122,7 +122,6 @@ export default function Workspace() {
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const sseCleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -138,28 +137,22 @@ export default function Workspace() {
       const assistantMsg = createChatMessage("assistant", "");
       addMessage(assistantMsg);
 
+      // SSE mode disabled — using mock responses for now
       try {
-        const url = getChatSSEUrl();
-        if (url) {
-          const cleanup = connectSSE(url, (data) => {
-            if (data.content) {
-              appendToLastAssistantMessage(data.content);
-            }
-            if (data.done) {
-              updateLastAssistantMessage(
-                useWorkspaceStore.getState().messages.findLast(
-                  (m: ChatMessage) => m.role === "assistant"
-                )?.content ?? ""
-              );
-              if (data.files) {
-                setFiles(buildFileNodes(data.files));
-              }
-            }
-          });
-          sseCleanupRef.current = cleanup;
-        } else {
-          throw new Error("No SSE URL");
-        }
+        // For real backend, connect with:
+        // const url = getChatSSEUrl(projectId);
+        // sseCleanupRef.current = connectSSE(url, {
+        //   onTextDelta: (text) => appendToLastAssistantMessage(text),
+        //   onDone: (data) => {
+        //     updateLastAssistantMessage(
+        //       [...useWorkspaceStore.getState().messages].reverse().find(
+        //         (m: ChatMessage) => m.role === "assistant"
+        //       )?.content ?? ""
+        //     );
+        //     if (data.files) setFiles(buildFileNodes(data.files));
+        //   },
+        // });
+        throw new Error("No SSE URL");
       } catch {
         console.log("Backend unavailable, using mock response");
         const mock = MOCK_RESPONSES[framework] ?? MOCK_RESPONSES["Next.js"];
