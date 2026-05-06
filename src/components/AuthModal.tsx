@@ -4,7 +4,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, X } from 'lucide-react';
+import { Eye, EyeOff, Loader2, X } from 'lucide-react';
 import { getLoginUrl } from '@/const';
 
 interface AuthModalProps {
@@ -30,6 +30,8 @@ export function AuthModal({
 }: AuthModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('signin');
+  const [showSignInPassword, setShowSignInPassword] = useState(false);
+  const [showSignUpPassword, setShowSignUpPassword] = useState(false);
 
   const handleOAuthSignIn = (_provider?: string) => {
     if (onProviderSignIn) {
@@ -133,10 +135,10 @@ export function AuthModal({
                       placeholder="Email"
                       className="bg-black/40 border border-white/10 text-white placeholder-white/30 focus:border-white/20"
                     />
-                    <Input
-                      type="password"
+                    <PasswordField
+                      visible={showSignInPassword}
+                      onToggle={() => setShowSignInPassword((value) => !value)}
                       placeholder="Password"
-                      className="bg-black/40 border border-white/10 text-white placeholder-white/30 focus:border-white/20"
                     />
                     <Button
                       disabled
@@ -193,10 +195,10 @@ export function AuthModal({
                       placeholder="Email"
                       className="bg-black/40 border border-white/10 text-white placeholder-white/30 focus:border-white/20"
                     />
-                    <Input
-                      type="password"
+                    <PasswordField
+                      visible={showSignUpPassword}
+                      onToggle={() => setShowSignUpPassword((value) => !value)}
                       placeholder="Password"
-                      className="bg-black/40 border border-white/10 text-white placeholder-white/30 focus:border-white/20"
                     />
                     <Button
                       disabled
@@ -221,6 +223,34 @@ export function AuthModal({
         </DialogContent>
       </DialogPortal>
     </Dialog>
+  );
+}
+
+function PasswordField({
+  visible,
+  onToggle,
+  placeholder,
+}: {
+  visible: boolean;
+  onToggle: () => void;
+  placeholder: string;
+}) {
+  return (
+    <div className="relative">
+      <Input
+        type={visible ? "text" : "password"}
+        placeholder={placeholder}
+        className="bg-black/40 border border-white/10 pr-10 text-white placeholder-white/30 focus:border-white/20"
+      />
+      <button
+        type="button"
+        onClick={onToggle}
+        className="absolute right-0 top-0 inline-flex h-9 w-9 items-center justify-center text-white/40 transition-colors hover:text-white/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20"
+        aria-label={visible ? "Hide password" : "Show password"}
+      >
+        {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+      </button>
+    </div>
   );
 }
 
