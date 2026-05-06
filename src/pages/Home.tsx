@@ -40,13 +40,14 @@ export default function Home() {
             <div className="flex items-center gap-2">
               <ThemeToggle />
               <Button
-                variant="ghost"
+                type="button"
+                variant="outline"
                 size="icon"
                 onClick={() => setIsAuthModalOpen(true)}
-                className="rounded-full hover:bg-white/5 transition-colors"
+                className="h-9 w-9 rounded-full border-[var(--app-border-strong)] bg-[var(--app-panel)] text-[var(--app-text-muted)] shadow-none transition-colors hover:bg-[var(--app-panel-2)] hover:text-[var(--app-text)]"
                 aria-label="User menu"
               >
-                <User className="w-5 h-5 text-white/60" />
+                <User className="h-4 w-4" />
               </Button>
             </div>
           }
