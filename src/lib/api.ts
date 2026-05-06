@@ -1,6 +1,6 @@
 import type { AdminPermission, AdminRole, AiRoutingRule, AuthActor, ServiceIntegration } from "@/lib/types";
 
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:3001";
+const API_BASE = import.meta.env.VITE_API_URL || "/api";
 
 interface ApiOptions {
   method?: string;
@@ -28,7 +28,13 @@ async function request<T>(path: string, options: ApiOptions = {}): Promise<T> {
     (config.headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${API_BASE}${path}`, config);
+  let response: Response;
+
+  try {
+    response = await fetch(`${API_BASE}${path}`, config);
+  } catch {
+    throw new Error("Gateway is unavailable. Start the API server or verify the API base URL.");
+  }
 
   if (!response.ok) {
     const error = await response.json().catch(() => ({ error: "Unknown error" }));

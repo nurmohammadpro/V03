@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogOverlay, DialogPortal, DialogClose } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogOverlay, DialogPortal, DialogClose } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -125,6 +125,9 @@ export function AuthModal({
                 )}
               </span>
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              Authenticate with OAuth or the gateway OTP flow to access your workspace or admin area.
+            </DialogDescription>
           </DialogHeader>
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
