@@ -80,7 +80,7 @@ export function TrendChart({
                     borderRadius: "8px",
                     fontSize: "12px",
                   }}
-                  formatter={(val: number) => [formatValue ? formatValue(val) : val, title]}
+                  formatter={(val) => (formatValue && typeof val === 'number' ? String(formatValue(val)) : String(val ?? ''))}
                   labelFormatter={(label) => label}
                 />
                 <Area
