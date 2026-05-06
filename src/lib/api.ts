@@ -2,6 +2,17 @@ import type { AdminPermission, AdminRole, AiRoutingRule, AuthActor, ServiceInteg
 
 const API_BASE = import.meta.env.VITE_API_URL || "/api";
 
+function buildApiUrl(path: string) {
+  const normalizedBase = API_BASE.endsWith("/") ? API_BASE.slice(0, -1) : API_BASE;
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+
+  if (normalizedBase.endsWith("/api") && normalizedPath.startsWith("/api/")) {
+    return `${normalizedBase}${normalizedPath.slice(4)}`;
+  }
+
+  return `${normalizedBase}${normalizedPath}`;
+}
+
 interface ApiOptions {
   method?: string;
   body?: unknown;
@@ -31,7 +42,7 @@ async function request<T>(path: string, options: ApiOptions = {}): Promise<T> {
   let response: Response;
 
   try {
-    response = await fetch(`${API_BASE}${path}`, config);
+    response = await fetch(buildApiUrl(path), config);
   } catch {
     throw new Error("Gateway is unavailable. Start the API server or verify the API base URL.");
   }
