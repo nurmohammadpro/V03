@@ -1,20 +1,21 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import WorkspaceLayout from "../components/workspace/WorkspaceLayout";
-import { useWorkspaceStore } from "../stores/workspaceStore";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import WorkspaceLayout from "@/components/workspace/WorkspaceLayout";
+import { useWorkspaceStore } from "@/stores/workspaceStore";
 import {
   connectSSE,
   createChatMessage,
   getChatSSEUrl,
   type ChatMessage,
-} from "../lib/sse";
+} from "@/lib/sse";
+import { ChevronDown, FolderTree, MessageSquare, Code2, Send, Terminal, Plus } from "lucide-react";
 
 const FRAMEWORKS = ["Next.js", "MERN", "Laravel", "Django", "NestJS"];
 
 // Mock responses for when backend is unavailable
-const MOCK_RESPONSES: Record<
-  string,
-  { text: string; files: any[] }
-> = {
+const MOCK_RESPONSES: Record<string, { text: string; files: any[] }> = {
   "Next.js": {
     text: "Generating a Next.js project with App Router, TypeScript, Tailwind CSS, and Prisma...\n\nCreating project structure...\nSetting up pages and API routes...\nConfiguring database schema...\nDone! Your Next.js project is ready.",
     files: [
@@ -60,70 +61,67 @@ const MOCK_RESPONSES: Record<
           ]},
         ]},
       ]},
-      { name: "routes", path: "routes", type: "directory", children: [
-        { name: "web.php", path: "routes/web.php", type: "file", content: "<?php\nuse Illuminate\\Support\\Facades\\Route;\nRoute::get(\"/\", [App\\Http\\Controllers\\HomeController::class, \"index\"]);", language: "php" },
+      { name: "resources", path: "resources", type: "directory", children: [
+        { name: "views", path: "resources/views", type: "directory", children: [
+          { name: "welcome.blade.php", path: "resources/views/welcome.blade.php", type: "file", content: "<!DOCTYPE html>\n<html>\n<head><title>Laravel</title></head>\n<body><h1>Welcome</h1></body>\n</html>", language: "php" },
+        ]},
       ]},
     ],
   },
   "Django": {
-    text: "Creating a Django project with DRF, PostgreSQL, and JWT auth...\n\nSetting up Django project...\nCreating apps and models...\nConfiguring API endpoints...\nDone! Django project is ready.",
+    text: "Creating a Django project with models, views, and templates...\n\nConfiguring Django settings...\nSetting up URL patterns...\nCreating database models...\nDone! Django project is ready.",
     files: [
-      { name: "config", path: "config", type: "directory", children: [
-        { name: "settings.py", path: "config/settings.py", type: "file", content: "INSTALLED_APPS = [\"django.contrib.admin\", \"django.contrib.auth\", \"rest_framework\"]", language: "py" },
-        { name: "urls.py", path: "config/urls.py", type: "file", content: "from django.urls import path, include\nurlpatterns = [path(\"api/\", include(\"core.urls\"))]", language: "py" },
-      ]},
-      { name: "core", path: "core", type: "directory", children: [
-        { name: "models.py", path: "core/models.py", type: "file", content: "from django.db import models\nclass Item(models.Model):\n    name = models.CharField(max_length=100)\n    created_at = models.DateTimeField(auto_now_add=True)", language: "py" },
-        { name: "views.py", path: "core/views.py", type: "file", content: "from rest_framework.views import APIView\nfrom rest_framework.response import Response\nclass HomeView(APIView):\n    def get(self, request):\n        return Response({\"message\": \"Hello V03\"})", language: "py" },
-        { name: "urls.py", path: "core/urls.py", type: "file", content: "from django.urls import path\nfrom .views import HomeView\nurlpatterns = [path(\"\", HomeView.as_view())]", language: "py" },
+      { name: "myapp", path: "myapp", type: "directory", children: [
+        { name: "models.py", path: "myapp/models.py", type: "file", content: "from django.db import models\n\nclass Item(models.Model):\n    name = models.CharField(max_length=100)\n    created_at = models.DateTimeField(auto_now_add=True)", language: "py" },
+        { name: "views.py", path: "myapp/views.py", type: "file", content: "from django.shortcuts import render\nfrom .models import Item\n\ndef home(request):\n    items = Item.objects.all()\n    return render(request, \"home.html\", {\"items\": items})", language: "py" },
+        { name: "urls.py", path: "myapp/urls.py", type: "file", content: "from django.urls import path\nfrom . import views\n\nurlpatterns = [\n    path(\"\", views.home, name=\"home\"),\n]", language: "py" },
       ]},
     ],
   },
   "NestJS": {
-    text: "Generating a NestJS application with TypeScript, Prisma, and Swagger docs...\n\nScaffolding NestJS modules...\nSetting up Prisma schema...\nCreating REST endpoints...\nDone! NestJS project generated.",
+    text: "Bootstrapping a NestJS application with modules, controllers, and services...\n\nSetting up NestJS project...\nCreating modules and controllers...\nConfiguring dependency injection...\nDone! NestJS project is ready.",
     files: [
       { name: "src", path: "src", type: "directory", children: [
-        { name: "main.ts", path: "src/main.ts", type: "file", content: "import { NestFactory } from \"@nestjs/core\";\nimport { AppModule } from \"./app.module\";\nasync function bootstrap() {\n  const app = await NestFactory.create(AppModule);\n  await app.listen(3000);\n}\nbootstrap();", language: "ts" },
-        { name: "app.module.ts", path: "src/app.module.ts", type: "file", content: "import { Module } from \"@nestjs/common\";\nimport { AppController } from \"./app.controller\";\n@Module({ controllers: [AppController] })\nexport class AppModule {}", language: "ts" },
-        { name: "app.controller.ts", path: "src/app.controller.ts", type: "file", content: "import { Controller, Get } from \"@nestjs/common\";\n@Controller()\nexport class AppController {\n  @Get()\n  getHello(): string { return \"Hello V03\"; }\n}", language: "ts" },
-      ]},
-      { name: "prisma", path: "prisma", type: "directory", children: [
-        { name: "schema.prisma", path: "prisma/schema.prisma", type: "file", content: "datasource db {\n  provider = \"postgresql\"\n  url = env(\"DATABASE_URL\")\n}\nmodel User {\n  id    Int     @id @default(autoincrement())\n  email String  @unique\n  name  String?\n}", language: "prisma" },
+        { name: "app.module.ts", path: "src/app.module.ts", type: "file", content: "import { Module } from '@nestjs/common';\nimport { AppController } from './app.controller';\nimport { AppService } from './app.service';\n\n@Module({\n  imports: [],\n  controllers: [AppController],\n  providers: [AppService],\n})\nexport class AppModule {}", language: "ts" },
+        { name: "app.controller.ts", path: "src/app.controller.ts", type: "file", content: "import { Controller, Get } from '@nestjs/common';\nimport { AppService } from './app.service';\n\n@Controller()\nexport class AppController {\n  constructor(private readonly appService: AppService) {}\n  @Get()\n  getHello(): string { return this.appService.getHello(); }\n}", language: "ts" },
+        { name: "app.service.ts", path: "src/app.service.ts", type: "file", content: "import { Injectable } from '@nestjs/common';\n\n@Injectable()\nexport class AppService {\n  getHello(): string { return 'Hello NestJS!'; }\n}", language: "ts" },
       ]},
     ],
   },
 };
 
-function buildFileNodes(tree: any[]): any[] {
-  return tree.map((item: any) => ({
-    name: item.name,
-    path: item.path,
-    type: item.type,
-    content: item.content,
-    language: item.language,
-    children: item.children ? buildFileNodes(item.children) : undefined,
-  }));
+function buildFileNodes(files: any[]): any[] {
+  return files.map((f: any) => {
+    if (f.type === "directory" && f.children) {
+      return { ...f, children: buildFileNodes(f.children) };
+    }
+    return f;
+  });
 }
 
 export default function Workspace() {
-  const [input, setInput] = useState("");
-  const [framework, setFramework] = useState("Next.js");
-  const [showFrameworkPicker, setShowFrameworkPicker] = useState(false);
-
+  const { user } = useAuth();
   const messages = useWorkspaceStore((s) => s.messages);
+  const selectedFramework = useWorkspaceStore((s) => s.selectedFramework);
   const isGenerating = useWorkspaceStore((s) => s.isGenerating);
   const addMessage = useWorkspaceStore((s) => s.addMessage);
-  const appendToLastAssistantMessage = useWorkspaceStore(
-    (s) => s.appendToLastAssistantMessage
-  );
-  const updateLastAssistantMessage = useWorkspaceStore(
-    (s) => s.updateLastAssistantMessage
-  );
+  const appendToLastAssistantMessage = useWorkspaceStore((s) => s.appendToLastAssistantMessage);
+  const updateLastAssistantMessage = useWorkspaceStore((s) => s.updateLastAssistantMessage);
   const setFiles = useWorkspaceStore((s) => s.setFiles);
   const setIsGenerating = useWorkspaceStore((s) => s.setIsGenerating);
+  const setSelectedFramework = useWorkspaceStore((s) => s.setSelectedFramework);
+  const activeFileContent = useWorkspaceStore((s) => s.activeFileContent);
+  const activeFilePath = useWorkspaceStore((s) => s.activeFilePath);
+  const files = useWorkspaceStore((s) => s.files);
+
+  const [input, setInput] = useState("");
+  const [showFrameworkPicker, setShowFrameworkPicker] = useState(false);
+  const [framework, setFramework] = useState(selectedFramework);
+  const [sidebarTab, setSidebarTab] = useState<"files" | "chat">("files");
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const sseCleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -131,82 +129,44 @@ export default function Workspace() {
 
   const sendMessage = useCallback(
     async (content: string) => {
-      if (!content.trim() || isGenerating) return;
-
+      if (isGenerating) return;
       const userMsg = createChatMessage("user", content);
       addMessage(userMsg);
 
+      setIsGenerating(true);
       const assistantMsg = createChatMessage("assistant", "");
       addMessage(assistantMsg);
-      setIsGenerating(true);
 
       try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-
-        const response = await fetch("/api/chat/stream", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            prompt: content,
-            framework,
-            projectId: "new",
-          }),
-          signal: controller.signal,
-        });
-
-        clearTimeout(timeoutId);
-
-        if (!response.ok) throw new Error("Backend unavailable");
-
-        const reader = response.body?.getReader();
-        if (!reader) throw new Error("No reader");
-
-        const decoder = new TextDecoder();
-        let buffer = "";
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split("\n");
-          buffer = lines.pop() ?? "";
-
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              try {
-                const data = JSON.parse(line.slice(6));
-                if (data.type === "text_delta") {
-                  appendToLastAssistantMessage(data.text ?? "");
-                } else if (data.type === "workspace_ready") {
-                  if (data.files) {
-                    setFiles(buildFileNodes(data.files));
-                  }
-                } else if (data.type === "done") {
-                  updateLastAssistantMessage(
-                    data.text ?? "Generation complete."
-                  );
-                  if (data.files) {
-                    setFiles(buildFileNodes(data.files));
-                  }
-                }
-              } catch {
-                // ignore parse errors
+        const url = getChatSSEUrl();
+        if (url) {
+          const cleanup = connectSSE(url, (data) => {
+            if (data.content) {
+              appendToLastAssistantMessage(data.content);
+            }
+            if (data.done) {
+              updateLastAssistantMessage(
+                useWorkspaceStore.getState().messages.findLast(
+                  (m: ChatMessage) => m.role === "assistant"
+                )?.content ?? ""
+              );
+              if (data.files) {
+                setFiles(buildFileNodes(data.files));
               }
             }
-          }
+          });
+          sseCleanupRef.current = cleanup;
+        } else {
+          throw new Error("No SSE URL");
         }
       } catch {
         console.log("Backend unavailable, using mock response");
         const mock = MOCK_RESPONSES[framework] ?? MOCK_RESPONSES["Next.js"];
-
         const words = mock.text.split(" ");
         for (let i = 0; i < words.length; i++) {
           await new Promise((r) => setTimeout(r, 30));
           appendToLastAssistantMessage(words[i] + (i < words.length - 1 ? " " : ""));
         }
-
         updateLastAssistantMessage(mock.text);
         setFiles(buildFileNodes(mock.files));
       }
@@ -218,107 +178,186 @@ export default function Workspace() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!input.trim() || isGenerating) return;
     sendMessage(input);
     setInput("");
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen bg-background text-foreground overflow-hidden">
-      {/* Header */}
-      <header className="flex items-center justify-between px-4 py-2 bg-card border-b border-border shrink-0">
-        <div className="flex items-center gap-3">
-          <h1 className="text-base font-bold text-white">v03.tech</h1>
-          <span className="text-muted-foreground text-xs">Workspace</span>
+    <div className="h-screen w-screen bg-[#05070A] text-[#E6EDF3] flex overflow-hidden">
+      {/* ===== Sidebar (260px fixed) ===== */}
+      <aside className="fixed left-0 top-0 h-full w-[260px] bg-[#0B0F14] border-r border-white/5 flex flex-col z-10">
+        {/* Project header */}
+        <div className="px-4 pt-5 pb-3 space-y-3">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-[#3B82F6] flex items-center justify-center text-white font-bold text-sm">
+              v
+            </div>
+            <div className="min-w-0">
+              <p className="text-sm font-semibold text-[#E6EDF3] truncate">v03.tech</p>
+              <p className="text-[11px] text-[#6B7280]">Workspace</p>
+            </div>
+          </div>
+          {/* Framework selector */}
+          <div className="relative">
+            <button
+              onClick={() => setShowFrameworkPicker(!showFrameworkPicker)}
+              className="w-full bg-[#111827] hover:bg-[#1F2937] rounded-lg px-3 py-2 text-sm text-[#E6EDF3] font-medium transition-colors text-left flex items-center justify-between"
+            >
+              <span>{framework}</span>
+              <ChevronDown className="w-3.5 h-3.5 text-[#6B7280]" />
+            </button>
+            {showFrameworkPicker && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-[#0F141A] border border-white/5 rounded-lg overflow-hidden z-20 shadow-xl">
+                {FRAMEWORKS.map((fw) => (
+                  <button
+                    key={fw}
+                    onClick={() => {
+                      setFramework(fw);
+                      setSelectedFramework(fw);
+                      setShowFrameworkPicker(false);
+                    }}
+                    className={`w-full px-3 py-2 text-sm text-left transition-colors ${
+                      fw === framework
+                        ? "bg-[#1F2937] text-[#E6EDF3]"
+                        : "text-[#9BA7B4] hover:bg-[#111827] hover:text-[#E6EDF3]"
+                    }`}
+                  >
+                    {fw}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
-        <div className="relative">
-          <button
-            onClick={() => setShowFrameworkPicker(!showFrameworkPicker)}
-            className="bg-surface border border-border text-foreground px-3.5 py-1.5 rounded-md cursor-pointer text-[13px] font-medium hover:bg-surface-hover transition-colors"
-          >
-            {framework} ▼
-          </button>
-          {showFrameworkPicker && (
-            <div className="absolute top-full right-0 mt-1 bg-card border border-border rounded-lg overflow-hidden z-[100] min-w-[140px] shadow-[var(--shadow-md)]">
-              {FRAMEWORKS.map((fw) => (
-                <div
-                  key={fw}
-                  onClick={() => {
-                    setFramework(fw);
-                    setShowFrameworkPicker(false);
-                  }}
-                  className="px-4 py-2 cursor-pointer text-[13px] transition-colors"
-                  style={{
-                    color: fw === framework ? "var(--primary-foreground)" : undefined,
-                    background: fw === framework ? "var(--surface-active)" : "transparent",
-                  }}
-                  onMouseEnter={(e) => {
-                    if (fw !== framework) e.currentTarget.style.background = "var(--surface-hover)";
-                  }}
-                  onMouseLeave={(e) => {
-                    if (fw !== framework) e.currentTarget.style.background = "transparent";
-                  }}
-                >
-                  {fw}
+        {/* Sidebar tabs */}
+        <div className="flex gap-0.5 mx-3 bg-[#111827] p-0.5 rounded-lg mb-3">
+          {[
+            { id: "files" as const, icon: FolderTree, label: "Files" },
+            { id: "chat" as const, icon: MessageSquare, label: "Chat" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              onClick={() => setSidebarTab(tab.id)}
+              className={`flex items-center gap-1.5 flex-1 justify-center px-2 py-1.5 text-[11px] font-medium rounded-md transition-colors ${
+                sidebarTab === tab.id
+                  ? "bg-[#1F2937] text-[#E6EDF3]"
+                  : "text-[#6B7280] hover:text-[#9BA7B4]"
+              }`}
+            >
+              <tab.icon className="w-3.5 h-3.5" />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Sidebar content */}
+        <div className="flex-1 overflow-y-auto px-3">
+          {sidebarTab === "files" && (
+            <div>
+              <p className="px-1 pb-1.5 text-[11px] font-medium text-[#6B7280] uppercase tracking-wider">
+                Project Files
+              </p>
+              {files.length > 0 ? (
+                <div className="text-xs text-[#9BA7B4] space-y-0.5">
+                  {renderFileList(files, 0)}
                 </div>
-              ))}
+              ) : (
+                <div className="text-center py-8">
+                  <FolderTree className="w-6 h-6 text-[#6B7280] mx-auto mb-2" />
+                  <p className="text-xs text-[#6B7280]">
+                    Generate something to see files
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+          {sidebarTab === "chat" && (
+            <div>
+              <p className="px-1 pb-1.5 text-[11px] font-medium text-[#6B7280] uppercase tracking-wider">
+                Conversation
+              </p>
+              <div className="text-xs text-[#6B7280] text-center py-8">
+                <MessageSquare className="w-6 h-6 mx-auto mb-2 opacity-50" />
+                {messages.length} message{messages.length !== 1 ? "s" : ""}
+              </div>
             </div>
           )}
         </div>
-      </header>
 
-      {/* Main content */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left: Chat pane */}
-        <div className="w-1/2 flex flex-col border-r border-border">
-          {/* Messages */}
-          <div className="flex-1 overflow-auto p-4 flex flex-col gap-3">
-            {messages.length === 0 && (
-              <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm text-center flex-col gap-2">
-                <div className="text-[32px] opacity-30">⚡</div>
-                <div>Describe the app you want to build.</div>
-                <div className="text-xs text-muted-foreground">
-                  Using {framework}
+        {/* User footer */}
+        <div className="px-3 py-3 border-t border-white/5">
+          <div className="flex items-center gap-3">
+            <Avatar size="sm">
+              <AvatarFallback className="bg-[#1F2937] text-[#9BA7B4]">
+                {user?.email?.[0]?.toUpperCase() || "U"}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <p className="text-[13px] font-medium text-[#E6EDF3] truncate">
+                {user?.email?.split("@")[0] || "Guest"}
+              </p>
+              <p className="text-[11px] text-[#6B7280] truncate">
+                {user?.email || "guest@v03.tech"}
+              </p>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* ===== Main Content (Chat) ===== */}
+      <main className="ml-[260px] mr-[500px] flex-1 flex flex-col min-w-0 relative z-[1]">
+        {/* Chat area */}
+        <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
+          {messages.length === 0 && (
+            <div className="flex-1 flex items-center justify-center min-h-[60vh]">
+              <div className="text-center space-y-3 max-w-md">
+                <div className="w-12 h-12 rounded-xl bg-[#3B82F6]/10 flex items-center justify-center mx-auto">
+                  <Code2 className="w-6 h-6 text-[#3B82F6]" />
                 </div>
+                <h2 className="text-base font-semibold text-[#E6EDF3]">Start building</h2>
+                <p className="text-sm text-[#6B7280]">
+                  Describe the app you want to build or pick a framework to get started.
+                </p>
+                <Badge className="bg-[#111827] text-[#6B7280] border-0 text-xs">
+                  Using {framework}
+                </Badge>
               </div>
-            )}
-            {messages.map((msg) => (
+            </div>
+          )}
+          {messages.map((msg) => (
+            <div
+              key={msg.id}
+              className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+            >
               <div
-                key={msg.id}
-                className="max-w-[85%] px-3.5 py-2.5 rounded-xl text-sm leading-relaxed whitespace-pre-wrap break-words"
-                style={{
-                  alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
-                  background:
-                    msg.role === "user"
-                      ? "var(--surface-active)"
-                      : msg.role === "system"
-                      ? "oklch(0.12 0.04 150)" // green-tinted for system messages
-                      : "var(--surface)",
-                  color:
-                    msg.role === "user"
-                      ? "var(--primary-foreground)"
-                      : "var(--foreground)",
-                  border:
-                    msg.role === "assistant"
-                      ? "1px solid var(--border)"
-                      : "none",
-                }}
+                className={`max-w-[75%] px-4 py-3 rounded-xl text-sm leading-relaxed whitespace-pre-wrap break-words ${
+                  msg.role === "user"
+                    ? "bg-[#3B82F6]/10 text-[#E6EDF3] border border-white/5"
+                    : msg.role === "system"
+                    ? "bg-[#22C55E]/5 text-[#D1D5DB] border border-white/5"
+                    : "bg-transparent text-[#D1D5DB]"
+                }`}
               >
+                {msg.role === "assistant" && (
+                  <p className="text-[13px] font-semibold text-[#3B82F6] mb-2">manus</p>
+                )}
                 {msg.content}
                 {msg.isStreaming && (
-                  <span
-                    className="inline-block w-2 h-3.5 bg-muted-foreground ml-0.5 animate-pulse"
-                  />
+                  <span className="inline-block w-2 h-4 bg-[#3B82F6] ml-0.5 animate-pulse rounded-sm" />
                 )}
               </div>
-            ))}
-            <div ref={chatEndRef} />
-          </div>
+            </div>
+          ))}
+          <div ref={chatEndRef} />
+        </div>
 
-          {/* Prompt bar */}
+        {/* Prompt input */}
+        <div className="px-4 pb-4 pt-2">
           <form
             onSubmit={handleSubmit}
-            className="p-3 border-t border-border flex gap-2 bg-card"
+            className="flex items-end gap-2 bg-[#0F141A] border border-white/5 rounded-xl px-4 py-3 focus-within:border-[#3B82F6]/30 transition-colors"
           >
             <textarea
               ref={inputRef}
@@ -326,37 +365,132 @@ export default function Workspace() {
               onChange={(e) => setInput(e.target.value)}
               placeholder="Describe the app you want to build..."
               disabled={isGenerating}
-              rows={2}
-              className="flex-1 bg-surface border border-border rounded-lg text-foreground px-3.5 py-2.5 text-sm resize-none outline-none font-[inherit] placeholder:text-muted-foreground focus:border-ring transition-colors"
+              rows={1}
+              className="flex-1 bg-transparent text-sm text-[#E6EDF3] placeholder:text-[#6B7280] resize-none outline-none font-body leading-5 max-h-32"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
                   handleSubmit(e);
                 }
               }}
+              onInput={(e) => {
+                const el = e.currentTarget;
+                el.style.height = "auto";
+                el.style.height = Math.min(el.scrollHeight, 128) + "px";
+              }}
             />
             <button
               type="submit"
               disabled={isGenerating || !input.trim()}
-              className="bg-primary border-0 text-primary-foreground px-5 py-2.5 rounded-lg text-sm font-semibold self-end transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-primary/90"
+              className="w-8 h-8 rounded-lg bg-[#3B82F6] text-white flex items-center justify-center disabled:opacity-30 disabled:cursor-not-allowed hover:bg-[#2563EB] transition-colors shrink-0"
             >
-              {isGenerating ? "..." : "→"}
+              <Send className="w-4 h-4" />
             </button>
           </form>
         </div>
+      </main>
 
-        {/* Right: Code workspace */}
-        <div className="flex-1 flex flex-col">
-          <WorkspaceLayout />
+      {/* ===== Code Panel (500px fixed) ===== */}
+      <aside className="fixed right-0 top-0 h-full w-[500px] bg-[#020617] border-l border-white/5 flex flex-col z-10">
+        {/* Panel header */}
+        <div className="px-4 py-3 border-b border-white/5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-md bg-[#3B82F6]/10 flex items-center justify-center">
+                <Code2 className="w-3.5 h-3.5 text-[#3B82F6]" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-[#E6EDF3]">Code</p>
+                <p className="text-[11px] text-[#6B7280]">
+                  {activeFilePath
+                    ? activeFilePath
+                    : "No file selected"}
+                </p>
+              </div>
+            </div>
+            {activeFileContent && (
+              <Badge className="text-[10px] px-1.5 py-0 bg-[#111827] text-[#6B7280] border-0">
+                <Terminal className="w-3 h-3 mr-0.5" />
+                {activeFilePath?.split(".").pop()?.toUpperCase() || "CODE"}
+              </Badge>
+            )}
+          </div>
         </div>
-      </div>
 
-      <style>{`
-        @keyframes blink {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0; }
-        }
-      `}</style>
+        {/* Code editor */}
+        <div className="flex-1 overflow-hidden">
+          {activeFileContent ? (
+            <WorkspaceLayout />
+          ) : (
+            <div className="h-full flex items-center justify-center">
+              <div className="text-center space-y-2">
+                <Code2 className="w-8 h-8 text-[#6B7280] mx-auto" />
+                <p className="text-xs text-[#6B7280]">
+                  Select a file or generate code to see it here
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Status footer */}
+        <div className="px-4 py-2.5 border-t border-white/5 text-xs text-[#22C55E] flex items-center gap-1.5">
+          <div className="w-1.5 h-1.5 rounded-full bg-[#22C55E]" />
+          {isGenerating ? "Generating..." : activeFileContent ? "Ready" : "Waiting for input"}
+        </div>
+      </aside>
     </div>
+  );
+}
+
+// Render file tree items
+function renderFileList(files: any[], depth: number): React.ReactNode {
+  return files.map((node: any, i: number) => {
+    if (node.type === "directory") {
+      return (
+        <FileDir key={node.path || i} node={node} depth={depth} />
+      );
+    }
+    return <FileItem key={node.path || i} node={node} depth={depth} />;
+  });
+}
+
+function FileDir({ node, depth }: { node: any; depth: number }) {
+  const [open, setOpen] = useState(true);
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-1.5 w-full px-2 py-1 rounded-md text-[#9BA7B4] hover:text-[#E6EDF3] hover:bg-[#111827] transition-colors text-left"
+        style={{ paddingLeft: depth * 14 + 8 }}
+      >
+        <span className="text-[10px]">{open ? "▼" : "▶"}</span>
+        <span className="text-xs truncate">{node.name}</span>
+      </button>
+      {open && node.children && (
+        <div>{renderFileList(node.children, depth + 1)}</div>
+      )}
+    </div>
+  );
+}
+
+function FileItem({ node, depth }: { node: any; depth: number }) {
+  const setActiveFile = useWorkspaceStore((s) => s.setActiveFile);
+  const activeFilePath = useWorkspaceStore((s) => s.activeFilePath);
+  const isActive = activeFilePath === node.path;
+
+  return (
+    <button
+      onClick={() => setActiveFile(node.path)}
+      className={`flex items-center gap-1.5 w-full px-2 py-1 rounded-md text-xs text-left transition-colors ${
+        isActive
+          ? "bg-[#1F2937] text-[#E6EDF3]"
+          : "text-[#6B7280] hover:text-[#9BA7B4] hover:bg-[#111827]"
+      }`}
+      style={{ paddingLeft: depth * 14 + 8 }}
+    >
+      <span className="text-[10px] opacity-50">📄</span>
+      <span className="truncate">{node.name}</span>
+    </button>
   );
 }
