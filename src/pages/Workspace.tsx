@@ -292,7 +292,10 @@ export default function Workspace() {
   const [input, setInput] = useState("");
   const [showFrameworkPicker, setShowFrameworkPicker] = useState(false);
   const [framework, setFramework] = useState(selectedFramework);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return window.innerWidth >= 1280;
+  });
   const [codePanelOpen, setCodePanelOpen] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<"files" | "chat">("files");
 
@@ -349,6 +352,7 @@ export default function Workspace() {
 
     sendMessage(input.trim());
     setInput("");
+    setSidebarOpen(false);
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
@@ -380,18 +384,18 @@ export default function Workspace() {
         />
       )}
 
-      <div className="mx-auto flex min-h-[100dvh] w-full max-w-[1600px] flex-col px-3 py-3 sm:px-4">
+      <div className="flex min-h-[100dvh] w-full flex-col px-3 py-3 sm:px-4">
         <header className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-[18px] border border-[var(--app-border)] bg-[color-mix(in_srgb,var(--app-bg)_78%,transparent)] px-4 py-3 backdrop-blur-xl">
           <div className="flex items-center gap-2 sm:gap-3">
             <Button
               type="button"
               variant="ghost"
               size="icon"
-              className="h-9 w-9 rounded-full border border-[var(--app-border)] bg-[var(--app-panel)] text-[var(--app-text-muted)] hover:bg-[var(--app-panel-2)] hover:text-[var(--app-text)] lg:hidden"
-              onClick={() => setSidebarOpen(true)}
-              aria-label="Open file panel"
+              className="h-9 w-9 rounded-full border border-[var(--app-border)] bg-[var(--app-panel)] text-[var(--app-text-muted)] hover:bg-[var(--app-panel-2)] hover:text-[var(--app-text)]"
+              onClick={() => setSidebarOpen((open) => !open)}
+              aria-label={sidebarOpen ? "Collapse file panel" : "Expand file panel"}
             >
-              <PanelLeftOpen className="h-4 w-4" />
+              {sidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
             </Button>
 
             <Link
@@ -461,10 +465,18 @@ export default function Workspace() {
           </div>
         </header>
 
-        <div className="grid flex-1 gap-3 xl:grid-cols-[240px_minmax(0,1fr)_520px]">
+        <div
+          className={`grid flex-1 gap-3 ${
+            sidebarOpen
+              ? "xl:grid-cols-[240px_minmax(0,1fr)_minmax(0,2fr)]"
+              : "xl:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]"
+          }`}
+        >
           <aside
-            className={`fixed inset-y-[78px] left-3 z-40 w-[240px] rounded-[18px] border border-[var(--app-border)] bg-[var(--app-panel)] backdrop-blur-xl transition-transform lg:left-4 xl:static xl:inset-auto xl:z-auto xl:w-auto ${
-              sidebarOpen ? "translate-x-0" : "-translate-x-[115%] xl:translate-x-0"
+            className={`fixed inset-y-[78px] left-3 z-40 w-[240px] rounded-[18px] border border-[var(--app-border)] bg-[var(--app-panel)] backdrop-blur-xl transition-transform lg:left-4 ${
+              sidebarOpen ? "translate-x-0" : "-translate-x-[115%]"
+            } ${
+              sidebarOpen ? "xl:relative xl:inset-auto xl:left-auto xl:z-auto xl:w-auto xl:translate-x-0" : "xl:hidden"
             }`}
           >
             <div className="flex h-full flex-col">
@@ -677,7 +689,7 @@ export default function Workspace() {
           </section>
 
           <aside
-            className={`fixed inset-y-[78px] right-3 z-40 w-[min(520px,calc(100vw-24px))] rounded-[18px] border border-[var(--app-border)] bg-[var(--app-panel)] backdrop-blur-xl transition-transform xl:static xl:inset-auto xl:z-auto xl:w-auto ${
+            className={`fixed inset-y-[78px] right-3 z-40 w-[min(720px,calc(100vw-24px))] rounded-[18px] border border-[var(--app-border)] bg-[var(--app-panel)] backdrop-blur-xl transition-transform xl:static xl:inset-auto xl:z-auto xl:w-auto ${
               codePanelOpen ? "translate-x-0" : "translate-x-[110%] xl:translate-x-0"
             }`}
           >
