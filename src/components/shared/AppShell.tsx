@@ -4,6 +4,7 @@ import { PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 interface NavItem {
   label: string;
@@ -38,6 +39,8 @@ export function AppShell({
 }: AppShellProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [location] = useLocation();
+  const { user } = useAuth();
+  const brandHref = user?.isAdmin ? "/admin/overview" : "/dashboard";
 
   return (
     <div className="min-h-screen bg-[var(--app-bg)] text-[var(--app-text)]">
@@ -57,14 +60,10 @@ export function AppShell({
         )}
       >
         <div className="flex items-center justify-between px-2 py-2">
-          <Link href="/" className="flex items-center gap-3">
+          <Link href={brandHref} className="flex items-center">
             <span className="flex h-10 w-16 items-center justify-center overflow-hidden rounded-[8px] bg-[var(--app-panel-2)] px-2">
               <img src="/v03.svg" alt="v03" className="h-4 w-auto" />
             </span>
-            <div>
-              <p className="text-[15px] font-normal tracking-[-0.02em] text-[var(--app-text)]">v03</p>
-              <p className="text-xs text-[var(--app-text-dim)]">AI App Builder</p>
-            </div>
           </Link>
 
           <Button

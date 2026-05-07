@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { UniverseBackground } from '@/components/UniverseBackground';
 import { Navbar } from '@/components/Navbar';
@@ -13,6 +13,12 @@ export default function Home() {
   const { user, isAuthenticated } = useAuth();
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isPromptLoading, setIsPromptLoading] = useState(false);
+  const [showIntro, setShowIntro] = useState(true);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setShowIntro(false), 1100);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const handlePromptSubmit = (prompt: string) => {
     if (!isAuthenticated) {
@@ -32,6 +38,20 @@ export default function Home() {
   return (
     <div className="relative w-full h-screen overflow-hidden bg-background">
       <UniverseBackground />
+
+      <div
+        className={`pointer-events-none fixed inset-0 z-[120] flex items-center justify-center bg-[#05070b] transition-opacity duration-700 ${
+          showIntro ? "opacity-100" : "opacity-0"
+        }`}
+        aria-hidden="true"
+      >
+        <div className={`flex flex-col items-center gap-4 transition-all duration-700 ${showIntro ? "translate-y-0 opacity-100" : "-translate-y-2 opacity-0"}`}>
+          <span className="flex h-16 w-24 items-center justify-center rounded-[10px] bg-white/[0.04] ring-1 ring-white/8">
+            <img src="/v03.svg" alt="v03" className="h-6 w-auto" />
+          </span>
+          <p className="text-[11px] uppercase tracking-[0.22em] text-white/38">AI app builder</p>
+        </div>
+      </div>
 
       <div className="relative w-full h-screen flex flex-col" style={{ zIndex: "var(--z-content)" }}>
         <Navbar

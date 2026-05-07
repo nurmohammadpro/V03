@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/v03.svg" />
@@ -8,8 +8,24 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+    <script>
+      (() => {
+        const storageKey = "v03-ui-theme";
+        const saved = localStorage.getItem(storageKey) || "dark";
+        const resolved =
+          saved === "system"
+            ? window.matchMedia("(prefers-color-scheme: dark)").matches
+              ? "dark"
+              : "light"
+            : saved;
+
+        document.documentElement.classList.remove("light", "dark");
+        document.documentElement.classList.add(resolved);
+        document.documentElement.style.backgroundColor = resolved === "dark" ? "#06080c" : "#f4f7fb";
+      })();
+    </script>
   </head>
-  <body>
+  <body style="background:#06080c;">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
