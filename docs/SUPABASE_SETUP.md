@@ -43,6 +43,15 @@ Optional Supabase vars for future phases:
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 
+Mail delivery vars for gateway OTP:
+
+- `SMTP_HOST`
+- `SMTP_PORT`
+- `SMTP_SECURE`
+- `SMTP_USER`
+- `SMTP_PASS`
+- `SMTP_FROM`
+
 ## Which Supabase connection string to use
 
 Runtime gateway:

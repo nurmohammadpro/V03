@@ -3,6 +3,7 @@ import db from "../db";
 import { users } from "../db/schema";
 import { buildActorFromEmail } from "../middleware/auth";
 import { eq } from "drizzle-orm";
+import { sendOtpEmail } from "../lib/mailer";
 
 // In-memory OTP store (for multi-node, use Redis)
 const otpStore = new Map<string, { code: string; expires: number }>();
@@ -19,13 +20,27 @@ export async function authRoutes(app: FastifyInstance) {
       return reply.status(400).send({ error: "Email is required" });
     }
 
+    const normalizedEmail = email.trim().toLowerCase();
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailPattern.test(normalizedEmail)) {
+      return reply.status(400).send({ error: "Enter a valid email address" });
+    }
+
     const code = generateOTP();
-    otpStore.set(email, { code, expires: Date.now() + 5 * 60 * 1000 });
+    otpStore.set(normalizedEmail, { code, expires: Date.now() + 5 * 60 * 1000 });
 
-    console.log(`[OTP] ${email}: ${code}`);
+    const mailResult = await sendOtpEmail(normalizedEmail, code);
 
-    // In production, send via email (nodemailer)
-    return reply.send({ ok: true, message: "OTP sent" });
+    if (!mailResult.delivered) {
+      console.log(`[OTP] ${normalizedEmail}: ${code}`);
+    }
+
+    return reply.send({
+      ok: true,
+      message: mailResult.delivered ? "OTP sent to email" : "OTP generated",
+      delivery: mailResult.delivered ? "email" : "console",
+    });
   });
 
   // POST /api/auth/verify-otp
@@ -35,13 +50,14 @@ export async function authRoutes(app: FastifyInstance) {
       return reply.status(400).send({ error: "Email and code are required" });
     }
 
-    const stored = otpStore.get(email);
+    const normalizedEmail = email.trim().toLowerCase();
+    const stored = otpStore.get(normalizedEmail);
     if (!stored) {
       return reply.status(400).send({ error: "No OTP requested" });
     }
 
     if (Date.now() > stored.expires) {
-      otpStore.delete(email);
+      otpStore.delete(normalizedEmail);
       return reply.status(400).send({ error: "OTP expired" });
     }
 
@@ -49,15 +65,15 @@ export async function authRoutes(app: FastifyInstance) {
       return reply.status(400).send({ error: "Invalid OTP" });
     }
 
-    otpStore.delete(email);
+    otpStore.delete(normalizedEmail);
 
-    let actor = await buildActorFromEmail(email);
+    let actor = await buildActorFromEmail(normalizedEmail);
 
     if (!actor) {
       const [user] = await db
         .insert(users)
         .values({
-          email,
+          email: normalizedEmail,
           plan: "free",
           status: "active",
         })

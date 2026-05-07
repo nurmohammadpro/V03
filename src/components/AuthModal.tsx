@@ -54,9 +54,13 @@ export function AuthModal({
 
     try {
       setIsLoading(true);
-      await api.sendOtp(email.trim());
+      const res = await api.sendOtp(email.trim());
       setOtpRequested(true);
-      toast.success('OTP sent. Check the gateway log or email provider integration.');
+      toast.success(
+        res.delivery === 'email'
+          ? 'OTP sent to your email.'
+          : 'OTP generated. Mailer is not configured yet, so use the gateway log.',
+      );
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Could not send OTP.');
     } finally {
@@ -207,7 +211,7 @@ export function AuthModal({
                   </div>
 
                   <p className="text-xs text-white/30 text-center font-light">
-                    Use gateway OTP sign-in for now. Password auth is still disabled.
+                    Use email OTP sign-in for now. Password auth is still disabled.
                   </p>
                 </>
               )}

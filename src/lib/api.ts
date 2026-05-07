@@ -58,7 +58,7 @@ async function request<T>(path: string, options: ApiOptions = {}): Promise<T> {
 export const api = {
   // Auth
   sendOtp: (email: string) =>
-    request<{ ok: boolean; message: string }>("/api/auth/send-otp", {
+    request<{ ok: boolean; message: string; delivery: "email" | "console" }>("/api/auth/send-otp", {
       method: "POST",
       body: { email },
     }),
