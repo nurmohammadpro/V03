@@ -22,7 +22,7 @@ export function Navbar({ logo, children, actions, className }: NavbarProps) {
             <img
               src="/v03.svg"
               alt="v03.tech"
-              className="h-4 md:h-5 w-auto"
+              className="h-5 w-auto md:h-5"
             />
           </a>
         )}

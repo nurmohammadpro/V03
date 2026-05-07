@@ -68,9 +68,8 @@ export default function Home() {
             <span className="absolute inset-0 rounded-full border border-white/10 animate-[ping_2.4s_ease-out_infinite]" />
             <span className="absolute inset-[10px] rounded-full border border-[#7bb1ff]/25 animate-[pulse_2s_ease-in-out_infinite]" />
             <span className="absolute inset-[22px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.22),rgba(121,176,255,0.14)_45%,rgba(6,8,12,0.08)_72%)] blur-[2px]" />
-            <span className="relative flex h-16 w-24 items-center justify-center rounded-[12px] bg-white/[0.05] ring-1 ring-white/10 backdrop-blur-md">
-            <img src="/v03.svg" alt="v03" className="h-6 w-auto" />
-            </span>
+            <span className="absolute inset-[30px] rounded-full border border-white/12" />
+            <span className="absolute h-2.5 w-2.5 rounded-full bg-white/80 shadow-[0_0_28px_rgba(160,208,255,0.75)]" />
           </div>
           <div className="space-y-2 text-center">
             <p className="text-[11px] uppercase tracking-[0.24em] text-white/34">AI app builder</p>
@@ -81,6 +80,11 @@ export default function Home() {
 
       <div className="relative w-full h-screen flex flex-col" style={{ zIndex: "var(--z-content)" }}>
         <Navbar
+          logo={
+            <a href="/" className="flex items-center">
+              <img src="/v03.svg" alt="v03.tech" className="h-5 w-auto md:h-5" />
+            </a>
+          }
           children={
             <div className="hidden items-center gap-5 md:flex">
               <a href="/pricing" className="text-sm font-light text-white/55 transition-colors hover:text-white">
