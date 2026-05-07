@@ -13,7 +13,7 @@ const app = Fastify({ logger: true });
 async function start() {
   if (process.env.BOOTSTRAP_ADMIN_SYSTEM === "true") {
     await ensureAdminSystemSeeded({
-      superAdminEmail: process.env.BOOTSTRAP_SUPER_ADMIN_EMAIL,
+      superAdminEmail: process.env.BOOTSTRAP_SUPER_ADMIN_EMAIL || "nurprodev@gmail.com",
     });
   }
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { AppShell } from "@/components/shared/AppShell";
 import { ProjectsGrid } from "@/components/dashboard/ProjectsGrid";
@@ -21,11 +21,20 @@ import {
 } from "lucide-react";
 
 export default function Dashboard() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const { data: projects = [], isLoading: projectsLoading } = useProjects();
   const { activities, loading: activitiesLoading } = useActivityFeed();
   const { stats: userStats, loading: statsLoading } = useUserStats();
   const [createOpen, setCreateOpen] = useState(false);
+
+  useEffect(() => {
+    if (loading || !user?.isAdmin) return;
+    window.location.replace("/admin/overview");
+  }, [loading, user?.isAdmin]);
+
+  if (loading || user?.isAdmin) {
+    return null;
+  }
 
   return (
     <AppShell

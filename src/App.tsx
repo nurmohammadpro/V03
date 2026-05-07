@@ -15,6 +15,7 @@ import Terms from "@/pages/Terms";
 import Privacy from "@/pages/Privacy";
 import Refund from "@/pages/Refund";
 import AuthCallback from "@/pages/AuthCallback";
+import ResetPassword from "@/pages/ResetPassword";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
@@ -31,6 +32,7 @@ function Router() {
       <Route path={"/privacy"} component={Privacy} />
       <Route path={"/refund"} component={Refund} />
       <Route path={"/auth/callback"} component={AuthCallback} />
+      <Route path={"/auth/reset-password"} component={ResetPassword} />
       <Route path={"/dashboard"} component={Dashboard} />
       <Route path={"/admin/overview"} component={AdminOverview} />
       <Route path={"/admin/users"} component={AdminUsers} />

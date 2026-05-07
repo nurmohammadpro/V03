@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { AppShell } from "@/components/shared/AppShell";
 import { Button } from "@/components/ui/button";
@@ -17,9 +17,18 @@ interface AdminShellProps {
 }
 
 export function AdminShell({ title, subtitle, children, badge, headerActions }: AdminShellProps) {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const [dateRange] = useState<"7d" | "30d" | "90d">("30d");
   const primaryRole = user?.roleKeys?.[0]?.replace(/_/g, " ") ?? "admin";
+
+  useEffect(() => {
+    if (loading || !user || user.isAdmin) return;
+    window.location.replace("/dashboard");
+  }, [loading, user]);
+
+  if (loading || !user || !user.isAdmin) {
+    return null;
+  }
 
   return (
     <AppShell

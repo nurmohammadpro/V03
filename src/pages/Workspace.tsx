@@ -277,7 +277,7 @@ function WorkspaceMessage({ role, content, isStreaming }: { role: "user" | "assi
 }
 
 export default function Workspace() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const messages = useWorkspaceStore((s) => s.messages);
   const selectedFramework = useWorkspaceStore((s) => s.selectedFramework);
   const isGenerating = useWorkspaceStore((s) => s.isGenerating);
@@ -303,6 +303,15 @@ export default function Workspace() {
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (loading || !user?.isAdmin) return;
+    window.location.replace("/admin/overview");
+  }, [loading, user?.isAdmin]);
+
+  if (loading || user?.isAdmin) {
+    return null;
+  }
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });

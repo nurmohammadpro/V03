@@ -36,6 +36,7 @@ Core variables:
   - set to `true` if you want the gateway to seed defaults on startup
 - `BOOTSTRAP_SUPER_ADMIN_EMAIL`
   - existing user email to auto-assign `super_admin`
+  - current default bootstrap target is `nurprodev@gmail.com`
 
 Optional Supabase vars for future phases:
 

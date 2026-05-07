@@ -13,9 +13,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, X } from "lucide-react";
+import { Eye, EyeOff, Loader2, X } from "lucide-react";
 import { toast } from "sonner";
 import { hasSupabaseEnv, supabase } from "@/lib/supabase";
+import api from "@/lib/api";
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -31,6 +32,12 @@ const providers = [
   { key: "apple", label: "Apple", logo: <AppleMark /> },
 ] as const;
 
+type PanelMode = "auth" | "reset";
+
+function getRedirectTarget(user: { isAdmin: boolean }) {
+  return user.isAdmin ? "/admin/overview" : "/dashboard";
+}
+
 export function AuthModal({
   isOpen,
   onClose,
@@ -40,11 +47,29 @@ export function AuthModal({
 }: AuthModalProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("signin");
+  const [panelMode, setPanelMode] = useState<PanelMode>("auth");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [resetEmail, setResetEmail] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const tabClass = "data-[state=active]:bg-white/10 data-[state=active]:text-white text-white/50 font-light";
+  const inputClass =
+    "bg-black/40 border border-white/10 text-white placeholder-white/30 focus:border-white/20";
+
+  const resetLocalState = () => {
+    setPassword("");
+    setConfirmPassword("");
+  };
+
+  const completePasswordSignIn = async () => {
+    const res = await api.getMe();
+    localStorage.setItem("v03-user", JSON.stringify(res.user));
+    onClose();
+    window.location.href = getRedirectTarget(res.user);
+  };
 
   const handleOAuthSignIn = async (provider: "github" | "google" | "apple") => {
     if (!supabase || !hasSupabaseEnv) {
@@ -93,8 +118,7 @@ export function AuthModal({
       }
 
       toast.success("Signed in successfully.");
-      onClose();
-      window.location.href = "/dashboard";
+      await completePasswordSignIn();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not sign in.");
     } finally {
@@ -110,6 +134,11 @@ export function AuthModal({
 
     if (!email.trim() || !password.trim() || !confirmPassword.trim()) {
       toast.error("Email and password fields are required.");
+      return;
+    }
+
+    if (password.length < 8) {
+      toast.error("Password must be at least 8 characters.");
       return;
     }
 
@@ -134,8 +163,7 @@ export function AuthModal({
 
       toast.success("Account created. Confirm your email before signing in.");
       setActiveTab("signin");
-      setPassword("");
-      setConfirmPassword("");
+      resetLocalState();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not create account.");
     } finally {
@@ -143,8 +171,143 @@ export function AuthModal({
     }
   };
 
+  const handleResetPasswordRequest = async () => {
+    if (!supabase || !hasSupabaseEnv) {
+      toast.error("Supabase auth is not configured yet.");
+      return;
+    }
+
+    if (!resetEmail.trim()) {
+      toast.error("Enter your email address first.");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      const { error } = await supabase.auth.resetPasswordForEmail(resetEmail.trim(), {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success("Password reset email sent.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not send password reset email.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const renderProviders = () => (
+    <div className="space-y-2">
+      {providers.map((provider) => (
+        <Button
+          key={provider.key}
+          onClick={() => void handleOAuthSignIn(provider.key)}
+          disabled={isLoading}
+          className="w-full rounded-lg border border-white/10 bg-white/10 py-2 font-light text-white transition-all duration-[var(--duration-slow)] hover:bg-white/15 disabled:opacity-50"
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Starting...
+            </>
+          ) : (
+            <>
+              <span className="mr-2 inline-flex h-4 w-4 items-center justify-center">{provider.logo}</span>
+              Continue with {provider.label}
+            </>
+          )}
+        </Button>
+      ))}
+    </div>
+  );
+
+  const renderPasswordField = ({
+    value,
+    onChange,
+    placeholder,
+    visible,
+    onToggle,
+  }: {
+    value: string;
+    onChange: (value: string) => void;
+    placeholder: string;
+    visible: boolean;
+    onToggle: () => void;
+  }) => (
+    <div className="relative">
+      <Input
+        type={visible ? "text" : "password"}
+        placeholder={placeholder}
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        className={`${inputClass} pr-11`}
+      />
+      <button
+        type="button"
+        onClick={onToggle}
+        className="absolute inset-y-0 right-0 inline-flex w-10 items-center justify-center text-white/40 transition-colors hover:text-white/70"
+        aria-label={visible ? "Hide password" : "Show password"}
+      >
+        {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+      </button>
+    </div>
+  );
+
+  const renderResetPanel = () => (
+    <div className="space-y-4">
+      <div className="space-y-1">
+        <h3 className="text-sm font-medium text-white/88">Reset password</h3>
+        <p className="text-sm font-light text-white/45">
+          Enter your email and we will send you a reset link.
+        </p>
+      </div>
+      <div className="space-y-3">
+        <Input
+          type="email"
+          placeholder="Email"
+          value={resetEmail}
+          onChange={(event) => setResetEmail(event.target.value)}
+          className={inputClass}
+        />
+        <Button
+          onClick={() => void handleResetPasswordRequest()}
+          disabled={isLoading}
+          className="w-full border border-white/10 bg-white/10 font-light text-white hover:bg-white/15"
+        >
+          {isLoading ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Sending reset link...
+            </>
+          ) : (
+            "Send reset link"
+          )}
+        </Button>
+      </div>
+      <button
+        type="button"
+        onClick={() => setPanelMode("auth")}
+        className="text-sm font-light text-white/45 transition-colors hover:text-white/70"
+      >
+        Back to sign in
+      </button>
+    </div>
+  );
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(next) => {
+        if (!next) {
+          setPanelMode("auth");
+        }
+        onClose();
+      }}
+    >
       <DialogPortal>
         <DialogOverlay className="bg-[radial-gradient(circle_at_top,_rgba(76,137,245,0.18),_transparent_34%),radial-gradient(circle_at_80%_20%,_rgba(49,194,142,0.08),_transparent_24%),rgba(1,4,8,0.68)] backdrop-blur-md" />
         <DialogContent
@@ -165,12 +328,11 @@ export function AuthModal({
               </button>
             </DialogClose>
             <DialogHeader className="mb-5">
-              <DialogTitle className="font-heading text-2xl font-normal text-center">
+              <DialogTitle className="font-heading text-center text-2xl font-normal">
                 <span className="bg-gradient-to-r from-white/80 to-cyan-300 bg-clip-text text-transparent">
                   {title === "Welcome to V03" ? (
                     <>
-                      Welcome to{" "}
-                      <span className="font-mono uppercase tracking-[0.14em] text-white">V03</span>
+                      Welcome to <span className="font-mono uppercase tracking-[0.14em] text-white">V03</span>
                     </>
                   ) : (
                     title
@@ -182,160 +344,128 @@ export function AuthModal({
               </DialogDescription>
             </DialogHeader>
 
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 bg-black/40 border border-white/10">
-                <TabsTrigger value="signin" className={tabClass}>
-                  Sign In
-                </TabsTrigger>
-                <TabsTrigger value="signup" className={tabClass}>
-                  Sign Up
-                </TabsTrigger>
-              </TabsList>
+            {panelMode === "reset" ? (
+              renderResetPanel()
+            ) : (
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-2 border border-white/10 bg-black/40">
+                  <TabsTrigger value="signin" className={tabClass}>
+                    Sign In
+                  </TabsTrigger>
+                  <TabsTrigger value="signup" className={tabClass}>
+                    Sign Up
+                  </TabsTrigger>
+                </TabsList>
 
-              <TabsContent value="signin" className="mt-6 space-y-4">
-                <p className="mb-4 text-center text-sm font-light text-white/50">
-                  Sign in with your account to keep building.
-                </p>
+                <TabsContent value="signin" className="mt-6 space-y-4">
+                  <p className="mb-4 text-center text-sm font-light text-white/50">
+                    Sign in with your account to keep building.
+                  </p>
 
-                <div className="space-y-2">
-                  {providers.map((provider) => (
-                    <Button
-                      key={provider.key}
-                      onClick={() => void handleOAuthSignIn(provider.key)}
-                      disabled={isLoading}
-                      className="w-full rounded-lg border border-white/10 bg-white/10 py-2 font-light text-white transition-all duration-[var(--duration-slow)] hover:bg-white/15 disabled:opacity-50"
-                    >
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Starting...
-                        </>
-                      ) : (
-                        <>
-                          <span className="mr-2 inline-flex h-4 w-4 items-center justify-center">
-                            {provider.logo}
-                          </span>
-                          Continue with {provider.label}
-                        </>
-                      )}
-                    </Button>
-                  ))}
-                </div>
+                  {renderProviders()}
 
-                {showEmailAuth ? (
-                  <>
-                    <Separator label="or" className="my-4" />
-                    <div className="space-y-3">
-                      <Input
-                        type="email"
-                        placeholder="Email"
-                        value={email}
-                        onChange={(event) => setEmail(event.target.value)}
-                        className="bg-black/40 border border-white/10 text-white placeholder-white/30 focus:border-white/20"
-                      />
-                      <Input
-                        type="password"
-                        placeholder="Password"
-                        value={password}
-                        onChange={(event) => setPassword(event.target.value)}
-                        className="bg-black/40 border border-white/10 text-white placeholder-white/30 focus:border-white/20"
-                      />
-                      <Button
-                        onClick={() => void handlePasswordSignIn()}
-                        disabled={isLoading}
-                        className="w-full border border-white/10 bg-white/10 font-light text-white hover:bg-white/15"
-                      >
-                        {isLoading ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Signing in...
-                          </>
-                        ) : (
-                          "Sign In"
-                        )}
-                      </Button>
-                    </div>
-                    <p className="text-center text-xs font-light text-white/30">
-                      Email sign-in requires confirmed email addresses.
-                    </p>
-                  </>
-                ) : null}
-              </TabsContent>
+                  {showEmailAuth ? (
+                    <>
+                      <Separator label="or" className="my-4" />
+                      <div className="space-y-3">
+                        <Input
+                          type="email"
+                          placeholder="Email"
+                          value={email}
+                          onChange={(event) => {
+                            setEmail(event.target.value);
+                            setResetEmail(event.target.value);
+                          }}
+                          className={inputClass}
+                        />
+                        {renderPasswordField({
+                          value: password,
+                          onChange: setPassword,
+                          placeholder: "Password",
+                          visible: showPassword,
+                          onToggle: () => setShowPassword((current) => !current),
+                        })}
+                        <Button
+                          onClick={() => void handlePasswordSignIn()}
+                          disabled={isLoading}
+                          className="w-full border border-white/10 bg-white/10 font-light text-white hover:bg-white/15"
+                        >
+                          {isLoading ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Signing in...
+                            </>
+                          ) : (
+                            "Sign In"
+                          )}
+                        </Button>
+                      </div>
+                      <div className="flex items-center justify-between gap-3 text-xs font-light text-white/35">
+                        <span>Email sign-in requires confirmed email addresses.</span>
+                        <button
+                          type="button"
+                          onClick={() => setPanelMode("reset")}
+                          className="shrink-0 text-white/52 transition-colors hover:text-white/74"
+                        >
+                          Forgot password?
+                        </button>
+                      </div>
+                    </>
+                  ) : null}
+                </TabsContent>
 
-              <TabsContent value="signup" className="mt-6 space-y-4">
-                <p className="mb-4 text-center text-sm font-light text-white/50">
-                  Create your account. Email confirmation is required.
-                </p>
+                <TabsContent value="signup" className="mt-6 space-y-4">
+                  <p className="mb-4 text-center text-sm font-light text-white/50">
+                    Create your account. Email confirmation is required.
+                  </p>
 
-                <div className="space-y-2">
-                  {providers.map((provider) => (
-                    <Button
-                      key={provider.key}
-                      onClick={() => void handleOAuthSignIn(provider.key)}
-                      disabled={isLoading}
-                      className="w-full rounded-lg border border-white/10 bg-white/10 py-2 font-light text-white transition-all duration-[var(--duration-slow)] hover:bg-white/15 disabled:opacity-50"
-                    >
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Starting...
-                        </>
-                      ) : (
-                        <>
-                          <span className="mr-2 inline-flex h-4 w-4 items-center justify-center">
-                            {provider.logo}
-                          </span>
-                          Sign Up with {provider.label}
-                        </>
-                      )}
-                    </Button>
-                  ))}
-                </div>
+                  {renderProviders()}
 
-                {showEmailAuth ? (
-                  <>
-                    <Separator label="or" className="my-4 rounded-md" />
-                    <div className="space-y-3">
-                      <Input
-                        type="email"
-                        placeholder="Email"
-                        value={email}
-                        onChange={(event) => setEmail(event.target.value)}
-                        className="bg-black/40 border border-white/10 text-white placeholder-white/30 focus:border-white/20"
-                      />
-                      <Input
-                        type="password"
-                        placeholder="Password"
-                        value={password}
-                        onChange={(event) => setPassword(event.target.value)}
-                        className="bg-black/40 border border-white/10 text-white placeholder-white/30 focus:border-white/20"
-                      />
-                      <Input
-                        type="password"
-                        placeholder="Confirm password"
-                        value={confirmPassword}
-                        onChange={(event) => setConfirmPassword(event.target.value)}
-                        className="bg-black/40 border border-white/10 text-white placeholder-white/30 focus:border-white/20"
-                      />
-                      <Button
-                        onClick={() => void handlePasswordSignUp()}
-                        disabled={isLoading}
-                        className="w-full border border-white/10 bg-white/10 font-light text-white hover:bg-white/15"
-                      >
-                        {isLoading ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Creating account...
-                          </>
-                        ) : (
-                          "Create Account"
-                        )}
-                      </Button>
-                    </div>
-                  </>
-                ) : null}
-              </TabsContent>
-            </Tabs>
+                  {showEmailAuth ? (
+                    <>
+                      <Separator label="or" className="my-4 rounded-md" />
+                      <div className="space-y-3">
+                        <Input
+                          type="email"
+                          placeholder="Email"
+                          value={email}
+                          onChange={(event) => setEmail(event.target.value)}
+                          className={inputClass}
+                        />
+                        {renderPasswordField({
+                          value: password,
+                          onChange: setPassword,
+                          placeholder: "Password",
+                          visible: showPassword,
+                          onToggle: () => setShowPassword((current) => !current),
+                        })}
+                        {renderPasswordField({
+                          value: confirmPassword,
+                          onChange: setConfirmPassword,
+                          placeholder: "Confirm password",
+                          visible: showConfirmPassword,
+                          onToggle: () => setShowConfirmPassword((current) => !current),
+                        })}
+                        <Button
+                          onClick={() => void handlePasswordSignUp()}
+                          disabled={isLoading}
+                          className="w-full border border-white/10 bg-white/10 font-light text-white hover:bg-white/15"
+                        >
+                          {isLoading ? (
+                            <>
+                              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                              Creating account...
+                            </>
+                          ) : (
+                            "Create Account"
+                          )}
+                        </Button>
+                      </div>
+                    </>
+                  ) : null}
+                </TabsContent>
+              </Tabs>
+            )}
 
             <p className="mt-6 text-center text-xs font-light text-white/20">{legalText}</p>
           </div>

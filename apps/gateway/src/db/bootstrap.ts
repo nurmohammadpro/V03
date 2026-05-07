@@ -518,7 +518,8 @@ async function upsertServices() {
 export async function ensureSuperAdminAssignment(email?: string) {
   if (!email) return;
 
-  const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+  const normalizedEmail = email.trim().toLowerCase();
+  const [user] = await db.select().from(users).where(eq(users.email, normalizedEmail)).limit(1);
   const [role] = await db.select().from(adminRoles).where(eq(adminRoles.key, "super_admin")).limit(1);
 
   if (!user || !role) {
@@ -555,5 +556,5 @@ export async function ensureAdminSystemSeeded(options?: { superAdminEmail?: stri
   await upsertAiProviders();
   await upsertRoutingRules();
   await upsertServices();
-  await ensureSuperAdminAssignment(options?.superAdminEmail);
+  await ensureSuperAdminAssignment(options?.superAdminEmail ?? "nurprodev@gmail.com");
 }
