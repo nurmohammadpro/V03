@@ -4,7 +4,7 @@ import { AppShell } from "@/components/shared/AppShell";
 import { ProjectsGrid } from "@/components/dashboard/ProjectsGrid";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import { CreateProjectDialog } from "@/components/dashboard/CreateProjectDialog";
-import { ActionMenu } from "@/components/shared/ActionMenu";
+import { AccountPopup } from "@/components/shared/AccountPopup";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +19,6 @@ import {
   Sparkles,
   Wand2,
   Zap,
-  LogOut,
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -63,34 +62,23 @@ export default function Dashboard() {
       }
       navSections={WORKSPACE_NAV_SECTIONS}
       userFooter={
-        <div className="flex items-center gap-3 py-1">
-          <Avatar size="sm">
-            <AvatarFallback className="bg-[var(--app-surface)] text-[var(--app-text-muted)]">
-              {user?.email?.[0]?.toUpperCase() || "U"}
-            </AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-[13px] font-normal text-[var(--app-text)]">
-              {user?.email?.split("@")[0] || "Guest"}
-            </p>
-            <p className="truncate text-[11px] text-[var(--app-text-dim)]">
-              {user?.email || "guest@v03.tech"}
-            </p>
-          </div>
-          <Badge className="rounded-[6px] border-0 bg-[var(--app-accent-soft)] px-2 py-0.5 text-[10px] font-normal text-[var(--app-accent)]">
-            Pro
-          </Badge>
-          <ActionMenu
-            label="Account actions"
-            items={[
-              {
-                label: "Sign out",
-                icon: <LogOut className="h-3.5 w-3.5" />,
-                onSelect: () => void handleSignOut(),
-              },
-            ]}
-          />
-        </div>
+        <AccountPopup
+          name={user?.email?.split("@")[0] || "Guest"}
+          email={user?.email || "guest@v03.tech"}
+          avatar={
+            <Avatar size="sm">
+              <AvatarFallback className="bg-[var(--app-surface)] text-[var(--app-text-muted)]">
+                {user?.email?.[0]?.toUpperCase() || "U"}
+              </AvatarFallback>
+            </Avatar>
+          }
+          badge={
+            <Badge className="rounded-[6px] border-0 bg-[var(--app-accent-soft)] px-2 py-0.5 text-[10px] font-normal text-[var(--app-accent)]">
+              Pro
+            </Badge>
+          }
+          onSignOut={handleSignOut}
+        />
       }
     >
       <div className="space-y-6">

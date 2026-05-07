@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { AppShell } from "@/components/shared/AppShell";
-import { ActionMenu } from "@/components/shared/ActionMenu";
+import { AccountPopup } from "@/components/shared/AccountPopup";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Download, LogOut, RefreshCw, UserPlus } from "lucide-react";
+import { Download, RefreshCw, UserPlus } from "lucide-react";
 import { ADMIN_NAV_SECTIONS } from "@/config/navigation";
 import { cn } from "@/lib/utils";
 
@@ -89,34 +89,23 @@ export function AdminShell({ title, subtitle, children, badge, headerActions }: 
         </>
       }
       userFooter={
-        <div className="flex items-center gap-3 py-1">
-          <Avatar size="sm">
-            <AvatarFallback className="bg-[var(--app-surface)] text-[var(--app-text-muted)]">
-              {user?.email?.[0]?.toUpperCase() || "A"}
-            </AvatarFallback>
-          </Avatar>
-          <div className="min-w-0 flex-1">
-            <p className="truncate text-[13px] font-normal text-[var(--app-text)]">
-              {user?.fullName || user?.email?.split("@")[0] || "Admin"}
-            </p>
-            <p className="truncate text-[11px] text-[var(--app-text-dim)]">
-              {user?.email || "admin@v03.tech"}
-            </p>
-          </div>
-          <Badge className="rounded-[6px] border-0 bg-[var(--app-accent-soft)] px-2 py-0.5 text-[10px] font-normal text-[var(--app-accent)]">
-            {primaryRole}
-          </Badge>
-          <ActionMenu
-            label="Admin account actions"
-            items={[
-              {
-                label: "Sign out",
-                icon: <LogOut className="h-3.5 w-3.5" />,
-                onSelect: () => void handleSignOut(),
-              },
-            ]}
-          />
-        </div>
+        <AccountPopup
+          name={user?.fullName || user?.email?.split("@")[0] || "Admin"}
+          email={user?.email || "admin@v03.tech"}
+          avatar={
+            <Avatar size="sm">
+              <AvatarFallback className="bg-[var(--app-surface)] text-[var(--app-text-muted)]">
+                {user?.email?.[0]?.toUpperCase() || "A"}
+              </AvatarFallback>
+            </Avatar>
+          }
+          badge={
+            <Badge className="rounded-[6px] border-0 bg-[var(--app-accent-soft)] px-2 py-0.5 text-[10px] font-normal text-[var(--app-accent)]">
+              {primaryRole}
+            </Badge>
+          }
+          onSignOut={handleSignOut}
+        />
       }
     >
       {children}

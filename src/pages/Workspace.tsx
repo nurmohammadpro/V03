@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { AccountPopup } from "@/components/shared/AccountPopup";
+import { ActionMenu } from "@/components/shared/ActionMenu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ActionMenu } from "@/components/shared/ActionMenu";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import WorkspaceLayout from "@/components/workspace/WorkspaceLayout";
 import FileTree from "@/components/workspace/FileTree";
@@ -21,7 +22,6 @@ import {
   Send,
   Sparkles,
   PlaySquare,
-  LogOut,
 } from "lucide-react";
 
 const FRAMEWORKS = ["Next.js", "MERN", "Laravel", "Django", "NestJS"] as const;
@@ -563,31 +563,18 @@ export default function Workspace() {
               </div>
 
               <div className="border-t border-[var(--app-border)] px-3 py-3">
-                <div className="flex items-center gap-3">
-                  <Avatar size="sm">
-                    <AvatarFallback className="bg-[var(--app-surface)] text-[var(--app-text-muted)]">
-                      {user?.email?.[0]?.toUpperCase() || "U"}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="min-w-0">
-                    <p className="truncate text-[13px] font-normal text-[var(--app-text)]">
-                      {user?.email?.split("@")[0] || "Guest"}
-                    </p>
-                    <p className="truncate text-[11px] text-[var(--app-text-dim)]">
-                      {user?.email || "guest@v03.tech"}
-                    </p>
-                  </div>
-                  <ActionMenu
-                    label="Workspace account actions"
-                    items={[
-                      {
-                        label: "Sign out",
-                        icon: <LogOut className="h-3.5 w-3.5" />,
-                        onSelect: () => void handleSignOut(),
-                      },
-                    ]}
-                  />
-                </div>
+                <AccountPopup
+                  name={user?.email?.split("@")[0] || "Guest"}
+                  email={user?.email || "guest@v03.tech"}
+                  avatar={
+                    <Avatar size="sm">
+                      <AvatarFallback className="bg-[var(--app-surface)] text-[var(--app-text-muted)]">
+                        {user?.email?.[0]?.toUpperCase() || "U"}
+                      </AvatarFallback>
+                    </Avatar>
+                  }
+                  onSignOut={handleSignOut}
+                />
               </div>
             </div>
           </aside>
