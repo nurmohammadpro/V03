@@ -16,8 +16,24 @@ export default function Home() {
   const [showIntro, setShowIntro] = useState(true);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setShowIntro(false), 1100);
-    return () => window.clearTimeout(timer);
+    const readyStateDone = document.readyState === "complete";
+    const minimumTimer = window.setTimeout(() => {
+      if (readyStateDone || document.readyState === "complete") {
+        setShowIntro(false);
+      }
+    }, 900);
+
+    const maximumTimer = window.setTimeout(() => setShowIntro(false), 2400);
+    const handleLoad = () => {
+      window.setTimeout(() => setShowIntro(false), 250);
+    };
+
+    window.addEventListener("load", handleLoad, { once: true });
+    return () => {
+      window.clearTimeout(minimumTimer);
+      window.clearTimeout(maximumTimer);
+      window.removeEventListener("load", handleLoad);
+    };
   }, []);
 
   const handlePromptSubmit = (prompt: string) => {
@@ -37,7 +53,7 @@ export default function Home() {
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-background">
-      <UniverseBackground />
+      {!showIntro ? <UniverseBackground /> : null}
 
       <div
         className={`pointer-events-none fixed inset-0 z-[120] flex items-center justify-center bg-[#05070b] transition-opacity duration-700 ${
@@ -45,11 +61,21 @@ export default function Home() {
         }`}
         aria-hidden="true"
       >
-        <div className={`flex flex-col items-center gap-4 transition-all duration-700 ${showIntro ? "translate-y-0 opacity-100" : "-translate-y-2 opacity-0"}`}>
-          <span className="flex h-16 w-24 items-center justify-center rounded-[10px] bg-white/[0.04] ring-1 ring-white/8">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(111,179,255,0.22),transparent_18%),radial-gradient(circle_at_center,rgba(255,255,255,0.12),transparent_38%)]" />
+        <div className="absolute left-1/2 top-1/2 h-[320px] w-[320px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(116,178,255,0.2),rgba(116,178,255,0.06)_32%,transparent_68%)] blur-2xl" />
+        <div className={`relative flex flex-col items-center gap-5 transition-all duration-700 ${showIntro ? "translate-y-0 opacity-100" : "-translate-y-2 opacity-0"}`}>
+          <div className="relative flex h-28 w-28 items-center justify-center">
+            <span className="absolute inset-0 rounded-full border border-white/10 animate-[ping_2.4s_ease-out_infinite]" />
+            <span className="absolute inset-[10px] rounded-full border border-[#7bb1ff]/25 animate-[pulse_2s_ease-in-out_infinite]" />
+            <span className="absolute inset-[22px] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.22),rgba(121,176,255,0.14)_45%,rgba(6,8,12,0.08)_72%)] blur-[2px]" />
+            <span className="relative flex h-16 w-24 items-center justify-center rounded-[12px] bg-white/[0.05] ring-1 ring-white/10 backdrop-blur-md">
             <img src="/v03.svg" alt="v03" className="h-6 w-auto" />
-          </span>
-          <p className="text-[11px] uppercase tracking-[0.22em] text-white/38">AI app builder</p>
+            </span>
+          </div>
+          <div className="space-y-2 text-center">
+            <p className="text-[11px] uppercase tracking-[0.24em] text-white/34">AI app builder</p>
+            <p className="text-sm font-light text-white/58">Preparing your workspace</p>
+          </div>
         </div>
       </div>
 
