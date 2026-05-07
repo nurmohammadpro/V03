@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { AppShell } from "@/components/shared/AppShell";
+import { ActionMenu } from "@/components/shared/ActionMenu";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { Download, RefreshCw, UserPlus } from "lucide-react";
+import { Download, LogOut, RefreshCw, UserPlus } from "lucide-react";
 import { ADMIN_NAV_SECTIONS } from "@/config/navigation";
 import { cn } from "@/lib/utils";
 
@@ -17,9 +18,14 @@ interface AdminShellProps {
 }
 
 export function AdminShell({ title, subtitle, children, badge, headerActions }: AdminShellProps) {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   const [dateRange] = useState<"7d" | "30d" | "90d">("30d");
   const primaryRole = user?.roleKeys?.[0]?.replace(/_/g, " ") ?? "admin";
+
+  const handleSignOut = async () => {
+    await logout();
+    window.location.replace("/");
+  };
 
   useEffect(() => {
     if (loading || !user || user.isAdmin) return;
@@ -100,6 +106,16 @@ export function AdminShell({ title, subtitle, children, badge, headerActions }: 
           <Badge className="rounded-[6px] border-0 bg-[var(--app-accent-soft)] px-2 py-0.5 text-[10px] font-normal text-[var(--app-accent)]">
             {primaryRole}
           </Badge>
+          <ActionMenu
+            label="Admin account actions"
+            items={[
+              {
+                label: "Sign out",
+                icon: <LogOut className="h-3.5 w-3.5" />,
+                onSelect: () => void handleSignOut(),
+              },
+            ]}
+          />
         </div>
       }
     >

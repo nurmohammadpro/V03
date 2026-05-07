@@ -4,6 +4,7 @@ import { AppShell } from "@/components/shared/AppShell";
 import { ProjectsGrid } from "@/components/dashboard/ProjectsGrid";
 import { ActivityFeed } from "@/components/dashboard/ActivityFeed";
 import { CreateProjectDialog } from "@/components/dashboard/CreateProjectDialog";
+import { ActionMenu } from "@/components/shared/ActionMenu";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -18,14 +19,20 @@ import {
   Sparkles,
   Wand2,
   Zap,
+  LogOut,
 } from "lucide-react";
 
 export default function Dashboard() {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   const { data: projects = [], isLoading: projectsLoading } = useProjects();
   const { activities, loading: activitiesLoading } = useActivityFeed();
   const { stats: userStats, loading: statsLoading } = useUserStats();
   const [createOpen, setCreateOpen] = useState(false);
+
+  const handleSignOut = async () => {
+    await logout();
+    window.location.replace("/");
+  };
 
   useEffect(() => {
     if (loading || !user?.isAdmin) return;
@@ -73,6 +80,16 @@ export default function Dashboard() {
           <Badge className="rounded-[6px] border-0 bg-[var(--app-accent-soft)] px-2 py-0.5 text-[10px] font-normal text-[var(--app-accent)]">
             Pro
           </Badge>
+          <ActionMenu
+            label="Account actions"
+            items={[
+              {
+                label: "Sign out",
+                icon: <LogOut className="h-3.5 w-3.5" />,
+                onSelect: () => void handleSignOut(),
+              },
+            ]}
+          />
         </div>
       }
     >

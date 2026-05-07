@@ -21,6 +21,7 @@ import {
   Send,
   Sparkles,
   PlaySquare,
+  LogOut,
 } from "lucide-react";
 
 const FRAMEWORKS = ["Next.js", "MERN", "Laravel", "Django", "NestJS"] as const;
@@ -277,7 +278,7 @@ function WorkspaceMessage({ role, content, isStreaming }: { role: "user" | "assi
 }
 
 export default function Workspace() {
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
   const messages = useWorkspaceStore((s) => s.messages);
   const selectedFramework = useWorkspaceStore((s) => s.selectedFramework);
   const isGenerating = useWorkspaceStore((s) => s.isGenerating);
@@ -303,6 +304,11 @@ export default function Workspace() {
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const handleSignOut = async () => {
+    await logout();
+    window.location.replace("/");
+  };
 
   useEffect(() => {
     if (loading || !user?.isAdmin) return;
@@ -571,6 +577,16 @@ export default function Workspace() {
                       {user?.email || "guest@v03.tech"}
                     </p>
                   </div>
+                  <ActionMenu
+                    label="Workspace account actions"
+                    items={[
+                      {
+                        label: "Sign out",
+                        icon: <LogOut className="h-3.5 w-3.5" />,
+                        onSelect: () => void handleSignOut(),
+                      },
+                    ]}
+                  />
                 </div>
               </div>
             </div>
