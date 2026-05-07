@@ -2,6 +2,7 @@ import { FastifyReply, FastifyRequest } from "fastify";
 import db from "../db";
 import { adminAuditLogs, adminPermissions, adminRoles, rolePermissions, userAdminAssignments, users } from "../db/schema";
 import { and, eq, inArray, isNull } from "drizzle-orm";
+import { createRemoteJWKSet, JWTPayload, jwtVerify } from "jose";
 
 export interface AuthenticatedActor {
   userId: string;
@@ -14,16 +15,50 @@ export interface AuthenticatedActor {
   permissionKeys: string[];
 }
 
-type JwtActorPayload = {
-  sub?: string;
+type SupabaseJwtPayload = JWTPayload & {
   email?: string;
-  fullName?: string | null;
-  plan?: string;
-  status?: string;
-  isAdmin?: boolean;
-  roleKeys?: string[];
-  permissionKeys?: string[];
+  user_metadata?: {
+    full_name?: string;
+    name?: string;
+    avatar_url?: string;
+    picture?: string;
+  };
+  app_metadata?: {
+    provider?: string;
+    providers?: string[];
+  };
 };
+
+type ActorRequest = FastifyRequest & {
+  actor?: AuthenticatedActor;
+};
+
+let jwks: ReturnType<typeof createRemoteJWKSet> | null = null;
+
+function getSupabaseUrl() {
+  const url = process.env.SUPABASE_URL;
+  if (!url) {
+    throw new Error("SUPABASE_URL is required for auth verification");
+  }
+
+  return url.replace(/\/$/, "");
+}
+
+function getJwks() {
+  if (!jwks) {
+    jwks = createRemoteJWKSet(new URL(`${getSupabaseUrl()}/auth/v1/.well-known/jwks.json`));
+  }
+
+  return jwks;
+}
+
+async function verifySupabaseToken(token: string): Promise<SupabaseJwtPayload> {
+  const { payload } = await jwtVerify(token, getJwks(), {
+    issuer: `${getSupabaseUrl()}/auth/v1`,
+  });
+
+  return payload as SupabaseJwtPayload;
+}
 
 export async function resolveAdminAccess(userId: string) {
   const assignments = await db
@@ -88,28 +123,91 @@ export async function buildActorFromEmail(email: string): Promise<AuthenticatedA
   };
 }
 
-export function getRequestActor(request: FastifyRequest): AuthenticatedActor {
-  const user = request.user as JwtActorPayload | undefined;
+async function upsertUserFromSupabase(payload: SupabaseJwtPayload) {
+  const email = payload.email?.trim().toLowerCase();
 
-  if (!user?.sub || !user.email) {
+  if (!email) {
+    throw new Error("Authenticated user is missing email");
+  }
+
+  const fullName = payload.user_metadata?.full_name ?? payload.user_metadata?.name ?? null;
+  const avatarUrl = payload.user_metadata?.avatar_url ?? payload.user_metadata?.picture ?? null;
+  const nextMetadata = {
+    supabaseUserId: payload.sub ?? null,
+    providers: payload.app_metadata?.providers ?? [],
+    provider: payload.app_metadata?.provider ?? null,
+  };
+
+  const [existingUser] = await db.select().from(users).where(eq(users.email, email)).limit(1);
+
+  if (!existingUser) {
+    const [createdUser] = await db
+      .insert(users)
+      .values({
+        email,
+        fullName,
+        avatarUrl,
+        plan: "free",
+        status: "active",
+        metadata: nextMetadata,
+      })
+      .returning();
+
+    return createdUser;
+  }
+
+  const mergedMetadata = {
+    ...(typeof existingUser.metadata === "object" && existingUser.metadata ? existingUser.metadata : {}),
+    ...nextMetadata,
+  };
+
+  const [updatedUser] = await db
+    .update(users)
+    .set({
+      fullName,
+      avatarUrl,
+      metadata: mergedMetadata,
+      updatedAt: new Date(),
+    })
+    .where(eq(users.id, existingUser.id))
+    .returning();
+
+  return updatedUser;
+}
+
+export function getRequestActor(request: FastifyRequest): AuthenticatedActor {
+  const actor = (request as ActorRequest).actor;
+
+  if (!actor) {
     throw new Error("Missing authenticated actor");
   }
 
-  return {
-    userId: user.sub,
-    email: user.email,
-    fullName: user.fullName ?? null,
-    plan: user.plan ?? "free",
-    status: user.status ?? "active",
-    isAdmin: Boolean(user.isAdmin),
-    roleKeys: (user.roleKeys ?? []).map((roleKey) => String(roleKey)),
-    permissionKeys: (user.permissionKeys ?? []).map((permissionKey) => String(permissionKey)),
-  };
+  return actor;
 }
 
 export async function requireAuthenticated(request: FastifyRequest, reply: FastifyReply) {
+  const authHeader = request.headers.authorization;
+  const token = authHeader?.startsWith("Bearer ") ? authHeader.slice(7) : null;
+
+  if (!token) {
+    return reply.status(401).send({ error: "Unauthorized" });
+  }
+
   try {
-    await request.jwtVerify();
+    const payload = await verifySupabaseToken(token);
+    const user = await upsertUserFromSupabase(payload);
+    const adminAccess = await resolveAdminAccess(user.id);
+
+    (request as ActorRequest).actor = {
+      userId: user.id,
+      email: user.email,
+      fullName: user.fullName,
+      plan: user.plan,
+      status: user.status,
+      isAdmin: adminAccess.isAdmin,
+      roleKeys: adminAccess.roleKeys,
+      permissionKeys: adminAccess.permissionKeys,
+    };
   } catch {
     return reply.status(401).send({ error: "Unauthorized" });
   }

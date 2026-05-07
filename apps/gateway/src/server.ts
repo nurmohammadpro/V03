@@ -1,6 +1,5 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
-import jwt from "@fastify/jwt";
 import cookie from "@fastify/cookie";
 import { authRoutes } from "./routes/auth";
 import { projectRoutes } from "./routes/projects";
@@ -22,11 +21,6 @@ async function start() {
   await app.register(cors, {
     origin: true,
     credentials: true,
-  });
-
-  // JWT
-  await app.register(jwt, {
-    secret: process.env.JWT_SECRET || "v03-jwt-secret",
   });
 
   // Cookies

@@ -43,14 +43,17 @@ Optional Supabase vars for future phases:
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
 
-Mail delivery vars for gateway OTP:
+Frontend vars for Supabase Auth:
 
-- `SMTP_HOST`
-- `SMTP_PORT`
-- `SMTP_SECURE`
-- `SMTP_USER`
-- `SMTP_PASS`
-- `SMTP_FROM`
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+
+For the current auth migration:
+
+- frontend uses Supabase Auth for email/password and OAuth
+- gateway verifies Supabase access tokens and resolves app RBAC
+- Google, GitHub, and Apple redirect back to `/auth/callback`
+- email/password signup expects email confirmation to be enabled in Supabase Auth
 
 ## Which Supabase connection string to use
 

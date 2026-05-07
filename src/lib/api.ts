@@ -1,4 +1,5 @@
 import type { AdminPermission, AdminRole, AiRoutingRule, AuthActor, ServiceIntegration } from "@/lib/types";
+import { supabase } from "@/lib/supabase";
 
 const API_BASE = import.meta.env.VITE_API_URL || "/api";
 
@@ -34,9 +35,15 @@ async function request<T>(path: string, options: ApiOptions = {}): Promise<T> {
     config.body = JSON.stringify(body);
   }
 
-  const token = localStorage.getItem("v03_token");
-  if (token) {
-    (config.headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
+  if (supabase) {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    const token = session?.access_token;
+    if (token) {
+      (config.headers as Record<string, string>)["Authorization"] = `Bearer ${token}`;
+    }
   }
 
   let response: Response;
@@ -56,23 +63,6 @@ async function request<T>(path: string, options: ApiOptions = {}): Promise<T> {
 }
 
 export const api = {
-  // Auth
-  sendOtp: (email: string) =>
-    request<{ ok: boolean; message: string; delivery: "email" | "console" }>("/api/auth/send-otp", {
-      method: "POST",
-      body: { email },
-    }),
-
-  verifyOtp: (email: string, code: string) =>
-    request<{
-      ok: boolean;
-      token: string;
-      user: AuthActor;
-    }>("/api/auth/verify-otp", {
-      method: "POST",
-      body: { email, code },
-    }),
-
   getMe: () => request<{ user: AuthActor }>("/api/auth/me"),
 
   // Projects

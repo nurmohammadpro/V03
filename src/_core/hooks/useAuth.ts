@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { getLoginUrl } from "@/const";
 import api from "@/lib/api";
+import { hasSupabaseEnv, supabase } from "@/lib/supabase";
 import type { AuthActor } from "@/lib/types";
 
 type UseAuthOptions = {
@@ -20,16 +20,28 @@ function readStoredActor() {
 }
 
 export function useAuth(options?: UseAuthOptions) {
-  const { redirectOnUnauthenticated = false, redirectPath = getLoginUrl() } = options ?? {};
+  const { redirectOnUnauthenticated = false, redirectPath = "/" } = options ?? {};
   const [user, setUser] = useState<AuthActor | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const refresh = useCallback(async () => {
-    const token = localStorage.getItem("v03_token");
+  const clearLocalState = useCallback(() => {
+    localStorage.removeItem("v03-user");
+    setUser(null);
+  }, []);
 
-    if (!token) {
-      localStorage.removeItem("v03-user");
-      setUser(null);
+  const refresh = useCallback(async () => {
+    if (!supabase) {
+      clearLocalState();
+      setLoading(false);
+      return;
+    }
+
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session) {
+      clearLocalState();
       setLoading(false);
       return;
     }
@@ -39,14 +51,11 @@ export function useAuth(options?: UseAuthOptions) {
       localStorage.setItem("v03-user", JSON.stringify(res.user));
       setUser(res.user);
     } catch {
-      localStorage.removeItem("v03-token");
-      localStorage.removeItem("v03_token");
-      localStorage.removeItem("v03-user");
-      setUser(null);
+      clearLocalState();
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [clearLocalState]);
 
   useEffect(() => {
     const stored = readStoredActor();
@@ -54,20 +63,43 @@ export function useAuth(options?: UseAuthOptions) {
       setUser(stored);
     }
 
+    if (!supabase) {
+      setLoading(false);
+      return;
+    }
+
     void refresh();
-  }, [refresh]);
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        clearLocalState();
+        setLoading(false);
+        return;
+      }
+
+      void refresh();
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [clearLocalState, refresh]);
 
   const logout = useCallback(async () => {
-    localStorage.removeItem("v03_token");
-    localStorage.removeItem("v03-user");
-    setUser(null);
-  }, []);
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
+
+    clearLocalState();
+  }, [clearLocalState]);
 
   const state = useMemo(
     () => ({
       user,
       loading,
-      error: null,
+      error: hasSupabaseEnv ? null : "Missing Supabase environment variables",
       isAuthenticated: Boolean(user),
       isAdmin: Boolean(user?.isAdmin),
     }),
