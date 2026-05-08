@@ -143,6 +143,10 @@ export function AppShell({
                 <PanelLeftOpen className="h-4 w-4" />
               </Button>
 
+              <Link href={brandHref} className="flex items-center lg:hidden">
+                <img src="/v03.svg" alt="v03" className="h-4 w-auto" />
+              </Link>
+
               <div>
                 <div className="flex flex-wrap items-center gap-3">
                   <h1 className="text-[16px] font-medium tracking-[-0.02em] text-[var(--app-text)] sm:text-[16px]">

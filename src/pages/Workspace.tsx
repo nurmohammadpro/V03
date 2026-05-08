@@ -426,6 +426,10 @@ export default function Workspace() {
               {sidebarOpen ? <PanelLeftClose className="h-4 w-4" /> : <PanelLeftOpen className="h-4 w-4" />}
             </Button>
 
+            <Link href="/dashboard" className="flex items-center sm:hidden">
+              <img src="/v03.svg" alt="v03" className="h-4 w-auto" />
+            </Link>
+
             <Link
               href="/dashboard"
               className="inline-flex items-center gap-2 rounded-[8px] bg-[var(--app-panel)] px-3 py-2 text-sm text-[var(--app-text-muted)] transition-colors hover:bg-[var(--app-panel-2)] hover:text-[var(--app-text)]"
