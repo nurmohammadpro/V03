@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { ChevronUp, LogOut } from "lucide-react";
+import { ChevronDown, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface AccountPopupProps {
@@ -79,7 +79,7 @@ export function AccountPopup({
         </div>
         {badge}
         <span className="flex h-8 w-8 items-center justify-center rounded-[8px] text-[var(--app-text-dim)] transition-colors hover:bg-[var(--app-surface)] hover:text-[var(--app-text)]">
-          <ChevronUp className={cn("h-4 w-4 transition-transform", open ? "rotate-0" : "rotate-180")} />
+          <ChevronDown className={cn("h-4 w-4 transition-transform", open ? "rotate-0" : "rotate-180")} />
         </span>
       </button>
     </div>

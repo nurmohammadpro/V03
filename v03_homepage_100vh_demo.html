@@ -1,0 +1,878 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>V03 100vh Homepage Demo</title>
+    <style>
+      :root {
+        --bg: #05070a;
+        --panel: rgba(13, 18, 24, 0.82);
+        --panel-2: rgba(15, 21, 29, 0.96);
+        --line: rgba(255, 255, 255, 0.08);
+        --line-strong: rgba(255, 255, 255, 0.14);
+        --text: #ebf1f7;
+        --muted: #94a3b6;
+        --muted-2: #677588;
+        --accent: #4d8dff;
+        --accent-soft: rgba(77, 141, 255, 0.14);
+        --green: #33c48d;
+        --radius: 22px;
+        --shadow: 0 28px 90px rgba(0, 0, 0, 0.5);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        height: 100%;
+      }
+
+      body {
+        margin: 0;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background:
+          radial-gradient(circle at 20% 18%, rgba(77, 141, 255, 0.14), transparent 26%),
+          radial-gradient(circle at 84% 16%, rgba(51, 196, 141, 0.08), transparent 20%),
+          linear-gradient(180deg, #06080c 0%, #05070a 100%);
+        color: var(--text);
+        overflow: hidden;
+      }
+
+      body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        background-image:
+          linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+        background-size: 52px 52px;
+        mask-image: radial-gradient(circle at center, black 32%, transparent 82%);
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .page {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        width: min(1280px, calc(100% - 32px));
+        margin: 0 auto;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 20px 0 16px;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 15px;
+        font-weight: 600;
+        letter-spacing: -0.02em;
+      }
+
+      .mark {
+        width: 34px;
+        height: 34px;
+        border-radius: 11px;
+        display: grid;
+        place-items: center;
+        background: linear-gradient(135deg, #5d9bff 0%, #2f66f0 100%);
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
+      }
+
+      .nav {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        color: var(--muted);
+        font-size: 14px;
+      }
+
+      .nav a:hover {
+        color: var(--text);
+      }
+
+      .actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        padding: 11px 18px;
+        border-radius: 999px;
+        border: 1px solid transparent;
+        font-size: 14px;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        transition: 180ms ease;
+        white-space: nowrap;
+      }
+
+      .button.primary {
+        background: var(--accent);
+        color: white;
+        box-shadow: 0 16px 32px rgba(77, 141, 255, 0.22);
+      }
+
+      .button.primary:hover {
+        background: #6198ff;
+      }
+
+      .button.ghost {
+        border-color: var(--line);
+        background: rgba(255, 255, 255, 0.02);
+      }
+
+      .button.ghost:hover {
+        border-color: var(--line-strong);
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      .hero {
+        flex: 1;
+        display: grid;
+        grid-template-columns: minmax(0, 0.96fr) minmax(560px, 1.04fr);
+        gap: 28px;
+        align-items: center;
+        padding: 12px 0 24px;
+        min-height: 0;
+      }
+
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        padding: 7px 12px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.03);
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: var(--green);
+        box-shadow: 0 0 0 6px rgba(51, 196, 141, 0.08);
+      }
+
+      h1 {
+        margin: 18px 0 0;
+        font-size: clamp(44px, 7vw, 78px);
+        line-height: 0.95;
+        letter-spacing: -0.055em;
+        max-width: 10.4ch;
+      }
+
+      .copy {
+        margin: 20px 0 0;
+        max-width: 560px;
+        color: var(--muted);
+        font-size: 17px;
+        line-height: 1.72;
+      }
+
+      .cta-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        margin-top: 28px;
+      }
+
+      .signal-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 12px;
+        margin-top: 28px;
+        max-width: 620px;
+      }
+
+      .signal {
+        padding: 14px 15px;
+        border-radius: 16px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      .signal strong {
+        display: block;
+        font-size: 14px;
+        margin-bottom: 4px;
+        letter-spacing: -0.02em;
+      }
+
+      .signal span {
+        color: var(--muted-2);
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      .proof-row {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 18px;
+      }
+
+      .proof-chip {
+        padding: 8px 11px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.025);
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .builder {
+        height: min(700px, calc(100vh - 128px));
+        min-height: 560px;
+        border-radius: 30px;
+        border: 1px solid var(--line);
+        background: linear-gradient(180deg, rgba(14, 19, 25, 0.96), rgba(9, 13, 18, 0.94));
+        box-shadow: var(--shadow);
+        overflow: hidden;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+      }
+
+      .builder-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.015);
+      }
+
+      .dots {
+        display: inline-flex;
+        gap: 7px;
+      }
+
+      .dots span {
+        width: 8px;
+        height: 8px;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.18);
+      }
+
+      .session {
+        color: var(--muted);
+        font-size: 12px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+
+      .live {
+        color: var(--green);
+        font-size: 12px;
+      }
+
+      .builder-grid {
+        display: grid;
+        grid-template-columns: 240px minmax(0, 1fr) 290px;
+        min-height: 0;
+      }
+
+      .left,
+      .center,
+      .right {
+        min-height: 0;
+      }
+
+      .left {
+        border-right: 1px solid var(--line);
+        background: rgba(8, 12, 16, 0.72);
+        padding: 14px;
+      }
+
+      .left-title,
+      .right-title {
+        color: var(--muted);
+        font-size: 11px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-bottom: 10px;
+      }
+
+      .file-list {
+        display: grid;
+        gap: 6px;
+      }
+
+      .file,
+      .status-card,
+      .metric-card {
+        border-radius: 14px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.025);
+      }
+
+      .file {
+        padding: 10px 11px;
+      }
+
+      .file strong {
+        display: block;
+        font-size: 13px;
+        margin-bottom: 4px;
+      }
+
+      .file span {
+        color: var(--muted-2);
+        font-size: 11px;
+      }
+
+      .center {
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr);
+      }
+
+      .prompt-panel {
+        padding: 14px;
+        border-bottom: 1px solid var(--line);
+      }
+
+      .prompt-box {
+        border-radius: 18px;
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.02);
+        padding: 14px;
+      }
+
+      .prompt-box p {
+        margin: 0;
+        color: #d7e0ea;
+        font-size: 14px;
+        line-height: 1.65;
+      }
+
+      .prompt-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .tag {
+        padding: 6px 9px;
+        border-radius: 999px;
+        font-size: 11px;
+        color: var(--muted);
+        border: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.03);
+      }
+
+      .workbench {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 0.92fr;
+        min-height: 0;
+      }
+
+      .code,
+      .preview {
+        min-height: 0;
+      }
+
+      .code {
+        border-right: 1px solid var(--line);
+        background: #091018;
+      }
+
+      .pane-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 11px 14px;
+        border-bottom: 1px solid var(--line);
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      pre {
+        margin: 0;
+        padding: 16px 16px 20px;
+        font-family: "JetBrains Mono", "SFMono-Regular", Consolas, monospace;
+        font-size: 12px;
+        line-height: 1.82;
+        color: #c3d1e3;
+        overflow: auto;
+        height: calc(100% - 43px);
+      }
+
+      .k { color: #8fb7ff; }
+      .s { color: #9de6c4; }
+      .f { color: #f6c968; }
+
+      .preview {
+        background: linear-gradient(180deg, #0f151d 0%, #0b1016 100%);
+      }
+
+      .preview-wrap {
+        padding: 14px;
+      }
+
+      .app {
+        background: #f5f7fb;
+        color: #101827;
+        border-radius: 20px;
+        overflow: hidden;
+        border: 1px solid rgba(16, 24, 39, 0.08);
+      }
+
+      .app-top {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 16px;
+        background: white;
+        border-bottom: 1px solid rgba(16, 24, 39, 0.08);
+      }
+
+      .app-top strong {
+        display: block;
+        font-size: 14px;
+      }
+
+      .app-top span {
+        color: #718095;
+        font-size: 12px;
+      }
+
+      .app-body {
+        padding: 16px;
+      }
+
+      .hero-card {
+        padding: 16px;
+        border-radius: 16px;
+        background: linear-gradient(135deg, #0e1728 0%, #1a2b44 100%);
+        color: white;
+      }
+
+      .hero-card h3 {
+        margin: 0 0 7px;
+        font-size: 18px;
+        letter-spacing: -0.03em;
+      }
+
+      .hero-card p {
+        margin: 0;
+        color: rgba(255, 255, 255, 0.74);
+        font-size: 12px;
+        line-height: 1.62;
+      }
+
+      .app-metrics {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+        margin-top: 12px;
+      }
+
+      .metric-card {
+        padding: 12px;
+        background: white;
+        border-color: rgba(16, 24, 39, 0.08);
+      }
+
+      .metric-card strong {
+        display: block;
+        font-size: 16px;
+        margin-bottom: 4px;
+      }
+
+      .metric-card span {
+        color: #718095;
+        font-size: 11px;
+      }
+
+      .right {
+        border-left: 1px solid var(--line);
+        background: rgba(8, 12, 16, 0.68);
+        padding: 14px;
+        display: grid;
+        gap: 10px;
+        align-content: start;
+      }
+
+      .status-card {
+        padding: 12px;
+      }
+
+      .status-card strong {
+        display: block;
+        font-size: 13px;
+        margin-bottom: 5px;
+      }
+
+      .status-card span {
+        color: var(--muted-2);
+        font-size: 12px;
+        line-height: 1.55;
+      }
+
+      .builder-bottom {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding: 12px 14px;
+        border-top: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.015);
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .bottom-meta {
+        display: flex;
+        gap: 18px;
+        flex-wrap: wrap;
+      }
+
+      .footer-note {
+        padding: 0 0 14px;
+        color: var(--muted-2);
+        font-size: 12px;
+      }
+
+      @media (max-width: 1180px) {
+        body {
+          overflow: auto;
+        }
+
+        .page {
+          min-height: auto;
+        }
+
+        .hero {
+          min-height: auto;
+          grid-template-columns: 1fr;
+          padding-bottom: 28px;
+        }
+
+        .builder {
+          height: auto;
+          min-height: 0;
+        }
+
+        .builder-grid,
+        .workbench {
+          grid-template-columns: 1fr;
+        }
+
+        .left,
+        .code {
+          border-right: 0;
+        }
+
+        .right {
+          border-left: 0;
+        }
+
+        .left,
+        .center,
+        .code,
+        .preview {
+          border-bottom: 1px solid var(--line);
+        }
+      }
+
+      @media (max-width: 820px) {
+        .topbar {
+          flex-wrap: wrap;
+        }
+
+        .nav {
+          order: 3;
+          width: 100%;
+          justify-content: space-between;
+          gap: 14px;
+          font-size: 13px;
+        }
+
+        .signal-grid {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      @media (max-width: 640px) {
+        body {
+          overflow: auto;
+        }
+
+        .page {
+          width: min(1280px, calc(100% - 20px));
+        }
+
+        .actions,
+        .cta-row {
+          width: 100%;
+          display: grid;
+          grid-template-columns: 1fr;
+        }
+
+        .button {
+          width: 100%;
+        }
+
+        .builder,
+        .prompt-box,
+        .signal,
+        .file,
+        .status-card,
+        .metric-card {
+          border-radius: 18px;
+        }
+
+        .builder {
+          border-radius: 24px;
+        }
+
+        .app-metrics {
+          grid-template-columns: 1fr;
+        }
+
+        .nav {
+          overflow-x: auto;
+          padding-bottom: 4px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <header class="topbar">
+        <a href="#" class="brand">
+          <span class="mark">V</span>
+          <span>v03</span>
+        </a>
+
+        <nav class="nav">
+          <a href="#">Product</a>
+          <a href="#">Workspace</a>
+          <a href="#">Examples</a>
+          <a href="#">Docs</a>
+        </nav>
+
+        <div class="actions">
+          <a href="#" class="button ghost">See Demo</a>
+          <a href="#" class="button primary">Start Building</a>
+        </div>
+      </header>
+
+      <section class="hero">
+        <div>
+          <div class="eyebrow">
+            <span class="dot"></span>
+            Serious AI app builder for product teams
+          </div>
+
+          <h1>One screen. Enough proof to trust the product.</h1>
+
+          <p class="copy">
+            This keeps the simple `100vh` landing-page idea, but makes the screen do more:
+            explain the workflow, show the builder, and make the output feel real without
+            turning the page into generic marketing.
+          </p>
+
+          <div class="cta-row">
+            <a href="#" class="button primary">Start Building</a>
+            <a href="#" class="button ghost">Watch Workflow</a>
+          </div>
+
+          <div class="proof-row">
+            <span class="proof-chip">Prompt to app structure</span>
+            <span class="proof-chip">Code-aware workspace</span>
+            <span class="proof-chip">Preview-driven iteration</span>
+          </div>
+
+          <div class="signal-grid">
+            <div class="signal">
+              <strong>Describe</strong>
+              <span>Turn product intent into routes, sections, and working UI foundations.</span>
+            </div>
+            <div class="signal">
+              <strong>Generate</strong>
+              <span>Create code and interface structure inside a focused builder session.</span>
+            </div>
+            <div class="signal">
+              <strong>Refine</strong>
+              <span>Iterate against code and preview until the result feels release-worthy.</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="builder">
+          <div class="builder-top">
+            <div class="dots">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            <div class="session">Builder Session / SaaS Admin</div>
+            <div class="live">Live generation</div>
+          </div>
+
+          <div class="builder-grid">
+            <aside class="left">
+              <div class="left-title">Project Files</div>
+              <div class="file-list">
+                <div class="file">
+                  <strong>app/dashboard/page.tsx</strong>
+                  <span>overview surface</span>
+                </div>
+                <div class="file">
+                  <strong>components/stats-grid.tsx</strong>
+                  <span>metric cards</span>
+                </div>
+                <div class="file">
+                  <strong>components/activity-panel.tsx</strong>
+                  <span>recent events</span>
+                </div>
+                <div class="file">
+                  <strong>app/settings/billing/page.tsx</strong>
+                  <span>tenant billing</span>
+                </div>
+              </div>
+            </aside>
+
+            <div class="center">
+              <div class="prompt-panel">
+                <div class="prompt-box">
+                  <p>
+                    Build a minimal B2B SaaS admin dashboard with analytics cards, team
+                    management, billing health, and deployment status. Keep it clean, responsive,
+                    and production-friendly.
+                  </p>
+                  <div class="prompt-tags">
+                    <span class="tag">Next.js</span>
+                    <span class="tag">TypeScript</span>
+                    <span class="tag">Responsive UI</span>
+                    <span class="tag">Dark dashboard</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="workbench">
+                <div class="code">
+                  <div class="pane-head">
+                    <span>Generated Code</span>
+                    <span>synced</span>
+                  </div>
+                  <pre><span class="k">export default function</span> <span class="f">DashboardPage</span>() {
+  <span class="k">return</span> (
+    &lt;main className=<span class="s">"min-h-screen bg-slate-950 text-white"</span>&gt;
+      &lt;section className=<span class="s">"mx-auto max-w-7xl px-6 py-8"</span>&gt;
+        &lt;Header
+          title=<span class="s">"Tenant Overview"</span>
+          subtitle=<span class="s">"Revenue, activity, and deployment health"</span>
+        /&gt;
+        &lt;StatsGrid metrics={metrics} /&gt;
+        &lt;RevenueChart data={revenueTrend} /&gt;
+      &lt;/section&gt;
+    &lt;/main&gt;
+  );
+}</pre>
+                </div>
+
+                <div class="preview">
+                  <div class="pane-head">
+                    <span>Preview</span>
+                    <span>desktop</span>
+                  </div>
+                  <div class="preview-wrap">
+                    <div class="app">
+                      <div class="app-top">
+                        <div>
+                          <strong>Tenant Overview</strong>
+                          <span>generated from prompt</span>
+                        </div>
+                        <span>Updated now</span>
+                      </div>
+                      <div class="app-body">
+                        <div class="hero-card">
+                          <h3>Enterprise Console</h3>
+                          <p>Revenue, team access, billing, and release activity in one place.</p>
+                        </div>
+                        <div class="app-metrics">
+                          <div class="metric-card">
+                            <strong>$42.8k</strong>
+                            <span>MRR</span>
+                          </div>
+                          <div class="metric-card">
+                            <strong>1,284</strong>
+                            <span>Active workspaces</span>
+                          </div>
+                          <div class="metric-card">
+                            <strong>99.98%</strong>
+                            <span>API uptime</span>
+                          </div>
+                          <div class="metric-card">
+                            <strong>24</strong>
+                            <span>Deployments today</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <aside class="right">
+              <div class="right-title">Workflow Signals</div>
+              <div class="status-card">
+                <strong>Planning complete</strong>
+                <span>Routes, shell, and data sections mapped from the prompt.</span>
+              </div>
+              <div class="status-card">
+                <strong>Generation active</strong>
+                <span>Cards, tables, chart blocks, and layout primitives are being created.</span>
+              </div>
+              <div class="status-card">
+                <strong>Preview ready</strong>
+                <span>Output is visible immediately, so refinement starts in context.</span>
+              </div>
+            </aside>
+          </div>
+
+          <div class="builder-bottom">
+            <div class="bottom-meta">
+              <span>Prompt to code</span>
+              <span>Code to preview</span>
+              <span>Refinement loop</span>
+            </div>
+            <span>Single-screen product proof</span>
+          </div>
+        </div>
+      </section>
+
+      <div class="footer-note">
+        Demo for a stronger `100vh` homepage direction. Same simple footprint, more product clarity.
+      </div>
+    </div>
+  </body>
+</html>
