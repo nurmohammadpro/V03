@@ -19,18 +19,30 @@ import ResetPassword from "@/pages/ResetPassword";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { PublicLayout } from "./components/public/PublicLayout";
 import Home from "./pages/Home";
 
 const queryClient = new QueryClient();
 
+/** Wrap a page component so it inherits the public gradient background */
+function publicPage(Component: React.ComponentType) {
+  const Wrapped = () => (
+    <PublicLayout>
+      <Component />
+    </PublicLayout>
+  );
+  Wrapped.displayName = `publicPage(${Component.displayName || Component.name || "Component"})`;
+  return Wrapped;
+}
+
 function Router() {
   return (
     <Switch>
-      <Route path={"/"} component={Home} />
-      <Route path={"/pricing"} component={Pricing} />
-      <Route path={"/terms"} component={Terms} />
-      <Route path={"/privacy"} component={Privacy} />
-      <Route path={"/refund"} component={Refund} />
+      <Route path={"/"} component={publicPage(Home)} />
+      <Route path={"/pricing"} component={publicPage(Pricing)} />
+      <Route path={"/terms"} component={publicPage(Terms)} />
+      <Route path={"/privacy"} component={publicPage(Privacy)} />
+      <Route path={"/refund"} component={publicPage(Refund)} />
       <Route path={"/auth/callback"} component={AuthCallback} />
       <Route path={"/auth/reset-password"} component={ResetPassword} />
       <Route path={"/dashboard"} component={Dashboard} />
@@ -43,8 +55,8 @@ function Router() {
       <Route path={"/admin/activity"} component={AdminActivity} />
       <Route path={"/admin/services"} component={AdminServices} />
       <Route path={"/workspace/:projectId"} component={Workspace} />
-      <Route path={"/404"} component={NotFound} />
-      <Route component={NotFound} />
+      <Route path={"/404"} component={publicPage(NotFound)} />
+      <Route component={publicPage(NotFound)} />
     </Switch>
   );
 }

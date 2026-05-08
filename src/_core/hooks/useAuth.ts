@@ -21,8 +21,8 @@ function readStoredActor() {
 
 export function useAuth(options?: UseAuthOptions) {
   const { redirectOnUnauthenticated = false, redirectPath = "/" } = options ?? {};
-  const [user, setUser] = useState<AuthActor | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<AuthActor | null>(() => readStoredActor());
+  const [loading, setLoading] = useState(() => !readStoredActor());
 
   const clearLocalState = useCallback(() => {
     localStorage.removeItem("v03-user");
