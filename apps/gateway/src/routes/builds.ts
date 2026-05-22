@@ -11,6 +11,7 @@ import { getRequestActor, requireAuthenticated } from "../middleware/auth";
 
 const execFileAsync = promisify(execFile);
 const RUNNER_URL = process.env.RUNNER_URL || "http://localhost:3002";
+const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL?.replace(/\/$/, "") || null;
 
 async function requireProjectAccess(projectId: string, actor: { userId: string; isAdmin: boolean }) {
   const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
@@ -239,25 +240,33 @@ export async function buildRoutes(app: FastifyInstance) {
 
     try {
       const { tarPath } = await exportProjectToTarGz(id);
-      const runner = await runnerStartRun({ runId: preview.id, mode: "dev", tarPath });
+      const runner = await runnerStartRun({ runId: preview.id, mode: "build", tarPath });
+
+      const base =
+        PUBLIC_BASE_URL ||
+        `${request.headers["x-forwarded-proto"] ?? "http"}://${request.headers["x-forwarded-host"] ?? request.headers.host}`;
+      const publicUrl = `${String(base).replace(/\/$/, "")}/p/${preview.id}/`;
 
       const [updated] = await db
         .update(previewInstances)
         .set({
           status: "running",
-          url: runner.url,
+          url: publicUrl,
           ports: runner.ports,
           runnerRef: {
             ...(typeof preview.runnerRef === "object" && preview.runnerRef
               ? (preview.runnerRef as Record<string, unknown>)
               : {}),
             containerId: runner.containerId,
+            url: runner.url,
           },
         })
         .where(eq(previewInstances.id, preview.id))
         .returning();
 
-      return reply.status(201).send({ previewId: preview.id, status: updated?.status ?? "running", url: updated?.url ?? runner.url });
+      return reply
+        .status(201)
+        .send({ previewId: preview.id, status: updated?.status ?? "running", url: updated?.url ?? publicUrl });
     } catch (err: any) {
       await db
         .update(previewInstances)

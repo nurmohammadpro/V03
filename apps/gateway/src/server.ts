@@ -9,6 +9,7 @@ import { adminRoutes } from "./routes/admin";
 import { fileRoutes } from "./routes/files";
 import { generationRoutes } from "./routes/generations";
 import { buildRoutes } from "./routes/builds";
+import { previewProxyRoutes } from "./routes/previewProxy";
 import { ensureAdminSystemSeeded } from "./db/bootstrap";
 import "dotenv/config";
 
@@ -54,6 +55,7 @@ async function start() {
   await app.register(fileRoutes);
   await app.register(generationRoutes);
   await app.register(buildRoutes);
+  await app.register(previewProxyRoutes);
   await app.register(chatRoutes);
   await app.register(adminRoutes);
 

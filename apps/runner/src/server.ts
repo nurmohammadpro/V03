@@ -43,9 +43,9 @@ RUN if [ -f package-lock.json ]; then npm ci; \\
 COPY . .
 ENV HOST=0.0.0.0
 ENV PORT=3000
-${mode === "build" ? "RUN npm run build || true" : ""}
+${mode === "build" ? "RUN npm run build" : ""}
 EXPOSE 3000
-CMD ["sh", "-lc", "npm run dev -- --host 0.0.0.0 --port 3000 || npm start"]
+CMD ["sh", "-lc", "${mode === "build" ? "npm start || npm run preview || npm run serve" : "npm run dev -- --host 0.0.0.0 --port 3000 || npm start"}"]
 `.trimStart();
 
   await writeFile(path.join(dir, "Dockerfile"), dockerfile, "utf8");
