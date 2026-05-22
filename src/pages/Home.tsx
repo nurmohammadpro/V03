@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'wouter';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { UniverseBackground } from '@/components/UniverseBackground';
 import { Navbar } from '@/components/Navbar';
@@ -6,7 +7,7 @@ import { PromptHero } from '@/components/PromptHero';
 import { Footer } from '@/components/Footer';
 import { AuthModal } from '@/components/AuthModal';
 import { Button } from '@/components/ui/button';
-import { Link, User } from 'lucide-react';
+import { User } from 'lucide-react';
 import { toast } from 'sonner';
 
 export default function Home() {
@@ -81,9 +82,9 @@ export default function Home() {
       <div className="relative w-full h-screen flex flex-col" style={{ zIndex: "var(--z-content)" }}>
         <Navbar
           logo={
-            <link href="/" className="flex items-center">
+            <Link to="/" className="flex items-center">
               <img src="/v03.svg" alt="v03.tech" className="h-5 w-auto md:h-8" />
-            </link>
+            </Link>
           }
           children={
             <div className="hidden items-center gap-5 md:flex">
