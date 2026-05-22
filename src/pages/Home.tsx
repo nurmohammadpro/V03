@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'wouter';
 import { useAuth } from '@/_core/hooks/useAuth';
 import { UniverseBackground } from '@/components/UniverseBackground';
 import { Navbar } from '@/components/Navbar';
@@ -68,9 +69,9 @@ export default function Home() {
       <div className="relative w-full h-screen flex flex-col" style={{ zIndex: "var(--z-content)" }}>
         <Navbar
           logo={
-            <a href="/" className="flex items-center">
+            <Link to="/" className="flex items-center">
               <img src="/v03.svg" alt="v03.tech" className="h-5 w-auto md:h-8" />
-            </a>
+            </Link>
           }
           children={
             <div className="hidden items-center gap-5 md:flex">
