@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 interface NeuralNetworkProps {
   onComplete?: () => void;
@@ -7,7 +7,6 @@ interface NeuralNetworkProps {
 export function NeuralNetwork({ onComplete }: NeuralNetworkProps) {
   const [animate, setAnimate] = useState(false);
   const [showReady, setShowReady] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
     // Start animation after a brief delay
@@ -25,7 +24,6 @@ export function NeuralNetwork({ onComplete }: NeuralNetworkProps) {
       onComplete?.();
     }, 3000);
 
-    timeoutRef.current = startTimer;
     return () => {
       clearTimeout(startTimer);
       clearTimeout(readyTimer);
