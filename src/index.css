@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100..800&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
@@ -38,7 +38,8 @@
   --color-surface-hover: var(--surface-hover);
   --color-surface-active: var(--surface-active);
   --color-surface-alt: var(--surface-alt);
-  --font-body: 'Outfit', sans-serif;
+  --font-body: 'Geist', sans-serif;
+  --font-heading: 'Space Grotesk', sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 }
 
@@ -183,7 +184,8 @@
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-weight: 500;
+    font-weight: 600;
+    font-family: var(--font-heading);
     letter-spacing: -0.03em;
   }
 

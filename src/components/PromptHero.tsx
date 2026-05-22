@@ -59,16 +59,16 @@ export function PromptHero({
 
         {/* Heading */}
         <div className="text-center mb-8 md:mb-12">
-          <h1 className="font-heading text-4xl md:text-5xl lg:text-6xl font-normal mb-3 tracking-tight leading-tight">
-            <span className="bg-gradient-to-r from-white/80 via-white to-cyan-200 bg-clip-text text-transparent">
+          <h1 className="font-heading text-4xl md:text-5xl lg:text-6xl font-semibold mb-3 tracking-tight leading-tight">
+            <span className="text-white/90">
               {headingLine1}
             </span>
             <br />
-            <span className="bg-gradient-to-r from-cyan-300 via-blue-300 to-cyan-200 bg-clip-text text-transparent">
+            <span className="text-cyan-400">
               {headingLine2}
             </span>
           </h1>
-          <p className="text-sm md:text-base text-white/50 font-light max-w-lg mx-auto">
+          <p className="text-sm md:text-base text-white/60 max-w-lg mx-auto font-light">
             {subheading}
           </p>
         </div>
@@ -90,7 +90,7 @@ export function PromptHero({
                 type="submit"
                 disabled={!prompt.trim() || isLoading}
                 variant="ghost"
-                className="bg-white/10 hover:bg-white/15 text-white font-light px-5 md:px-6 py-1.5 md:py-2 text-sm rounded-lg transition-all duration-[var(--duration-slow)] disabled:opacity-30 border border-white/10"
+                className="bg-white/10 hover:bg-white/15 text-white px-5 md:px-6 py-1.5 md:py-2 text-sm rounded-lg transition-all duration-[var(--duration-slow)] disabled:opacity-30 border border-white/10 shadow-sm hover:shadow-md"
               >
                 {isLoading ? (
                   <>
