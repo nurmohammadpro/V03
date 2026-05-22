@@ -1,4 +1,4 @@
-import Fastify from "fastify";
+import Fastify, { FastifyRequest } from "fastify";
 import cors from "@fastify/cors";
 import cookie from "@fastify/cookie";
 import rateLimit from "@fastify/rate-limit";
@@ -6,6 +6,9 @@ import { authRoutes } from "./routes/auth";
 import { projectRoutes } from "./routes/projects";
 import { chatRoutes } from "./routes/chat";
 import { adminRoutes } from "./routes/admin";
+import { fileRoutes } from "./routes/files";
+import { generationRoutes } from "./routes/generations";
+import { buildRoutes } from "./routes/builds";
 import { ensureAdminSystemSeeded } from "./db/bootstrap";
 import "dotenv/config";
 
@@ -22,8 +25,8 @@ async function start() {
   await app.register(rateLimit, {
     max: 100,
     timeWindow: "1 minute",
-    keyGenerator: (request) => request.ip,
-    errorResponseBuilder: (request, context) => ({
+    keyGenerator: (request: FastifyRequest) => request.ip,
+    errorResponseBuilder: (request: FastifyRequest, context: any) => ({
       statusCode: 429,
       error: "Too Many Requests",
       message: `Rate limit exceeded. Try again in ${context.after}`,
@@ -48,6 +51,9 @@ async function start() {
   // Routes
   await app.register(authRoutes);
   await app.register(projectRoutes);
+  await app.register(fileRoutes);
+  await app.register(generationRoutes);
+  await app.register(buildRoutes);
   await app.register(chatRoutes);
   await app.register(adminRoutes);
 

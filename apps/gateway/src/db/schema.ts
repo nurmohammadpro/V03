@@ -1,4 +1,4 @@
-import { pgTable, uuid, text, timestamp, integer, jsonb, boolean } from "drizzle-orm/pg-core";
+import { pgTable, uuid, text, timestamp, integer, jsonb, boolean, index, uniqueIndex } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -21,6 +21,49 @@ export const projects = pgTable("projects", {
   framework: text("framework"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+export const projectFiles = pgTable(
+  "project_files",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    projectId: uuid("project_id").notNull().references(() => projects.id),
+    path: text("path").notNull(),
+    fileType: text("file_type").default("file").notNull(), // file | dir
+    parentPath: text("parent_path"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+    deletedAt: timestamp("deleted_at"),
+  },
+  (table) => ({
+    projectPathUnique: uniqueIndex("project_files_project_path_unique").on(table.projectId, table.path),
+    projectIdx: index("project_files_project_id_idx").on(table.projectId),
+  }),
+);
+
+export const fileBlobs = pgTable("file_blobs", {
+  sha256: text("sha256").primaryKey(),
+  sizeBytes: integer("size_bytes").notNull(),
+  isBinary: boolean("is_binary").default(false).notNull(),
+  textContent: text("text_content"),
+  metadata: jsonb("metadata").default({}).notNull(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const projectFileVersions = pgTable(
+  "project_file_versions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    projectFileId: uuid("project_file_id").notNull().references(() => projectFiles.id),
+    blobSha256: text("blob_sha256").notNull().references(() => fileBlobs.sha256),
+    actorUserId: uuid("actor_user_id").references(() => users.id),
+    source: text("source").default("manual").notNull(), // manual | generation | import
+    message: text("message"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    fileIdx: index("project_file_versions_file_id_idx").on(table.projectFileId),
+  }),
+);
 
 export const projectSnapshots = pgTable("project_snapshots", {
   id: uuid("id").defaultRandom().primaryKey(),
@@ -168,6 +211,62 @@ export const aiRoutingRules = pgTable("ai_routing_rules", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const generationRuns = pgTable(
+  "generation_runs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    projectId: uuid("project_id").notNull().references(() => projects.id),
+    userId: uuid("user_id").notNull().references(() => users.id),
+    intent: text("intent").default("component").notNull(), // component | feature | app | fix | refactor
+    targetPath: text("target_path"),
+    framework: text("framework"),
+    applyMode: text("apply_mode").default("propose").notNull(), // propose | auto_apply
+    status: text("status").default("running").notNull(), // running | complete | failed | canceled | applied
+    prompt: text("prompt").notNull(),
+    providerId: uuid("provider_id").references(() => aiProviders.id),
+    modelKey: text("model_key"),
+    summary: jsonb("summary").default({}).notNull(),
+    startedAt: timestamp("started_at").defaultNow().notNull(),
+    finishedAt: timestamp("finished_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    projectIdx: index("generation_runs_project_id_idx").on(table.projectId),
+    userIdx: index("generation_runs_user_id_idx").on(table.userId),
+  }),
+);
+
+export const generationEvents = pgTable(
+  "generation_events",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    runId: uuid("run_id").notNull().references(() => generationRuns.id),
+    seq: integer("seq").notNull(),
+    eventType: text("event_type").notNull(),
+    payload: jsonb("payload").default({}).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    runSeqUnique: uniqueIndex("generation_events_run_seq_unique").on(table.runId, table.seq),
+    runIdx: index("generation_events_run_id_idx").on(table.runId),
+  }),
+);
+
+export const generationFileOps = pgTable(
+  "generation_file_ops",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    runId: uuid("run_id").notNull().references(() => generationRuns.id),
+    seq: integer("seq").notNull(),
+    op: jsonb("op").default({}).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    runSeqUnique: uniqueIndex("generation_file_ops_run_seq_unique").on(table.runId, table.seq),
+    runIdx: index("generation_file_ops_run_id_idx").on(table.runId),
+  }),
+);
+
 export const serviceIntegrations = pgTable("service_integrations", {
   id: uuid("id").defaultRandom().primaryKey(),
   key: text("key").notNull().unique(),
@@ -179,6 +278,43 @@ export const serviceIntegrations = pgTable("service_integrations", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
+
+export const buildRuns = pgTable(
+  "build_runs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    projectId: uuid("project_id").notNull().references(() => projects.id),
+    userId: uuid("user_id").notNull().references(() => users.id),
+    mode: text("mode").default("build").notNull(), // build | dev
+    status: text("status").default("queued").notNull(), // queued | running | complete | failed | canceled
+    runnerRef: jsonb("runner_ref").default({}).notNull(),
+    logs: jsonb("logs").default([]).notNull(),
+    startedAt: timestamp("started_at"),
+    finishedAt: timestamp("finished_at"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    projectIdx: index("build_runs_project_id_idx").on(table.projectId),
+  }),
+);
+
+export const previewInstances = pgTable(
+  "preview_instances",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    projectId: uuid("project_id").notNull().references(() => projects.id),
+    userId: uuid("user_id").notNull().references(() => users.id),
+    status: text("status").default("starting").notNull(), // starting | running | stopped | failed
+    url: text("url"),
+    ports: jsonb("ports").default({}).notNull(),
+    runnerRef: jsonb("runner_ref").default({}).notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    endedAt: timestamp("ended_at"),
+  },
+  (table) => ({
+    projectIdx: index("preview_instances_project_id_idx").on(table.projectId),
+  }),
+);
 
 export const adminAuditLogs = pgTable("admin_audit_logs", {
   id: uuid("id").defaultRandom().primaryKey(),
