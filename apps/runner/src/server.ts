@@ -103,9 +103,10 @@ FROM php:8.3-cli
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends git unzip curl && rm -rf /var/lib/apt/lists/*
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-COPY composer.json composer.lock* ./
-RUN if [ -f composer.json ]; then ${installCommand}; fi
 COPY . .
+RUN if [ -f composer.json ] && [ -n ${JSON.stringify(installCommand)} ]; then sh -lc ${JSON.stringify(
+      installCommand,
+    )}; fi
 ENV PORT=${internalPort}
 EXPOSE ${internalPort}
 CMD ["sh", "-lc", "${startCommand}"]
@@ -116,19 +117,21 @@ CMD ["sh", "-lc", "${startCommand}"]
   }
 
   const internalPort = meta?.internalPort && Number.isFinite(meta.internalPort) ? meta.internalPort : 3000;
+  const installCommand = meta?.installCommand || "";
   const buildCommand = meta?.buildCommand || "npm run build";
   const devCommand = meta?.devCommand || `npm run dev -- --host 0.0.0.0 --port ${internalPort}`;
   const startCommand = meta?.startCommand || "npm start || npm run preview || npm run serve";
+  const installShell = installCommand ? JSON.stringify(installCommand) : "";
 
   const dockerfile = `
 FROM node:20-alpine
 WORKDIR /app
-COPY package.json package-lock.json* pnpm-lock.yaml* yarn.lock* ./
-RUN if [ -f package-lock.json ]; then npm ci; \\
+COPY . .
+RUN if [ -n ${installShell} ]; then sh -lc ${installShell}; \\
+    elif [ -f package-lock.json ]; then npm ci; \\
     elif [ -f pnpm-lock.yaml ]; then corepack enable && pnpm i --frozen-lockfile; \\
     elif [ -f yarn.lock ]; then corepack enable && yarn --frozen-lockfile; \\
     else npm i; fi
-COPY . .
 ENV HOST=0.0.0.0
 ENV PORT=${internalPort}
 ${mode === "build" ? `RUN ${buildCommand}` : ""}

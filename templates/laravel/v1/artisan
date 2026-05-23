@@ -1,4 +1,0 @@
-#!/usr/bin/env php
-<?php
-echo "V03 Laravel Template (artisan placeholder)\n";
-
