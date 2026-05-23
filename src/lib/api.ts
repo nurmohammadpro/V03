@@ -348,6 +348,11 @@ export const api = {
   getPreviewLogs: (previewId: string, tail = 200) =>
     request<{ logs: string }>(`/api/previews/${previewId}/logs?tail=${tail}`),
 
+  getPreview: (previewId: string) =>
+    request<{ preview: { id: string; status: string; url: string | null; runnerRef: Record<string, unknown> } }>(
+      `/api/previews/${previewId}`,
+    ),
+
   // Generations
   getProjectGenerations: (projectId: string) =>
     request<{

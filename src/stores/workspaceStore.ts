@@ -35,6 +35,10 @@ interface WorkspaceState {
   previewUrl: string | null;
   isPreviewStarting: boolean;
   previewLogs: string;
+  isPreviewReady: boolean;
+
+  // UI
+  outputTab: "preview" | "code" | "logs";
 
   // Layout
   layout: LayoutState;
@@ -55,7 +59,10 @@ interface WorkspaceState {
   toggleFileTree: () => void;
   startPreview: () => Promise<void>;
   stopPreview: () => Promise<void>;
+  restartPreview: () => Promise<void>;
   refreshPreviewLogs: () => Promise<void>;
+  refreshPreviewStatus: () => Promise<void>;
+  setOutputTab: (tab: "preview" | "code" | "logs") => void;
   reset: () => void;
 }
 
@@ -79,6 +86,8 @@ const initialState = {
   previewUrl: null,
   isPreviewStarting: false,
   previewLogs: "",
+  isPreviewReady: false,
+  outputTab: "preview" as const,
   layout: initialLayout,
 };
 
@@ -173,6 +182,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       activeFileContent: res.content ?? "",
       activeFileLanguage: inferLanguage(res.path),
       isFileDirty: false,
+      outputTab: "code",
     });
   },
 
@@ -241,7 +251,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     set({ isPreviewStarting: true });
     try {
       const res = await api.startPreview(projectId);
-      set({ previewId: res.previewId, previewUrl: res.url, previewLogs: "" });
+      set({ previewId: res.previewId, previewUrl: res.url, previewLogs: "", isPreviewReady: false, outputTab: "preview" });
+      await get().refreshPreviewStatus();
     } finally {
       set({ isPreviewStarting: false });
     }
@@ -251,7 +262,15 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     const previewId = get().previewId;
     if (!previewId) return;
     await api.stopPreview(previewId);
-    set({ previewId: null, previewUrl: null, previewLogs: "" });
+    set({ previewId: null, previewUrl: null, previewLogs: "", isPreviewReady: false });
+  },
+
+  restartPreview: async () => {
+    const previewId = get().previewId;
+    if (previewId) {
+      await api.stopPreview(previewId).catch(() => {});
+    }
+    await get().startPreview();
   },
 
   refreshPreviewLogs: async () => {
@@ -260,6 +279,16 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     const res = await api.getPreviewLogs(previewId, 400);
     set({ previewLogs: res.logs ?? "" });
   },
+
+  refreshPreviewStatus: async () => {
+    const previewId = get().previewId;
+    if (!previewId) return;
+    const res = await api.getPreview(previewId);
+    const status = res.preview?.status || "running";
+    set({ isPreviewReady: status === "ready" });
+  },
+
+  setOutputTab: (tab) => set({ outputTab: tab }),
 
   reset: () => set(initialState),
 }));

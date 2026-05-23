@@ -14,15 +14,12 @@ export default function WorkspaceLayout() {
   const isFileDirty = useWorkspaceStore((s) => s.isFileDirty);
   const isFileSaving = useWorkspaceStore((s) => s.isFileSaving);
   const saveActiveFile = useWorkspaceStore((s) => s.saveActiveFile);
-
-  const defaultTab = useMemo(() => {
-    if (activeFilePath) return "code";
-    return "preview";
-  }, [activeFilePath]);
+  const outputTab = useWorkspaceStore((s) => s.outputTab);
+  const setOutputTab = useWorkspaceStore((s) => s.setOutputTab);
 
   return (
     <div className="flex flex-col h-full w-full">
-      <Tabs.Root defaultValue={defaultTab} className="flex h-full min-h-0 flex-col">
+      <Tabs.Root value={outputTab} onValueChange={(v) => setOutputTab(v as any)} className="flex h-full min-h-0 flex-col">
         <div className="flex min-h-[42px] items-center gap-2 border-b border-[var(--app-border)] bg-[var(--app-panel-2)] px-3 py-2">
           <Tabs.List className="flex items-center gap-1 rounded-[10px] bg-[var(--app-panel)] p-1">
             <Tabs.Trigger

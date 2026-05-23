@@ -129,7 +129,7 @@ async function runnerStartRun(input: { runId: string; mode: "build" | "dev"; tar
     const payload = await res.json().catch(() => ({}));
     throw new Error(payload.error || `Runner error ${res.status}`);
   }
-  return res.json() as Promise<{ containerId: string; url: string; ports: Record<string, number>; status: string }>;
+  return res.json() as Promise<{ containerId: string; url: string; ports: Record<string, number>; status: string; ready?: boolean }>;
 }
 
 export async function buildRoutes(app: FastifyInstance) {
@@ -167,13 +167,14 @@ export async function buildRoutes(app: FastifyInstance) {
       await db
         .update(buildRuns)
         .set({
-          status: "running",
+          status: runner.ready ? "complete" : "running",
           startedAt: new Date(),
           runnerRef: {
             ...(typeof run.runnerRef === "object" && run.runnerRef ? (run.runnerRef as Record<string, unknown>) : {}),
             containerId: runner.containerId,
             url: runner.url,
             ports: runner.ports,
+            ready: runner.ready ?? null,
           },
         })
         .where(eq(buildRuns.id, run.id));
@@ -295,7 +296,7 @@ export async function buildRoutes(app: FastifyInstance) {
       const [updated] = await db
         .update(previewInstances)
         .set({
-          status: "running",
+          status: runner.ready ? "ready" : "running",
           url: publicUrl,
           ports: runner.ports,
           runnerRef: {
@@ -304,6 +305,7 @@ export async function buildRoutes(app: FastifyInstance) {
               : {}),
             containerId: runner.containerId,
             url: runner.url,
+            ready: runner.ready ?? null,
           },
         })
         .where(eq(previewInstances.id, preview.id))

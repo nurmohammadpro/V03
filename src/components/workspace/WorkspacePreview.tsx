@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useWorkspaceStore, type FileNode } from "@/stores/workspaceStore";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, PlaySquare, Sparkles } from "lucide-react";
@@ -32,8 +32,18 @@ export default function WorkspacePreview() {
   const activeFileContent = useWorkspaceStore((s) => s.activeFileContent);
   const previewUrl = useWorkspaceStore((s) => s.previewUrl);
   const isPreviewStarting = useWorkspaceStore((s) => s.isPreviewStarting);
+  const isPreviewReady = useWorkspaceStore((s) => s.isPreviewReady);
   const startPreview = useWorkspaceStore((s) => s.startPreview);
   const stopPreview = useWorkspaceStore((s) => s.stopPreview);
+  const restartPreview = useWorkspaceStore((s) => s.restartPreview);
+  const refreshPreviewStatus = useWorkspaceStore((s) => s.refreshPreviewStatus);
+
+  useEffect(() => {
+    if (!previewUrl) return;
+    void refreshPreviewStatus();
+    const timer = window.setInterval(() => void refreshPreviewStatus(), 1500);
+    return () => window.clearInterval(timer);
+  }, [previewUrl, refreshPreviewStatus]);
 
   const activeFileName = activeFilePath?.split("/").pop() ?? "preview";
 
@@ -111,13 +121,22 @@ export default function WorkspacePreview() {
               {isPreviewStarting ? "Starting..." : "Start preview"}
             </button>
           ) : (
-            <button
-              type="button"
-              onClick={() => void stopPreview()}
-              className="inline-flex items-center gap-2 rounded-[8px] bg-[var(--app-panel)] px-3 py-1.5 text-xs text-[var(--app-text-muted)] hover:bg-[var(--app-panel-2)] hover:text-[var(--app-text)]"
-            >
-              Stop
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => void restartPreview()}
+                className="inline-flex items-center gap-2 rounded-[8px] bg-[var(--app-panel)] px-3 py-1.5 text-xs text-[var(--app-text-muted)] hover:bg-[var(--app-panel-2)] hover:text-[var(--app-text)]"
+              >
+                Restart
+              </button>
+              <button
+                type="button"
+                onClick={() => void stopPreview()}
+                className="inline-flex items-center gap-2 rounded-[8px] bg-[var(--app-panel)] px-3 py-1.5 text-xs text-[var(--app-text-muted)] hover:bg-[var(--app-panel-2)] hover:text-[var(--app-text)]"
+              >
+                Stop
+              </button>
+            </div>
           )}
         </div>
       </div>
@@ -125,7 +144,16 @@ export default function WorkspacePreview() {
       <div className="flex-1 overflow-hidden px-4 py-4">
         {previewUrl ? (
           <div className="h-full overflow-hidden rounded-[10px] border border-[var(--app-border)] bg-white">
-            <iframe title="Preview" src={previewUrl} className="h-full w-full border-0" />
+            <div className="relative h-full w-full">
+              <iframe title="Preview" src={previewUrl} className="h-full w-full border-0" />
+              {!isPreviewReady ? (
+                <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/40">
+                  <div className="rounded-[12px] bg-[var(--app-panel)] px-4 py-3 text-sm text-[var(--app-text-muted)]">
+                    Starting preview…
+                  </div>
+                </div>
+              ) : null}
+            </div>
           </div>
         ) : null}
         <div className="border-b border-[var(--app-border)] pb-5">
