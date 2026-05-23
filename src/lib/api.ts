@@ -71,10 +71,10 @@ export const api = {
       "/api/projects"
     ),
 
-  createProject: (name: string, framework?: string) =>
+  createProject: (name: string, frameworkKind?: string) =>
     request<{ project: { id: string; name: string; framework: string; createdAt: string } }>(
       "/api/projects",
-      { method: "POST", body: { name, framework } }
+      { method: "POST", body: { name, frameworkKind } }
     ),
 
   deleteProject: (id: string) =>
@@ -344,6 +344,20 @@ export const api = {
 
   stopPreview: (previewId: string) =>
     request<{ ok: boolean }>(`/api/previews/${previewId}`, { method: "DELETE" }),
+
+  // Generations
+  getProjectGenerations: (projectId: string) =>
+    request<{
+      runs: Array<{
+        id: string;
+        intent: string;
+        targetPath: string | null;
+        status: string;
+        startedAt: string;
+        finishedAt: string | null;
+        summary: Record<string, unknown>;
+      }>;
+    }>(`/api/projects/${projectId}/generations`),
 };
 
 export default api;

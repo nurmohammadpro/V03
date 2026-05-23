@@ -24,12 +24,12 @@ export function useCreateProject() {
   return useMutation({
     mutationFn: async ({
       name,
-      framework,
+      frameworkKind,
     }: {
       name: string;
-      framework?: string;
+      frameworkKind?: string;
     }) => {
-      const res = await api.createProject(name, framework);
+      const res = await api.createProject(name, frameworkKind);
       return res.project;
     },
     onSuccess: () => {

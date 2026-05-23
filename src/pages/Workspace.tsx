@@ -13,6 +13,8 @@ import { CommandPalette } from "@/components/workspace/CommandPalette";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { createChatMessage } from "@/lib/sse";
 import { toast } from "sonner";
+import { supabase } from "@/lib/supabase";
+import api from "@/lib/api";
 import {
   ArrowLeft,
   Code2,
@@ -308,6 +310,9 @@ export default function Workspace(props: { params: { projectId: string } }) {
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [generationRuns, setGenerationRuns] = useState<
+    Array<{ id: string; status: string; startedAt: string; finishedAt: string | null }>
+  >([]);
 
   const handleSignOut = async () => {
     await logout();
@@ -318,6 +323,7 @@ export default function Workspace(props: { params: { projectId: string } }) {
     if (!projectId) return;
     setProjectId(projectId);
     void refreshFileTree();
+    void api.getProjectGenerations(projectId).then((res) => setGenerationRuns(res.runs)).catch(() => {});
   }, [projectId, refreshFileTree, setProjectId]);
 
   useEffect(() => {
@@ -348,30 +354,110 @@ export default function Workspace(props: { params: { projectId: string } }) {
   const sendMessage = useCallback(
     async (content: string) => {
       if (isGenerating) return;
+      if (!projectId) {
+        toast.error("Missing project id");
+        return;
+      }
 
       addMessage(createChatMessage("user", content));
       setIsGenerating(true);
       addMessage(createChatMessage("assistant", ""));
 
       try {
-        throw new Error("No SSE URL");
-      } catch {
+        const session = supabase
+          ? (await supabase.auth.getSession()).data.session
+          : null;
+
+        const res = await fetch(`/api/projects/${projectId}/generations/stream`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {}),
+          },
+          body: JSON.stringify({
+            prompt: content,
+            intent: "app",
+            applyMode: "auto_apply",
+            framework,
+          }),
+        });
+
+        if (!res.ok || !res.body) {
+          throw new Error(`Gateway responded with ${res.status}`);
+        }
+
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+
+          let idx: number;
+          while ((idx = buffer.indexOf("\n\n")) !== -1) {
+            const block = buffer.slice(0, idx);
+            buffer = buffer.slice(idx + 2);
+
+            const parsed = parseSseBlock(block);
+            if (!parsed) continue;
+
+            if (parsed.event === "text_delta") {
+              const text = typeof (parsed.data as any)?.text === "string" ? (parsed.data as any).text : "";
+              if (text) appendToLastAssistantMessage(text);
+            }
+
+            if (parsed.event === "done") {
+              const text = typeof (parsed.data as any)?.text === "string" ? (parsed.data as any).text : "";
+              if (text) updateLastAssistantMessage(text);
+              await refreshFileTree();
+              const res2 = await api.getProjectGenerations(projectId);
+              setGenerationRuns(res2.runs);
+            }
+          }
+        }
+      } catch (err: any) {
         const mock = MOCK_RESPONSES[framework] ?? MOCK_RESPONSES["Next.js"];
         const words = mock.text.split(" ");
 
         for (let i = 0; i < words.length; i++) {
-          await new Promise((resolve) => setTimeout(resolve, 26));
+          await new Promise((resolve) => setTimeout(resolve, 20));
           appendToLastAssistantMessage(words[i] + (i < words.length - 1 ? " " : ""));
         }
 
         updateLastAssistantMessage(mock.text);
         setFiles(buildFileNodes(mock.files));
+        toast.error(err?.message || "Generation failed");
       }
 
       setIsGenerating(false);
     },
     [addMessage, appendToLastAssistantMessage, framework, isGenerating, setFiles, setIsGenerating, updateLastAssistantMessage]
   );
+
+  function parseSseBlock(block: string): { event: string; data: unknown } | null {
+    const lines = block.split("\n").map((line) => line.trimEnd());
+    let event = "message";
+    const dataLines: string[] = [];
+    for (const line of lines) {
+      if (!line) continue;
+      if (line.startsWith("event:")) {
+        event = line.slice(6).trim() || "message";
+        continue;
+      }
+      if (line.startsWith("data:")) {
+        dataLines.push(line.slice(5).trim());
+      }
+    }
+    if (dataLines.length === 0) return null;
+    const raw = dataLines.join("\n");
+    try {
+      return { event, data: JSON.parse(raw) };
+    } catch {
+      return { event, data: raw };
+    }
+  }
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -548,10 +634,26 @@ export default function Workspace(props: { params: { projectId: string } }) {
                   )
                 ) : (
                   <div className="space-y-4">
-                      <div className="rounded-[8px] bg-[var(--app-panel-2)] px-3 py-3">
-                        <p className="text-[11px] uppercase tracking-[0.12em] text-[var(--app-text-dim)]">Conversation</p>
-                        <p className="mt-2 text-sm text-[var(--app-text-muted)]">
-                          {messages.length} message{messages.length === 1 ? "" : "s"} in this session.
+                    <div className="rounded-[8px] bg-[var(--app-panel-2)] px-3 py-3">
+                      <p className="text-[11px] uppercase tracking-[0.12em] text-[var(--app-text-dim)]">Generations</p>
+                      <p className="mt-2 text-sm text-[var(--app-text-muted)]">
+                        {generationRuns.length} run{generationRuns.length === 1 ? "" : "s"} logged.
+                      </p>
+                      <div className="mt-3 space-y-2">
+                        {generationRuns.slice(0, 5).map((run) => (
+                          <div key={run.id} className="flex items-center justify-between gap-3 text-xs text-[var(--app-text-muted)]">
+                            <span className="truncate">{run.id.slice(0, 8)}</span>
+                            <span className="shrink-0 rounded-full bg-[var(--app-panel)] px-2 py-0.5 text-[10px] text-[var(--app-text-dim)]">
+                              {run.status}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="rounded-[8px] bg-[var(--app-panel-2)] px-3 py-3">
+                      <p className="text-[11px] uppercase tracking-[0.12em] text-[var(--app-text-dim)]">Conversation</p>
+                      <p className="mt-2 text-sm text-[var(--app-text-muted)]">
+                        {messages.length} message{messages.length === 1 ? "" : "s"} in this session.
                       </p>
                     </div>
                     <div className="space-y-2">

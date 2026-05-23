@@ -3,6 +3,7 @@ import db from "../db";
 import { projects, projectSnapshots } from "../db/schema";
 import { eq } from "drizzle-orm";
 import { getRequestActor, requireAuthenticated } from "../middleware/auth";
+import { bootstrapProjectFromTemplate } from "../templates/bootstrap";
 
 type FrameworkKind = "nextjs" | "react-vite" | "mern" | "django" | "laravel" | "nestjs";
 
@@ -128,6 +129,18 @@ export async function projectRoutes(app: FastifyInstance) {
         ...defaults,
       })
       .returning();
+
+    // Bootstrap the template into the project file store
+    try {
+      await bootstrapProjectFromTemplate({
+        projectId: project.id,
+        actorUserId: actor.userId,
+        templateKey: project.templateKey,
+        templateVersion: project.templateVersion,
+      });
+    } catch (err) {
+      request.log.warn({ err }, "template bootstrap failed");
+    }
 
     return reply.status(201).send({ project });
   });

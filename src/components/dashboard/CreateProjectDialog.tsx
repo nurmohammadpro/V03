@@ -49,12 +49,12 @@ const TEMPLATES = [
 ];
 
 const FRAMEWORKS = [
-  { id: "React", icon: Blocks },
-  { id: "Next.js", icon: Hexagon },
-  { id: "Vue", icon: Globe },
-  { id: "Svelte", icon: Sparkles },
-  { id: "Python", icon: FileText },
-  { id: "Node.js", icon: Package2 },
+  { id: "nextjs", label: "Next.js", icon: Hexagon },
+  { id: "react-vite", label: "React", icon: Blocks },
+  { id: "mern", label: "MERN", icon: Layers3 },
+  { id: "django", label: "Django", icon: FileText },
+  { id: "laravel", label: "Laravel", icon: Globe },
+  { id: "nestjs", label: "NestJS", icon: Package2 },
 ];
 
 interface CreateProjectDialogProps {
@@ -65,20 +65,20 @@ interface CreateProjectDialogProps {
 export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogProps) {
   const [step, setStep] = useState<"template" | "configure">("template");
   const [name, setName] = useState("");
-  const [framework, setFramework] = useState("React");
+  const [frameworkKind, setFrameworkKind] = useState("nextjs");
   const [, navigate] = useLocation();
   const createProject = useCreateProject();
 
   function handleSelectTemplate(template: (typeof TEMPLATES)[0]) {
     setName(template.name);
-    setFramework(template.frameworks[0]);
+    setFrameworkKind("nextjs");
     setStep("configure");
   }
 
   async function handleCreate() {
     if (!name.trim()) return;
     try {
-      const project = await createProject.mutateAsync({ name: name.trim(), framework });
+      const project = await createProject.mutateAsync({ name: name.trim(), frameworkKind });
       toast.success("Project created!");
       handleClose();
       navigate(`/workspace/${project.id}`);
@@ -90,7 +90,7 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
   function handleClose() {
     setStep("template");
     setName("");
-    setFramework("React");
+    setFrameworkKind("nextjs");
     onOpenChange(false);
   }
 
@@ -165,15 +165,15 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
                   {FRAMEWORKS.map((fw) => (
                     <button
                       key={fw.id}
-                      onClick={() => setFramework(fw.id)}
+                      onClick={() => setFrameworkKind(fw.id)}
                       className={`flex flex-col items-center gap-1 rounded-[10px] border p-3 transition-colors ${
-                        framework === fw.id
+                        frameworkKind === fw.id
                           ? "border-[var(--app-accent)] bg-[var(--app-accent-soft)] text-[var(--app-text)]"
                           : "border-[var(--app-border)] bg-[var(--app-panel)] text-[var(--app-text-muted)] hover:border-[var(--app-border-strong)] hover:text-[var(--app-text)]"
                       }`}
                     >
                       <fw.icon className="h-4 w-4" />
-                      <span className="text-[10px] font-medium">{fw.id}</span>
+                      <span className="text-[10px] font-medium">{fw.label}</span>
                     </button>
                   ))}
                 </div>
