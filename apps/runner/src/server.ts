@@ -7,6 +7,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
 import crypto from "node:crypto";
+import { access } from "node:fs/promises";
 
 const execFileAsync = promisify(execFile);
 
@@ -31,7 +32,60 @@ async function makeRunDir(runId: string) {
   return runDir;
 }
 
-async function writeDockerfile(dir: string, mode: "build" | "dev") {
+type RuntimeKind = "node" | "python" | "php";
+
+async function exists(filePath: string) {
+  try {
+    await access(filePath);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function detectRuntime(dir: string): Promise<RuntimeKind> {
+  if (await exists(path.join(dir, "package.json"))) return "node";
+  if ((await exists(path.join(dir, "composer.json"))) || (await exists(path.join(dir, "artisan")))) return "php";
+  if ((await exists(path.join(dir, "requirements.txt"))) || (await exists(path.join(dir, "manage.py")))) return "python";
+  return "node";
+}
+
+async function writeDockerfile(dir: string, mode: "build" | "dev", runtime: RuntimeKind) {
+  if (runtime === "python") {
+    const dockerfile = `
+FROM python:3.12-slim
+WORKDIR /app
+COPY requirements.txt* ./
+RUN if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; fi
+COPY . .
+ENV PORT=8000
+EXPOSE 8000
+${mode === "build" ? "RUN python -m compileall . || true" : ""}
+CMD ["sh", "-lc", "python manage.py runserver 0.0.0.0:8000"]
+`.trimStart();
+
+    await writeFile(path.join(dir, "Dockerfile"), dockerfile, "utf8");
+    return { internalPort: 8000 };
+  }
+
+  if (runtime === "php") {
+    const dockerfile = `
+FROM php:8.3-cli
+WORKDIR /app
+RUN apt-get update && apt-get install -y --no-install-recommends git unzip curl && rm -rf /var/lib/apt/lists/*
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+COPY composer.json composer.lock* ./
+RUN if [ -f composer.json ]; then composer install --no-interaction --prefer-dist; fi
+COPY . .
+ENV PORT=8000
+EXPOSE 8000
+CMD ["sh", "-lc", "php artisan serve --host 0.0.0.0 --port 8000"]
+`.trimStart();
+
+    await writeFile(path.join(dir, "Dockerfile"), dockerfile, "utf8");
+    return { internalPort: 8000 };
+  }
+
   const dockerfile = `
 FROM node:20-alpine
 WORKDIR /app
@@ -49,6 +103,7 @@ CMD ["sh", "-lc", "${mode === "build" ? "npm start || npm run preview || npm run
 `.trimStart();
 
   await writeFile(path.join(dir, "Dockerfile"), dockerfile, "utf8");
+  return { internalPort: 3000 };
 }
 
 async function dockerBuild(dir: string, tag: string) {
@@ -56,21 +111,21 @@ async function dockerBuild(dir: string, tag: string) {
   await execFileAsync("docker", ["build", "-t", tag, "."], { cwd: dir, maxBuffer: 10 * 1024 * 1024 });
 }
 
-async function dockerRunDetached(tag: string) {
+async function dockerRunDetached(tag: string, internalPort: number) {
   requireDocker();
   const { stdout } = await execFileAsync(
     "docker",
-    ["run", "-d", "-p", "0:3000", "--rm", tag],
+    ["run", "-d", "-p", `0:${internalPort}`, "--rm", tag],
     { maxBuffer: 1024 * 1024 },
   );
   return stdout.trim();
 }
 
-async function dockerInspectPort(containerId: string) {
+async function dockerInspectPort(containerId: string, internalPort: number) {
   requireDocker();
   const { stdout } = await execFileAsync(
     "docker",
-    ["port", containerId, "3000/tcp"],
+    ["port", containerId, `${internalPort}/tcp`],
     { maxBuffer: 1024 * 1024 },
   );
   const line = stdout.trim().split("\n")[0] || "";
@@ -155,7 +210,8 @@ app.post("/runs", async (request, reply) => {
     return reply.status(400).send({ error: "Failed to extract bundle" });
   }
 
-  await writeDockerfile(runDir, mode);
+  const runtime = await detectRuntime(runDir);
+  const { internalPort } = await writeDockerfile(runDir, mode, runtime);
 
   const tag = `v03-run-${runId}`;
   try {
@@ -166,15 +222,15 @@ app.post("/runs", async (request, reply) => {
   }
 
   try {
-    const containerId = await dockerRunDetached(tag);
-    const hostPort = await dockerInspectPort(containerId);
+    const containerId = await dockerRunDetached(tag, internalPort);
+    const hostPort = await dockerInspectPort(containerId, internalPort);
 
     return reply.status(201).send({
       runId,
       containerId,
       status: "running",
       url: `http://localhost:${hostPort}`,
-      ports: { "3000/tcp": hostPort },
+      ports: { [`${internalPort}/tcp`]: hostPort },
     });
   } catch (err: any) {
     request.log.warn({ err }, "docker run failed");
@@ -204,7 +260,8 @@ app.post("/runs/raw", async (request, reply) => {
     return reply.status(400).send({ error: "Failed to extract bundle" });
   }
 
-  await writeDockerfile(runDir, mode);
+  const runtime = await detectRuntime(runDir);
+  const { internalPort } = await writeDockerfile(runDir, mode, runtime);
 
   const tag = `v03-run-${runId}`;
   try {
@@ -215,15 +272,15 @@ app.post("/runs/raw", async (request, reply) => {
   }
 
   try {
-    const containerId = await dockerRunDetached(tag);
-    const hostPort = await dockerInspectPort(containerId);
+    const containerId = await dockerRunDetached(tag, internalPort);
+    const hostPort = await dockerInspectPort(containerId, internalPort);
 
     return reply.status(201).send({
       runId,
       containerId,
       status: "running",
       url: `http://localhost:${hostPort}`,
-      ports: { "3000/tcp": hostPort },
+      ports: { [`${internalPort}/tcp`]: hostPort },
     });
   } catch (err: any) {
     request.log.warn({ err }, "docker run failed");

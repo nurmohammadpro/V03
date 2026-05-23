@@ -1,0 +1,11 @@
+{
+  "name": "v03-mern-template",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node server/index.js",
+    "build": "npm --prefix client run build",
+    "start": "node server/index.js"
+  }
+}
+

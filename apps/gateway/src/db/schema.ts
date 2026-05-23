@@ -19,6 +19,16 @@ export const projects = pgTable("projects", {
   userId: uuid("user_id").notNull().references(() => users.id),
   name: text("name").notNull(),
   framework: text("framework"),
+  frameworkKind: text("framework_kind").default("nextjs").notNull(), // nextjs | react-vite | mern | django | laravel | nestjs
+  runtimeKind: text("runtime_kind").default("node").notNull(), // node | python | php
+  templateKey: text("template_key").default("nextjs-app-router").notNull(),
+  templateVersion: text("template_version").default("1").notNull(),
+  installCommand: text("install_command").default("npm ci").notNull(),
+  buildCommand: text("build_command").default("npm run build").notNull(),
+  startCommand: text("start_command").default("npm start").notNull(),
+  devCommand: text("dev_command").default("npm run dev").notNull(),
+  defaultPort: integer("default_port").default(3000).notNull(),
+  healthcheckPath: text("healthcheck_path").default("/").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

@@ -1,0 +1,9 @@
+{
+  "name": "v03-mern-server",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "express": "4.19.2"
+  }
+}
+
