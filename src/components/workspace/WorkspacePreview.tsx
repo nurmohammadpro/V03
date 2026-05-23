@@ -30,6 +30,10 @@ export default function WorkspacePreview() {
   const files = useWorkspaceStore((s) => s.files);
   const activeFilePath = useWorkspaceStore((s) => s.activeFilePath);
   const activeFileContent = useWorkspaceStore((s) => s.activeFileContent);
+  const previewUrl = useWorkspaceStore((s) => s.previewUrl);
+  const isPreviewStarting = useWorkspaceStore((s) => s.isPreviewStarting);
+  const startPreview = useWorkspaceStore((s) => s.startPreview);
+  const stopPreview = useWorkspaceStore((s) => s.stopPreview);
 
   const activeFileName = activeFilePath?.split("/").pop() ?? "preview";
 
@@ -95,13 +99,35 @@ export default function WorkspacePreview() {
           <Badge className="rounded-full border border-[var(--app-border)] bg-[var(--app-panel)] px-2 py-0.5 text-[10px] font-normal text-[var(--app-text-muted)]">
             {previewModel.framework}
           </Badge>
-          <Badge className="rounded-full border border-[var(--app-border)] bg-[var(--app-panel)] px-2 py-0.5 text-[10px] font-normal text-[var(--app-text-muted)]">
-            runtime slot
-          </Badge>
+          <div className="flex-1" />
+          {!previewUrl ? (
+            <button
+              type="button"
+              onClick={() => void startPreview()}
+              className="inline-flex items-center gap-2 rounded-[8px] bg-[var(--app-panel)] px-3 py-1.5 text-xs text-[var(--app-text-muted)] hover:bg-[var(--app-panel-2)] hover:text-[var(--app-text)]"
+              disabled={isPreviewStarting}
+            >
+              <PlaySquare className="h-4 w-4" />
+              {isPreviewStarting ? "Starting..." : "Start preview"}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => void stopPreview()}
+              className="inline-flex items-center gap-2 rounded-[8px] bg-[var(--app-panel)] px-3 py-1.5 text-xs text-[var(--app-text-muted)] hover:bg-[var(--app-panel-2)] hover:text-[var(--app-text)]"
+            >
+              Stop
+            </button>
+          )}
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto px-4 py-4">
+      <div className="flex-1 overflow-hidden px-4 py-4">
+        {previewUrl ? (
+          <div className="h-full overflow-hidden rounded-[10px] border border-[var(--app-border)] bg-white">
+            <iframe title="Preview" src={previewUrl} className="h-full w-full border-0" />
+          </div>
+        ) : null}
         <div className="border-b border-[var(--app-border)] pb-5">
           <p className="text-xs uppercase tracking-[0.12em] text-[var(--app-text-dim)]">Runtime preview</p>
           <h3 className="mt-3 text-[22px] font-medium tracking-[-0.04em] text-[var(--app-text)]">

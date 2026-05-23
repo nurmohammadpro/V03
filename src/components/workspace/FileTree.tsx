@@ -31,7 +31,7 @@ function TreeNode({ node, depth }: TreeNodeProps) {
     return (
       <button
         type="button"
-        onClick={() => setActiveFile(node.path)}
+        onClick={() => void setActiveFile(node.path)}
         className={`flex w-full items-center gap-2 rounded-[8px] py-1.5 pr-2 text-left text-[13px] transition-colors ${
           isActive
             ? "bg-[var(--app-surface)] text-[var(--app-text)]"

@@ -1,91 +1,86 @@
-import { useEffect, useRef } from "react";
-import { EditorView, keymap, placeholder } from "@codemirror/view";
-import { EditorState } from "@codemirror/state";
-import { oneDark } from "@codemirror/theme-one-dark";
-import { javascript } from "@codemirror/lang-javascript";
-import { python } from "@codemirror/lang-python";
-import { html } from "@codemirror/lang-html";
-import { useWorkspaceStore } from "../../stores/workspaceStore";
+import { Suspense, useCallback, useEffect, useMemo } from "react";
+import React from "react";
+import { useWorkspaceStore } from "@/stores/workspaceStore";
 
-function getLanguageExtension(filename: string) {
-  const ext = filename.split(".").pop()?.toLowerCase() ?? "";
-  switch (ext) {
-    case "js":
-    case "jsx":
-      return javascript({ jsx: true });
-    case "ts":
-    case "tsx":
-      return javascript({ jsx: true, typescript: true });
-    case "mjs":
-    case "cjs":
-    case "mts":
-    case "cts":
-      return javascript({ typescript: true });
-    case "py":
-      return python();
-    case "html":
-    case "htm":
-      return html();
-    case "css":
-    case "scss":
-    case "less":
-      return [];
-    case "json":
-      return javascript({ jsx: false });
-    default:
-      return [];
-  }
+const MonacoEditor = React.lazy(() => import("@monaco-editor/react"));
+
+function inferMonacoLanguage(path: string | null) {
+  if (!path) return "plaintext";
+  const ext = path.split(".").pop()?.toLowerCase() ?? "";
+  if (["ts", "tsx"].includes(ext)) return "typescript";
+  if (["js", "jsx", "mjs", "cjs"].includes(ext)) return "javascript";
+  if (["json"].includes(ext)) return "json";
+  if (["py"].includes(ext)) return "python";
+  if (["php"].includes(ext)) return "php";
+  if (["html", "htm"].includes(ext)) return "html";
+  if (["css", "scss", "less"].includes(ext)) return "css";
+  if (["md"].includes(ext)) return "markdown";
+  return "plaintext";
 }
 
 export default function CodeEditor() {
-  const editorRef = useRef<HTMLDivElement>(null);
-  const viewRef = useRef<EditorView | null>(null);
-
-  const activeFileContent = useWorkspaceStore((s) => s.activeFileContent);
   const activeFilePath = useWorkspaceStore((s) => s.activeFilePath);
+  const activeFileContent = useWorkspaceStore((s) => s.activeFileContent);
+  const setActiveFileContent = useWorkspaceStore((s) => s.setActiveFileContent);
+  const saveActiveFile = useWorkspaceStore((s) => s.saveActiveFile);
+  const isFileSaving = useWorkspaceStore((s) => s.isFileSaving);
+
+  const language = useMemo(() => inferMonacoLanguage(activeFilePath), [activeFilePath]);
+
+  const onChange = useCallback(
+    (value: string | undefined) => {
+      setActiveFileContent(value ?? "");
+    },
+    [setActiveFileContent],
+  );
 
   useEffect(() => {
-    if (!editorRef.current) return;
-
-    if (viewRef.current) {
-      viewRef.current.destroy();
-      viewRef.current = null;
-    }
-
-    const content = activeFileContent ?? "";
-    const filePath = activeFilePath ?? "untitled.ts";
-
-    const langExt = getLanguageExtension(filePath);
-
-    const state = EditorState.create({
-      doc: content,
-      extensions: [
-        oneDark,
-        EditorView.editable.of(false),
-        keymap.of([]),
-        placeholder("Select a file or generate a project..."),
-        EditorView.lineWrapping,
-        ...(Array.isArray(langExt) ? langExt : [langExt]),
-      ],
-    });
-
-    const view = new EditorView({
-      state,
-      parent: editorRef.current,
-    });
-
-    viewRef.current = view;
-
-    return () => {
-      view.destroy();
-      viewRef.current = null;
+    const handler = (event: KeyboardEvent) => {
+      const isMac = navigator.platform.toLowerCase().includes("mac");
+      const mod = isMac ? event.metaKey : event.ctrlKey;
+      if (!mod) return;
+      if (event.key.toLowerCase() !== "s") return;
+      event.preventDefault();
+      void saveActiveFile();
     };
-  }, [activeFileContent, activeFilePath]);
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [saveActiveFile]);
+
+  if (!activeFilePath) {
+    return (
+      <div className="flex h-full items-center justify-center px-6 py-6 text-sm text-[var(--app-text-muted)]">
+        Select a file from the tree to start editing.
+      </div>
+    );
+  }
 
   return (
-    <div
-      ref={editorRef}
-      className="h-full overflow-auto text-left"
-    />
+    <div className="h-full w-full">
+      <Suspense
+        fallback={
+          <div className="flex h-full items-center justify-center text-sm text-[var(--app-text-muted)]">
+            Loading editor…
+          </div>
+        }
+      >
+        <MonacoEditor
+          height="100%"
+          theme="vs-dark"
+          language={language}
+          value={activeFileContent ?? ""}
+          onChange={onChange}
+          options={{
+            readOnly: isFileSaving,
+            minimap: { enabled: false },
+            fontSize: 13,
+            fontFamily: "JetBrains Mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+            scrollBeyondLastLine: false,
+            wordWrap: "on",
+            automaticLayout: true,
+          }}
+        />
+      </Suspense>
+    </div>
   );
 }

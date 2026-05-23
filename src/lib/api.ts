@@ -311,6 +311,39 @@ export const api = {
 
   // Health
   health: () => request<{ status: string; service: string; version: string }>("/api/health"),
+
+  // Workspace files
+  getProjectTree: (projectId: string) =>
+    request<{
+      files: Array<{
+        id: string;
+        path: string;
+        fileType: "file" | "dir";
+        parentPath: string | null;
+        updatedAt: string;
+      }>;
+    }>(`/api/projects/${projectId}/tree`),
+
+  getProjectFile: (projectId: string, filePath: string) =>
+    request<{
+      path: string;
+      sha256?: string;
+      content: string;
+      updatedAt?: string;
+    }>(`/api/projects/${projectId}/files?path=${encodeURIComponent(filePath)}`),
+
+  putProjectFile: (projectId: string, filePath: string, content: string, message?: string) =>
+    request<{ ok: boolean; path: string; sha256: string }>(
+      `/api/projects/${projectId}/files?path=${encodeURIComponent(filePath)}`,
+      { method: "PUT", body: { content, message } },
+    ),
+
+  // Previews
+  startPreview: (projectId: string) =>
+    request<{ previewId: string; status: string; url: string }>(`/api/projects/${projectId}/previews`, { method: "POST", body: {} }),
+
+  stopPreview: (previewId: string) =>
+    request<{ ok: boolean }>(`/api/previews/${previewId}`, { method: "DELETE" }),
 };
 
 export default api;

@@ -1,44 +1,82 @@
 import { useWorkspaceStore } from "../../stores/workspaceStore";
 import CodeEditor from "./CodeEditor";
 import WorkspacePreview from "./WorkspacePreview";
+import { Button } from "../ui/button";
+import { Code2, Eye, Save } from "lucide-react";
+import * as Tabs from "@radix-ui/react-tabs";
+import { useMemo } from "react";
 
-export default function WorkspaceLayout({ viewMode }: { viewMode: "code" | "preview" }) {
+export default function WorkspaceLayout() {
   const activeFileContent = useWorkspaceStore((s) => s.activeFileContent);
   const activeFilePath = useWorkspaceStore((s) => s.activeFilePath);
   const activeFileLanguage = useWorkspaceStore((s) => s.activeFileLanguage);
   const files = useWorkspaceStore((s) => s.files);
+  const isFileDirty = useWorkspaceStore((s) => s.isFileDirty);
+  const isFileSaving = useWorkspaceStore((s) => s.isFileSaving);
+  const saveActiveFile = useWorkspaceStore((s) => s.saveActiveFile);
+
+  const defaultTab = useMemo(() => {
+    if (activeFilePath) return "code";
+    return "preview";
+  }, [activeFilePath]);
 
   return (
     <div className="flex flex-col h-full w-full">
-      <div className="flex min-h-[42px] items-center border-b border-[var(--app-border)] bg-[var(--app-panel-2)] px-3 py-2">
-        {activeFileContent && activeFilePath && (
-          <div className="flex items-center gap-2 rounded-[7px] bg-[var(--app-panel)] px-2.5 py-1 text-xs text-[var(--app-text-muted)]">
-            <span className="h-2 w-2 rounded-full bg-[var(--app-accent)]" />
-            <span className="font-normal text-[var(--app-text)]">{activeFilePath.split("/").pop()}</span>
-          </div>
-        )}
-        {!activeFileContent && files.length > 0 && (
-          <div className="text-xs text-[var(--app-text-muted)]">
-            Select a file for code view or stay in preview.
-          </div>
-        )}
-        <div className="flex-1" />
-        {activeFileLanguage && (
-          <span className="text-[10px] uppercase tracking-[0.12em] text-[var(--app-text-dim)]">{activeFileLanguage}</span>
-        )}
-      </div>
+      <Tabs.Root defaultValue={defaultTab} className="flex h-full min-h-0 flex-col">
+        <div className="flex min-h-[42px] items-center gap-2 border-b border-[var(--app-border)] bg-[var(--app-panel-2)] px-3 py-2">
+          <Tabs.List className="flex items-center gap-1 rounded-[10px] bg-[var(--app-panel)] p-1">
+            <Tabs.Trigger
+              value="preview"
+              className="inline-flex h-8 items-center gap-2 rounded-[8px] px-3 text-xs text-[var(--app-text-muted)] data-[state=active]:bg-[var(--app-surface)] data-[state=active]:text-[var(--app-text)]"
+            >
+              <Eye className="h-4 w-4" />
+              Preview
+            </Tabs.Trigger>
+            <Tabs.Trigger
+              value="code"
+              className="inline-flex h-8 items-center gap-2 rounded-[8px] px-3 text-xs text-[var(--app-text-muted)] data-[state=active]:bg-[var(--app-surface)] data-[state=active]:text-[var(--app-text)]"
+            >
+              <Code2 className="h-4 w-4" />
+              Code
+            </Tabs.Trigger>
+          </Tabs.List>
 
-      <div className="flex flex-1 min-h-0">
-        {viewMode === "code" ? (
-          <div className="min-h-0 flex-1">
-            <CodeEditor />
-          </div>
-        ) : (
-          <div className="min-h-0 flex-1">
-            <WorkspacePreview />
-          </div>
-        )}
-      </div>
+          {activeFilePath ? (
+            <div className="ml-2 hidden items-center gap-2 rounded-[7px] bg-[var(--app-panel)] px-2.5 py-1 text-xs text-[var(--app-text-muted)] md:flex">
+              <span className="h-2 w-2 rounded-full bg-[var(--app-accent)]" />
+              <span className="font-normal text-[var(--app-text)]">{activeFilePath.split("/").pop()}</span>
+            </div>
+          ) : null}
+
+          <div className="flex-1" />
+
+          {activeFilePath ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="h-8 rounded-[8px] border-0 bg-[var(--app-panel)] px-2.5 text-[var(--app-text-muted)] hover:bg-[var(--app-surface)] hover:text-[var(--app-text)]"
+              onClick={() => void saveActiveFile()}
+              disabled={!isFileDirty || isFileSaving}
+            >
+              <Save className="h-4 w-4" />
+              <span className="ml-2 text-xs">{isFileSaving ? "Saving..." : isFileDirty ? "Save" : "Saved"}</span>
+            </Button>
+          ) : null}
+
+          {activeFileLanguage ? (
+            <span className="ml-3 hidden text-[10px] uppercase tracking-[0.12em] text-[var(--app-text-dim)] sm:inline">
+              {activeFileLanguage}
+            </span>
+          ) : null}
+        </div>
+
+        <Tabs.Content value="preview" className="min-h-0 flex-1">
+          <WorkspacePreview />
+        </Tabs.Content>
+        <Tabs.Content value="code" className="min-h-0 flex-1">
+          <CodeEditor />
+        </Tabs.Content>
+      </Tabs.Root>
     </div>
   );
 }

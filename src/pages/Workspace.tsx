@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import WorkspaceLayout from "@/components/workspace/WorkspaceLayout";
 import FileTree from "@/components/workspace/FileTree";
+import { CommandPalette } from "@/components/workspace/CommandPalette";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { createChatMessage } from "@/lib/sse";
 import { toast } from "sonner";
@@ -277,7 +278,7 @@ function WorkspaceMessage({ role, content, isStreaming }: { role: "user" | "assi
   );
 }
 
-export default function Workspace() {
+export default function Workspace(props: { params: { projectId: string } }) {
   const { user, loading, logout } = useAuth();
   const messages = useWorkspaceStore((s) => s.messages);
   const selectedFramework = useWorkspaceStore((s) => s.selectedFramework);
@@ -291,6 +292,10 @@ export default function Workspace() {
   const activeFileContent = useWorkspaceStore((s) => s.activeFileContent);
   const activeFilePath = useWorkspaceStore((s) => s.activeFilePath);
   const files = useWorkspaceStore((s) => s.files);
+  const setProjectId = useWorkspaceStore((s) => s.setProjectId);
+  const refreshFileTree = useWorkspaceStore((s) => s.refreshFileTree);
+
+  const projectId = props?.params?.projectId;
 
   const [input, setInput] = useState("");
   const [framework, setFramework] = useState(selectedFramework);
@@ -300,7 +305,6 @@ export default function Workspace() {
   });
   const [codePanelOpen, setCodePanelOpen] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<"files" | "chat">("files");
-  const [outputView, setOutputView] = useState<"code" | "preview">("code");
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -309,6 +313,12 @@ export default function Workspace() {
     await logout();
     window.location.replace("/");
   };
+
+  useEffect(() => {
+    if (!projectId) return;
+    setProjectId(projectId);
+    void refreshFileTree();
+  }, [projectId, refreshFileTree, setProjectId]);
 
   useEffect(() => {
     if (loading || !user?.isAdmin) return;
@@ -326,17 +336,6 @@ export default function Workspace() {
   useEffect(() => {
     if (activeFileContent || files.length > 0) {
       setCodePanelOpen(true);
-    }
-  }, [activeFileContent, files.length]);
-
-  useEffect(() => {
-    if (!files.length) {
-      setOutputView("code");
-      return;
-    }
-
-    if (!activeFileContent) {
-      setOutputView("preview");
     }
   }, [activeFileContent, files.length]);
 
@@ -394,6 +393,7 @@ export default function Workspace() {
 
   return (
     <div className="min-h-[100dvh] bg-[var(--app-bg)] text-[var(--app-text)]">
+      <CommandPalette />
       {sidebarOpen && (
         <button
           type="button"
@@ -714,31 +714,8 @@ export default function Workspace() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <div className="inline-flex items-center rounded-[8px] bg-[var(--app-panel)] p-1">
-                      <button
-                        type="button"
-                        onClick={() => setOutputView("code")}
-                        className={`inline-flex h-7 items-center gap-1.5 rounded-[6px] px-2.5 text-[11px] transition-colors ${
-                          outputView === "code"
-                            ? "bg-[var(--app-surface)] text-[var(--app-text)]"
-                            : "text-[var(--app-text-muted)] hover:text-[var(--app-text)]"
-                        }`}
-                      >
-                        <Code2 className="h-3.5 w-3.5" />
-                        Code
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setOutputView("preview")}
-                        className={`inline-flex h-7 items-center gap-1.5 rounded-[6px] px-2.5 text-[11px] transition-colors ${
-                          outputView === "preview"
-                            ? "bg-[var(--app-surface)] text-[var(--app-text)]"
-                            : "text-[var(--app-text-muted)] hover:text-[var(--app-text)]"
-                        }`}
-                      >
-                        <PlaySquare className="h-3.5 w-3.5" />
-                        Preview
-                      </button>
+                    <div className="text-xs text-[var(--app-text-dim)]">
+                      Cmd/Ctrl+P to open files
                     </div>
                     <Button
                       type="button"
@@ -755,13 +732,13 @@ export default function Workspace() {
 
               <div className="border-b border-[var(--app-border)] px-4 py-2 text-xs text-[var(--app-text-dim)]">
                 {activeFileContent
-                  ? "Switch between code and preview from the toolbar."
+                  ? "Use Preview/Code tabs in the header."
                   : "Generate a project or select a file."}
               </div>
 
               <div className="min-h-0 flex-1">
                 {activeFileContent || files.length > 0 ? (
-                  <WorkspaceLayout viewMode={outputView} />
+                  <WorkspaceLayout />
                 ) : (
                   <div className="flex h-full items-center justify-center px-6">
                     <div className="max-w-[320px] text-center">
