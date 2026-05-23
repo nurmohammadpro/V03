@@ -33,6 +33,31 @@ async function exportProjectToTarGz(projectId: string) {
   await rm(exportDir, { recursive: true, force: true });
   await mkdir(exportDir, { recursive: true });
 
+  const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
+  if (project) {
+    const metaDir = path.join(exportDir, ".v03");
+    await mkdir(metaDir, { recursive: true });
+    await writeFile(
+      path.join(metaDir, "meta.json"),
+      JSON.stringify(
+        {
+          projectId,
+          frameworkKind: project.frameworkKind,
+          runtimeKind: project.runtimeKind,
+          installCommand: project.installCommand,
+          buildCommand: project.buildCommand,
+          startCommand: project.startCommand,
+          devCommand: project.devCommand,
+          internalPort: project.defaultPort,
+          healthcheckPath: project.healthcheckPath,
+        },
+        null,
+        2,
+      ),
+      "utf8",
+    );
+  }
+
   const files = await db
     .select({
       id: projectFiles.id,
@@ -210,7 +235,27 @@ export async function buildRoutes(app: FastifyInstance) {
     if (!project) return reply.status(404).send({ error: "Project not found" });
     if (project === "forbidden") return reply.status(403).send({ error: "Forbidden" });
 
-    return reply.send({ status: run.status, logs: run.logs });
+    // If runner container exists, proxy fresh logs
+    const [full] = await db.select().from(buildRuns).where(eq(buildRuns.id, id)).limit(1);
+    const runnerRef =
+      full && typeof full.runnerRef === "object" && full.runnerRef ? (full.runnerRef as Record<string, unknown>) : {};
+    const containerId = typeof runnerRef.containerId === "string" ? runnerRef.containerId : null;
+
+    if (!containerId) {
+      return reply.send({ status: run.status, logs: run.logs });
+    }
+
+    const tail = typeof (request.query as any)?.tail === "string" ? (request.query as any).tail : "200";
+    const url = new URL(`${RUNNER_URL}/runs/${containerId}/logs`);
+    url.searchParams.set("tail", tail);
+
+    try {
+      const res = await fetch(url);
+      const data = await res.json().catch(() => ({}));
+      return reply.send({ status: run.status, logs: data.logs ?? "" });
+    } catch {
+      return reply.send({ status: run.status, logs: run.logs });
+    }
   });
 
   // POST /api/projects/:id/previews
@@ -299,6 +344,33 @@ export async function buildRoutes(app: FastifyInstance) {
     if (project === "forbidden") return reply.status(403).send({ error: "Forbidden" });
 
     return reply.send({ preview });
+  });
+
+  // GET /api/previews/:id/logs
+  app.get("/api/previews/:id/logs", async (request, reply) => {
+    const actor = getRequestActor(request);
+    const { id } = request.params as { id: string };
+
+    const [preview] = await db.select().from(previewInstances).where(eq(previewInstances.id, id)).limit(1);
+    if (!preview) return reply.status(404).send({ error: "Preview not found" });
+
+    const project = await requireProjectAccess(preview.projectId, actor);
+    if (!project) return reply.status(404).send({ error: "Project not found" });
+    if (project === "forbidden") return reply.status(403).send({ error: "Forbidden" });
+
+    const runnerRef =
+      typeof preview.runnerRef === "object" && preview.runnerRef ? (preview.runnerRef as Record<string, unknown>) : {};
+    const containerId = typeof runnerRef.containerId === "string" ? runnerRef.containerId : null;
+    if (!containerId) return reply.send({ logs: "" });
+
+    const tail = typeof (request.query as any)?.tail === "string" ? (request.query as any).tail : "200";
+    const url = new URL(`${RUNNER_URL}/runs/${containerId}/logs`);
+    url.searchParams.set("tail", tail);
+
+    const res = await fetch(url);
+    if (!res.ok) return reply.status(502).send({ error: "Runner unavailable" });
+    const data = await res.json().catch(() => ({}));
+    return reply.send({ logs: data.logs ?? "" });
   });
 
   // DELETE /api/previews/:id (stop)

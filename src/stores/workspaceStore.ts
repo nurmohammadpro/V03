@@ -34,6 +34,7 @@ interface WorkspaceState {
   previewId: string | null;
   previewUrl: string | null;
   isPreviewStarting: boolean;
+  previewLogs: string;
 
   // Layout
   layout: LayoutState;
@@ -54,6 +55,7 @@ interface WorkspaceState {
   toggleFileTree: () => void;
   startPreview: () => Promise<void>;
   stopPreview: () => Promise<void>;
+  refreshPreviewLogs: () => Promise<void>;
   reset: () => void;
 }
 
@@ -76,6 +78,7 @@ const initialState = {
   previewId: null,
   previewUrl: null,
   isPreviewStarting: false,
+  previewLogs: "",
   layout: initialLayout,
 };
 
@@ -238,7 +241,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     set({ isPreviewStarting: true });
     try {
       const res = await api.startPreview(projectId);
-      set({ previewId: res.previewId, previewUrl: res.url });
+      set({ previewId: res.previewId, previewUrl: res.url, previewLogs: "" });
     } finally {
       set({ isPreviewStarting: false });
     }
@@ -248,7 +251,14 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     const previewId = get().previewId;
     if (!previewId) return;
     await api.stopPreview(previewId);
-    set({ previewId: null, previewUrl: null });
+    set({ previewId: null, previewUrl: null, previewLogs: "" });
+  },
+
+  refreshPreviewLogs: async () => {
+    const previewId = get().previewId;
+    if (!previewId) return;
+    const res = await api.getPreviewLogs(previewId, 400);
+    set({ previewLogs: res.logs ?? "" });
   },
 
   reset: () => set(initialState),

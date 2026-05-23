@@ -2,9 +2,9 @@ import { useWorkspaceStore } from "../../stores/workspaceStore";
 import CodeEditor from "./CodeEditor";
 import WorkspacePreview from "./WorkspacePreview";
 import { Button } from "../ui/button";
-import { Code2, Eye, Save } from "lucide-react";
+import { Code2, Eye, FileText, Save } from "lucide-react";
 import * as Tabs from "@radix-ui/react-tabs";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 
 export default function WorkspaceLayout() {
   const activeFileContent = useWorkspaceStore((s) => s.activeFileContent);
@@ -38,6 +38,13 @@ export default function WorkspaceLayout() {
             >
               <Code2 className="h-4 w-4" />
               Code
+            </Tabs.Trigger>
+            <Tabs.Trigger
+              value="logs"
+              className="inline-flex h-8 items-center gap-2 rounded-[8px] px-3 text-xs text-[var(--app-text-muted)] data-[state=active]:bg-[var(--app-surface)] data-[state=active]:text-[var(--app-text)]"
+            >
+              <FileText className="h-4 w-4" />
+              Logs
             </Tabs.Trigger>
           </Tabs.List>
 
@@ -76,7 +83,41 @@ export default function WorkspaceLayout() {
         <Tabs.Content value="code" className="min-h-0 flex-1">
           <CodeEditor />
         </Tabs.Content>
+        <Tabs.Content value="logs" className="min-h-0 flex-1">
+          <WorkspaceLogs />
+        </Tabs.Content>
       </Tabs.Root>
+    </div>
+  );
+}
+
+function WorkspaceLogs() {
+  const previewUrl = useWorkspaceStore((s) => s.previewUrl);
+  const previewLogs = useWorkspaceStore((s) => s.previewLogs);
+  const refreshPreviewLogs = useWorkspaceStore((s) => s.refreshPreviewLogs);
+
+  useEffect(() => {
+    if (!previewUrl) return;
+    void refreshPreviewLogs();
+    const timer = window.setInterval(() => void refreshPreviewLogs(), 2000);
+    return () => window.clearInterval(timer);
+  }, [previewUrl, refreshPreviewLogs]);
+
+  if (!previewUrl) {
+    return (
+      <div className="flex h-full items-center justify-center px-6 py-6 text-sm text-[var(--app-text-muted)]">
+        Start a preview to view logs.
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full bg-[var(--app-bg-alt)] p-3">
+      <div className="h-full overflow-hidden rounded-[10px] border border-[var(--app-border)] bg-black">
+        <pre className="h-full overflow-auto p-4 text-[12px] leading-6 text-white/80">
+          {previewLogs || "Waiting for logs..."}
+        </pre>
+      </div>
     </div>
   );
 }

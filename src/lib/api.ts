@@ -345,6 +345,9 @@ export const api = {
   stopPreview: (previewId: string) =>
     request<{ ok: boolean }>(`/api/previews/${previewId}`, { method: "DELETE" }),
 
+  getPreviewLogs: (previewId: string, tail = 200) =>
+    request<{ logs: string }>(`/api/previews/${previewId}/logs?tail=${tail}`),
+
   // Generations
   getProjectGenerations: (projectId: string) =>
     request<{

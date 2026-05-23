@@ -2,7 +2,7 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import multipart from "@fastify/multipart";
 import { execFile } from "node:child_process";
-import { mkdir, rm, writeFile } from "node:fs/promises";
+import { mkdir, rm, writeFile, readFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { promisify } from "node:util";
@@ -50,41 +50,75 @@ async function detectRuntime(dir: string): Promise<RuntimeKind> {
   return "node";
 }
 
-async function writeDockerfile(dir: string, mode: "build" | "dev", runtime: RuntimeKind) {
+type ProjectMeta = {
+  runtimeKind?: RuntimeKind;
+  internalPort?: number;
+  installCommand?: string;
+  buildCommand?: string;
+  startCommand?: string;
+  devCommand?: string;
+};
+
+async function readProjectMeta(dir: string): Promise<ProjectMeta | null> {
+  const metaPath = path.join(dir, ".v03", "meta.json");
+  if (!(await exists(metaPath))) return null;
+  try {
+    const raw = await readFile(metaPath, "utf8");
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+    return parsed as ProjectMeta;
+  } catch {
+    return null;
+  }
+}
+
+async function writeDockerfile(dir: string, mode: "build" | "dev", runtime: RuntimeKind, meta: ProjectMeta | null) {
   if (runtime === "python") {
+    const internalPort = meta?.internalPort && Number.isFinite(meta.internalPort) ? meta.internalPort : 8000;
+    const startCommand = meta?.startCommand || `python manage.py runserver 0.0.0.0:${internalPort}`;
+    const buildCommand = meta?.buildCommand || "python -m compileall . || true";
+    const installCommand = meta?.installCommand || "pip install --no-cache-dir -r requirements.txt";
     const dockerfile = `
 FROM python:3.12-slim
 WORKDIR /app
 COPY requirements.txt* ./
-RUN if [ -f requirements.txt ]; then pip install --no-cache-dir -r requirements.txt; fi
+RUN if [ -f requirements.txt ]; then ${installCommand}; fi
 COPY . .
-ENV PORT=8000
-EXPOSE 8000
-${mode === "build" ? "RUN python -m compileall . || true" : ""}
-CMD ["sh", "-lc", "python manage.py runserver 0.0.0.0:8000"]
+ENV PORT=${internalPort}
+EXPOSE ${internalPort}
+${mode === "build" ? `RUN ${buildCommand}` : ""}
+CMD ["sh", "-lc", "${startCommand}"]
 `.trimStart();
 
     await writeFile(path.join(dir, "Dockerfile"), dockerfile, "utf8");
-    return { internalPort: 8000 };
+    return { internalPort };
   }
 
   if (runtime === "php") {
+    const internalPort = meta?.internalPort && Number.isFinite(meta.internalPort) ? meta.internalPort : 8000;
+    const startCommand = meta?.startCommand || `php artisan serve --host 0.0.0.0 --port ${internalPort}`;
+    const installCommand = meta?.installCommand || "composer install --no-interaction --prefer-dist";
     const dockerfile = `
 FROM php:8.3-cli
 WORKDIR /app
 RUN apt-get update && apt-get install -y --no-install-recommends git unzip curl && rm -rf /var/lib/apt/lists/*
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 COPY composer.json composer.lock* ./
-RUN if [ -f composer.json ]; then composer install --no-interaction --prefer-dist; fi
+RUN if [ -f composer.json ]; then ${installCommand}; fi
 COPY . .
-ENV PORT=8000
-EXPOSE 8000
-CMD ["sh", "-lc", "php artisan serve --host 0.0.0.0 --port 8000"]
+ENV PORT=${internalPort}
+EXPOSE ${internalPort}
+CMD ["sh", "-lc", "${startCommand}"]
 `.trimStart();
 
     await writeFile(path.join(dir, "Dockerfile"), dockerfile, "utf8");
-    return { internalPort: 8000 };
+    return { internalPort };
   }
+
+  const internalPort = meta?.internalPort && Number.isFinite(meta.internalPort) ? meta.internalPort : 3000;
+  const buildCommand = meta?.buildCommand || "npm run build";
+  const devCommand = meta?.devCommand || `npm run dev -- --host 0.0.0.0 --port ${internalPort}`;
+  const startCommand = meta?.startCommand || "npm start || npm run preview || npm run serve";
 
   const dockerfile = `
 FROM node:20-alpine
@@ -96,14 +130,14 @@ RUN if [ -f package-lock.json ]; then npm ci; \\
     else npm i; fi
 COPY . .
 ENV HOST=0.0.0.0
-ENV PORT=3000
-${mode === "build" ? "RUN npm run build" : ""}
-EXPOSE 3000
-CMD ["sh", "-lc", "${mode === "build" ? "npm start || npm run preview || npm run serve" : "npm run dev -- --host 0.0.0.0 --port 3000 || npm start"}"]
+ENV PORT=${internalPort}
+${mode === "build" ? `RUN ${buildCommand}` : ""}
+EXPOSE ${internalPort}
+CMD ["sh", "-lc", "${mode === "build" ? startCommand : devCommand}"]
 `.trimStart();
 
   await writeFile(path.join(dir, "Dockerfile"), dockerfile, "utf8");
-  return { internalPort: 3000 };
+  return { internalPort };
 }
 
 async function dockerBuild(dir: string, tag: string) {
@@ -210,8 +244,9 @@ app.post("/runs", async (request, reply) => {
     return reply.status(400).send({ error: "Failed to extract bundle" });
   }
 
-  const runtime = await detectRuntime(runDir);
-  const { internalPort } = await writeDockerfile(runDir, mode, runtime);
+  const meta = await readProjectMeta(runDir);
+  const runtime = meta?.runtimeKind || (await detectRuntime(runDir));
+  const { internalPort } = await writeDockerfile(runDir, mode, runtime, meta);
 
   const tag = `v03-run-${runId}`;
   try {
@@ -260,8 +295,9 @@ app.post("/runs/raw", async (request, reply) => {
     return reply.status(400).send({ error: "Failed to extract bundle" });
   }
 
-  const runtime = await detectRuntime(runDir);
-  const { internalPort } = await writeDockerfile(runDir, mode, runtime);
+  const meta = await readProjectMeta(runDir);
+  const runtime = meta?.runtimeKind || (await detectRuntime(runDir));
+  const { internalPort } = await writeDockerfile(runDir, mode, runtime, meta);
 
   const tag = `v03-run-${runId}`;
   try {
