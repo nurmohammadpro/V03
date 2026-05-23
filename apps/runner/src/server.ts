@@ -52,11 +52,13 @@ async function detectRuntime(dir: string): Promise<RuntimeKind> {
 
 type ProjectMeta = {
   runtimeKind?: RuntimeKind;
+  frameworkKind?: string;
   internalPort?: number;
   installCommand?: string;
   buildCommand?: string;
   startCommand?: string;
   devCommand?: string;
+  healthcheckPath?: string;
 };
 
 async function readProjectMeta(dir: string): Promise<ProjectMeta | null> {
@@ -122,6 +124,19 @@ CMD ["sh", "-lc", "${startCommand}"]
   const devCommand = meta?.devCommand || `npm run dev -- --host 0.0.0.0 --port ${internalPort}`;
   const startCommand = meta?.startCommand || "npm start || npm run preview || npm run serve";
   const installShell = installCommand ? JSON.stringify(installCommand) : "";
+  const frameworkKind = meta?.frameworkKind || "";
+
+  const runCommand =
+    mode === "build"
+      ? startCommand
+      : frameworkKind === "mern"
+        ? [
+            // MERN dev: server on 3002, client on internalPort (proxy -> 3002)
+            `export PORT=3002`,
+            `node server/index.js &`,
+            `npm --prefix client run dev -- --host 0.0.0.0 --port ${internalPort}`,
+          ].join(" ")
+        : devCommand;
 
   const dockerfile = `
 FROM node:20-alpine
@@ -136,7 +151,7 @@ ENV HOST=0.0.0.0
 ENV PORT=${internalPort}
 ${mode === "build" ? `RUN ${buildCommand}` : ""}
 EXPOSE ${internalPort}
-CMD ["sh", "-lc", "${mode === "build" ? startCommand : devCommand}"]
+CMD ["sh", "-lc", "${runCommand}"]
 `.trimStart();
 
   await writeFile(path.join(dir, "Dockerfile"), dockerfile, "utf8");
@@ -171,6 +186,27 @@ async function dockerInspectPort(containerId: string, internalPort: number) {
     throw new Error("Failed to read container port mapping");
   }
   return parseInt(match[1], 10);
+}
+
+async function waitForReady(input: { url: string; path: string; timeoutMs?: number }) {
+  const timeoutMs = input.timeoutMs ?? 30_000;
+  const deadline = Date.now() + timeoutMs;
+  const target = new URL(input.url);
+  target.pathname = input.path.startsWith("/") ? input.path : `/${input.path}`;
+
+  while (Date.now() < deadline) {
+    try {
+      const res = await fetch(target, { redirect: "manual" });
+      if (res.status >= 200 && res.status < 500) {
+        return true;
+      }
+    } catch {
+      // ignore
+    }
+    await new Promise((r) => setTimeout(r, 500));
+  }
+
+  return false;
 }
 
 async function dockerLogs(containerId: string, tail = 200) {
@@ -262,13 +298,18 @@ app.post("/runs", async (request, reply) => {
   try {
     const containerId = await dockerRunDetached(tag, internalPort);
     const hostPort = await dockerInspectPort(containerId, internalPort);
+    const ready = await waitForReady({
+      url: `http://localhost:${hostPort}`,
+      path: meta?.healthcheckPath || "/",
+    });
 
     return reply.status(201).send({
       runId,
       containerId,
-      status: "running",
+      status: ready ? "ready" : "running",
       url: `http://localhost:${hostPort}`,
       ports: { [`${internalPort}/tcp`]: hostPort },
+      ready,
     });
   } catch (err: any) {
     request.log.warn({ err }, "docker run failed");
@@ -313,13 +354,18 @@ app.post("/runs/raw", async (request, reply) => {
   try {
     const containerId = await dockerRunDetached(tag, internalPort);
     const hostPort = await dockerInspectPort(containerId, internalPort);
+    const ready = await waitForReady({
+      url: `http://localhost:${hostPort}`,
+      path: meta?.healthcheckPath || "/",
+    });
 
     return reply.status(201).send({
       runId,
       containerId,
-      status: "running",
+      status: ready ? "ready" : "running",
       url: `http://localhost:${hostPort}`,
       ports: { [`${internalPort}/tcp`]: hostPort },
+      ready,
     });
   } catch (err: any) {
     request.log.warn({ err }, "docker run failed");
