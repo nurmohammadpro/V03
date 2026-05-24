@@ -428,17 +428,23 @@ export default function Workspace(props: { params: { projectId: string } }) {
           }
         }
       } catch (err: any) {
-        const mock = MOCK_RESPONSES[framework] ?? MOCK_RESPONSES["Next.js"];
-        const words = mock.text.split(" ");
+        if (import.meta.env.DEV) {
+          const mock = MOCK_RESPONSES[framework] ?? MOCK_RESPONSES["Next.js"];
+          const words = mock.text.split(" ");
 
-        for (let i = 0; i < words.length; i++) {
-          await new Promise((resolve) => setTimeout(resolve, 20));
-          appendToLastAssistantMessage(words[i] + (i < words.length - 1 ? " " : ""));
+          for (let i = 0; i < words.length; i++) {
+            await new Promise((resolve) => setTimeout(resolve, 20));
+            appendToLastAssistantMessage(words[i] + (i < words.length - 1 ? " " : ""));
+          }
+
+          updateLastAssistantMessage(mock.text);
+          setFiles(buildFileNodes(mock.files));
+          toast.error(err?.message || "Generation failed");
+        } else {
+          const message = String(err?.message || "Generation failed");
+          updateLastAssistantMessage(`Generation failed: ${message}`);
+          toast.error(message);
         }
-
-        updateLastAssistantMessage(mock.text);
-        setFiles(buildFileNodes(mock.files));
-        toast.error(err?.message || "Generation failed");
       }
 
       setIsGenerating(false);

@@ -61,28 +61,11 @@ export async function chatRoutes(app: FastifyInstance) {
           }
         }
       } catch (err: any) {
-        // AI worker unavailable - return fallback SSE events
-        console.warn("AI worker unavailable, sending fallback SSE:", err.message);
-
-        const initData = JSON.stringify({ projectId, framework, status: "started" });
-        reply.raw.write(`event: init\ndata: ${initData}\n\n`);
-
-        // Stream text_delta events
-        const mockText = `Generating a ${framework} project...\\n\\nCreating project structure...\\nDone! Your ${framework} project is ready.`;
-        const words = mockText.split(" ");
-        for (const word of words) {
-          const deltaData = JSON.stringify({ text: word + " " });
-          reply.raw.write(`event: text_delta\ndata: ${deltaData}\n\n`);
-          await new Promise((r) => setTimeout(r, 20));
-          if (req.raw.destroyed) break;
-        }
-
-        const doneData = JSON.stringify({
-          text: mockText,
-          files: [],
-          framework,
-        });
-        reply.raw.write(`event: done\ndata: ${doneData}\n\n`);
+        // AI worker unavailable - report as SSE error and end.
+        const message = String(err?.message || "AI worker unavailable");
+        console.warn("AI worker unavailable:", message);
+        const errorData = JSON.stringify({ error: "AI worker unavailable", message });
+        reply.raw.write(`event: error\ndata: ${errorData}\n\n`);
       } finally {
         if (!reply.raw.destroyed) {
           reply.raw.end();
@@ -115,14 +98,9 @@ export async function chatRoutes(app: FastifyInstance) {
         const data = await workerResponse.json();
         return reply.send(data);
       } catch (err: any) {
-        console.warn("AI worker unavailable for sync:", err.message);
-        return reply.send({
-          projectId,
-          framework,
-          text: `Mock: Generated ${framework} project for: "${prompt}"`,
-          files: [],
-          status: "complete",
-        });
+        const message = String(err?.message || "AI worker unavailable");
+        console.warn("AI worker unavailable for sync:", message);
+        return reply.status(502).send({ error: "AI worker unavailable", message });
       }
     }
   );

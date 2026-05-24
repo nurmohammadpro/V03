@@ -10,6 +10,7 @@ import {
   useUpdateAiProvider,
   useUpdateAiRoutingRule,
 } from "@/hooks/useDashboardData";
+import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -17,6 +18,7 @@ import * as React from "react";
 import { toast } from "sonner";
 
 export default function AdminSystem() {
+  const qc = useQueryClient();
   const { stats } = useAdminStats();
   const { providers } = useAiProviders();
   const { rules } = useAiRoutingRules();
@@ -85,7 +87,12 @@ export default function AdminSystem() {
       setKeyModalOpen(false);
       setKeyValue("");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not save API key.");
+      const message = error instanceof Error ? error.message : "Could not save API key.";
+      if (typeof message === "string" && message.includes("AI_PROVIDER_SECRETS_KEY_BASE64")) {
+        toast.error(`${message} Set it in the gateway environment and redeploy.`);
+      } else {
+        toast.error(message);
+      }
     }
   }
 
@@ -139,6 +146,7 @@ export default function AdminSystem() {
       });
       toast.success("Provider created.");
       setCreateModalOpen(false);
+      await qc.invalidateQueries({ queryKey: ["aiProviders"] });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not create provider.");
     }
@@ -148,6 +156,13 @@ export default function AdminSystem() {
     <AdminShell title="AI Management" subtitle="Providers, models, routing policy, and cost-quality control.">
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-end gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => qc.invalidateQueries({ queryKey: ["aiProviders"] })}
+          >
+            Refresh
+          </Button>
           <Button type="button" onClick={openCreateModal}>
             Add provider
           </Button>
@@ -176,7 +191,8 @@ export default function AdminSystem() {
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <p className="text-sm text-[var(--app-text)]">{provider.name}</p>
-                      <p className="mt-1 text-sm text-[var(--app-text-muted)]">{provider.baseUrl}</p>
+                      <p className="mt-1 text-xs text-[var(--app-text-dim)]">Key: {provider.key}</p>
+                      <p className="mt-1 text-sm text-[var(--app-text-muted)]">{provider.baseUrl || "No base URL configured"}</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-[var(--app-text-dim)]">{provider.status}</span>
