@@ -536,15 +536,30 @@ export async function adminRoutes(app: FastifyInstance) {
     const [provider] = await db.select().from(aiProviders).where(eq(aiProviders.id, id)).limit(1);
     if (!provider) return reply.status(404).send({ error: "Provider not found" });
 
-    const apiKeyEnc = encryptProviderSecret(body.apiKey.trim());
+    let apiKeyEnc: string;
+    try {
+      apiKeyEnc = encryptProviderSecret(body.apiKey.trim());
+    } catch (err: any) {
+      request.log.error({ err }, "encrypt provider secret failed");
+      return reply.status(500).send({ error: err?.message || "Secret encryption failed. Check AI_PROVIDER_SECRETS_KEY_BASE64 / PROJECT_SECRETS_KEY_BASE64." });
+    }
 
-    await db
-      .insert(aiProviderSecrets)
-      .values({ providerId: id, apiKeyEnc })
-      .onConflictDoUpdate({
-        target: aiProviderSecrets.providerId,
-        set: { apiKeyEnc, updatedAt: new Date() },
-      });
+    try {
+      await db
+        .insert(aiProviderSecrets)
+        .values({ providerId: id, apiKeyEnc })
+        .onConflictDoUpdate({
+          target: aiProviderSecrets.providerId,
+          set: { apiKeyEnc, updatedAt: new Date() },
+        });
+    } catch (err: any) {
+      request.log.error({ err }, "save provider secret failed");
+      const message = String(err?.message || "");
+      if (message.includes('relation "ai_provider_secrets" does not exist')) {
+        return reply.status(500).send({ error: "Database migration missing: ai_provider_secrets. Apply migration 0003_fair_radiant.sql." });
+      }
+      return reply.status(500).send({ error: "Could not save API key." });
+    }
 
     await writeAdminAuditLog({
       request,
