@@ -98,6 +98,24 @@ export const projectEnvVars = pgTable(
   }),
 );
 
+export const projectAuditLogs = pgTable(
+  "project_audit_logs",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    projectId: uuid("project_id").notNull().references(() => projects.id),
+    actorUserId: uuid("actor_user_id").notNull().references(() => users.id),
+    action: text("action").notNull(), // env.set | env.delete | ...
+    metadata: jsonb("metadata").default({}).notNull(),
+    ipAddress: text("ip_address"),
+    userAgent: text("user_agent"),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    projectIdx: index("project_audit_logs_project_id_idx").on(table.projectId),
+    actorIdx: index("project_audit_logs_actor_user_id_idx").on(table.actorUserId),
+  }),
+);
+
 export const creditLedger = pgTable("credit_ledger", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").notNull().references(() => users.id),

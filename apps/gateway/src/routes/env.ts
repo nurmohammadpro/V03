@@ -1,7 +1,7 @@
 import type { FastifyInstance } from "fastify";
 import { and, eq } from "drizzle-orm";
 import db from "../db";
-import { projectEnvVars, projects } from "../db/schema";
+import { projectAuditLogs, projectEnvVars, projects } from "../db/schema";
 import { getRequestActor, requireAuthenticated } from "../middleware/auth";
 import { decryptSecret, encryptSecret } from "../secrets/crypto";
 
@@ -69,6 +69,15 @@ export async function envRoutes(app: FastifyInstance) {
           target: [projectEnvVars.projectId, projectEnvVars.key],
           set: { valueEnc, updatedAt: now },
         });
+
+      await db.insert(projectAuditLogs).values({
+        projectId: id,
+        actorUserId: actor.userId,
+        action: "env.set",
+        metadata: { key },
+        ipAddress: request.ip,
+        userAgent: String(request.headers["user-agent"] ?? ""),
+      });
       updated += 1;
     }
 
@@ -91,6 +100,15 @@ export async function envRoutes(app: FastifyInstance) {
     }
 
     await db.delete(projectEnvVars).where(and(eq(projectEnvVars.projectId, id), eq(projectEnvVars.key, normalized)));
+
+    await db.insert(projectAuditLogs).values({
+      projectId: id,
+      actorUserId: actor.userId,
+      action: "env.delete",
+      metadata: { key: normalized },
+      ipAddress: request.ip,
+      userAgent: String(request.headers["user-agent"] ?? ""),
+    });
     return reply.send({ ok: true });
   });
 }
@@ -107,4 +125,3 @@ export async function getProjectEnvVarsPlaintext(projectId: string) {
   }
   return out;
 }
-

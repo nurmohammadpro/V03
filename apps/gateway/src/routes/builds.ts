@@ -6,6 +6,8 @@ import { buildRuns, previewInstances, projects } from "../db/schema";
 import { getRequestActor, requireAuthenticated } from "../middleware/auth";
 import { getRunnerUrl } from "../runner/runnerClient";
 import { runnerQueue } from "../runner/runnerQueue";
+import { getProjectEnvVarsPlaintext } from "./env";
+import { redactSecrets } from "../secrets/redact";
 
 const RUNNER_URL = getRunnerUrl();
 const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL?.replace(/\/$/, "") || null;
@@ -160,7 +162,10 @@ export async function buildRoutes(app: FastifyInstance) {
     const containerId = typeof runnerRef.containerId === "string" ? runnerRef.containerId : null;
 
     if (!containerId) {
-      return reply.send({ status: run.status, logs: run.logs });
+      const env = await getProjectEnvVarsPlaintext(run.projectId);
+      const secretValues = Object.values(env);
+      const rawLogs = typeof run.logs === "string" ? run.logs : JSON.stringify(run.logs ?? []);
+      return reply.send({ status: run.status, logs: redactSecrets(rawLogs, secretValues) });
     }
 
     const tail = typeof (request.query as any)?.tail === "string" ? (request.query as any).tail : "200";
@@ -170,9 +175,14 @@ export async function buildRoutes(app: FastifyInstance) {
     try {
       const res = await fetch(url);
       const data = await res.json().catch(() => ({}));
-      return reply.send({ status: run.status, logs: data.logs ?? "" });
+      const env = await getProjectEnvVarsPlaintext(run.projectId);
+      const secretValues = Object.values(env);
+      return reply.send({ status: run.status, logs: redactSecrets(String(data.logs ?? ""), secretValues) });
     } catch {
-      return reply.send({ status: run.status, logs: run.logs });
+      const env = await getProjectEnvVarsPlaintext(run.projectId);
+      const secretValues = Object.values(env);
+      const rawLogs = typeof run.logs === "string" ? run.logs : JSON.stringify(run.logs ?? []);
+      return reply.send({ status: run.status, logs: redactSecrets(rawLogs, secretValues) });
     }
   });
 
@@ -271,7 +281,9 @@ export async function buildRoutes(app: FastifyInstance) {
     const res = await fetch(url);
     if (!res.ok) return reply.status(502).send({ error: "Runner unavailable" });
     const data = await res.json().catch(() => ({}));
-    return reply.send({ logs: data.logs ?? "" });
+    const env = await getProjectEnvVarsPlaintext(preview.projectId);
+    const secretValues = Object.values(env);
+    return reply.send({ logs: redactSecrets(String(data.logs ?? ""), secretValues) });
   });
 
   // DELETE /api/previews/:id (stop)
