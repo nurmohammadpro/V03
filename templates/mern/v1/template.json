@@ -1,0 +1,16 @@
+{
+  "key": "mern",
+  "version": "1",
+  "label": "MERN",
+  "frameworkKind": "mern",
+  "runtimeKind": "node",
+  "internalPort": 3000,
+  "healthcheckPath": "/api/health",
+  "commands": {
+    "install": "npm --prefix server install && npm --prefix client install",
+    "build": "npm --prefix client run build",
+    "start": "node server/index.js",
+    "dev": "node server/index.js"
+  }
+}
+

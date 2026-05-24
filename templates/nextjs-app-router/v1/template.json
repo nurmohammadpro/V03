@@ -1,0 +1,16 @@
+{
+  "key": "nextjs-app-router",
+  "version": "1",
+  "label": "Next.js App Router",
+  "frameworkKind": "nextjs",
+  "runtimeKind": "node",
+  "internalPort": 3000,
+  "healthcheckPath": "/",
+  "commands": {
+    "install": "npm ci",
+    "build": "npm run build",
+    "start": "npm start",
+    "dev": "npm run dev -- --host 0.0.0.0 --port 3000"
+  }
+}
+

@@ -1,0 +1,16 @@
+{
+  "key": "django",
+  "version": "2",
+  "label": "Django (conventional scaffold)",
+  "frameworkKind": "django",
+  "runtimeKind": "python",
+  "internalPort": 8000,
+  "healthcheckPath": "/healthz",
+  "commands": {
+    "install": "pip install -r requirements.txt",
+    "build": "python -m compileall .",
+    "start": "gunicorn config.wsgi:application --bind 0.0.0.0:8000",
+    "dev": "python manage.py runserver 0.0.0.0:8000"
+  }
+}
+

@@ -1,0 +1,16 @@
+{
+  "key": "nestjs",
+  "version": "1",
+  "label": "NestJS",
+  "frameworkKind": "nestjs",
+  "runtimeKind": "node",
+  "internalPort": 3000,
+  "healthcheckPath": "/",
+  "commands": {
+    "install": "npm ci",
+    "build": "npm run build",
+    "start": "npm run start:prod",
+    "dev": "npm run start:dev"
+  }
+}
+

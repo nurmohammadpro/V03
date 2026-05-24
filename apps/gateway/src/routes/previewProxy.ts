@@ -22,6 +22,13 @@ export async function previewProxyRoutes(app: FastifyInstance) {
   // Public, shareable preview URL:
   // GET/POST/... /p/:previewId/* -> proxy to runnerRef.url
   const handler = async (request: any, reply: any) => {
+    const connectionHeader = String(request.headers["connection"] ?? "").toLowerCase();
+    const upgradeHeader = String(request.headers["upgrade"] ?? "").toLowerCase();
+    if (connectionHeader.includes("upgrade") || upgradeHeader) {
+      // WebSocket proxying not implemented yet.
+      return reply.status(426).send("WebSocket upgrade not supported");
+    }
+
     const { previewId } = request.params as { previewId: string };
     const wildcard = (request.params as any)["*"] as string | undefined;
 
@@ -55,12 +62,21 @@ export async function previewProxyRoutes(app: FastifyInstance) {
     upstreamUrl.pathname = joinPath(upstreamUrl.pathname, wildcard ? `/${wildcard}` : "/");
     upstreamUrl.search = request.raw.url?.includes("?") ? request.raw.url.split("?").slice(1).join("?") : "";
 
+    const allowedRequestHeaders = new Set([
+      "accept",
+      "accept-language",
+      "content-type",
+      "user-agent",
+      "referer",
+      "origin",
+      "cache-control",
+    ]);
+
     const headers: Record<string, string> = {};
     for (const [key, value] of Object.entries(request.headers)) {
       if (!value) continue;
-      if (key.toLowerCase() === "host") continue;
-      if (key.toLowerCase() === "connection") continue;
-      if (key.toLowerCase() === "content-length") continue;
+      const lower = key.toLowerCase();
+      if (!allowedRequestHeaders.has(lower)) continue;
       headers[key] = Array.isArray(value) ? value.join(",") : String(value);
     }
 

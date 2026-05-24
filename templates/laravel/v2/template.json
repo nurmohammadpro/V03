@@ -1,0 +1,15 @@
+{
+  "key": "laravel",
+  "version": "2",
+  "label": "Laravel (scaffold via Composer)",
+  "frameworkKind": "laravel",
+  "runtimeKind": "php",
+  "internalPort": 8000,
+  "healthcheckPath": "/",
+  "commands": {
+    "install": "tmp=$(mktemp -d) && composer create-project laravel/laravel \"$tmp\" --no-interaction --prefer-dist && cp -R \"$tmp\"/. .",
+    "build": "",
+    "start": "php artisan serve --host 0.0.0.0 --port 8000",
+    "dev": "php artisan serve --host 0.0.0.0 --port 8000"
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "key": "laravel",
+  "version": "1",
+  "label": "PHP (Laravel placeholder)",
+  "frameworkKind": "laravel",
+  "runtimeKind": "php",
+  "internalPort": 8000,
+  "healthcheckPath": "/",
+  "commands": {
+    "install": "",
+    "build": "",
+    "start": "php -S 0.0.0.0:8000 -t public",
+    "dev": "php -S 0.0.0.0:8000 -t public"
+  }
+}
+

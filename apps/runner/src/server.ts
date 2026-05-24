@@ -75,22 +75,27 @@ async function readProjectMeta(dir: string): Promise<ProjectMeta | null> {
 }
 
 async function writeDockerfile(dir: string, mode: "build" | "dev", runtime: RuntimeKind, meta: ProjectMeta | null) {
+  const templateRoot = path.resolve(process.cwd(), "src", "dockerfiles");
+  const render = (tmpl: string, vars: Record<string, string>) => {
+    let out = tmpl;
+    for (const [k, v] of Object.entries(vars)) {
+      out = out.replaceAll(`{{${k}}}`, v);
+    }
+    return out;
+  };
+
   if (runtime === "python") {
     const internalPort = meta?.internalPort && Number.isFinite(meta.internalPort) ? meta.internalPort : 8000;
     const startCommand = meta?.startCommand || `python manage.py runserver 0.0.0.0:${internalPort}`;
     const buildCommand = meta?.buildCommand || "python -m compileall . || true";
     const installCommand = meta?.installCommand || "pip install --no-cache-dir -r requirements.txt";
-    const dockerfile = `
-FROM python:3.12-slim
-WORKDIR /app
-COPY requirements.txt* ./
-RUN if [ -f requirements.txt ]; then ${installCommand}; fi
-COPY . .
-ENV PORT=${internalPort}
-EXPOSE ${internalPort}
-${mode === "build" ? `RUN ${buildCommand}` : ""}
-CMD ["sh", "-lc", "${startCommand}"]
-`.trimStart();
+    const tmpl = await readFile(path.join(templateRoot, "python.Dockerfile.tmpl"), "utf8");
+    const dockerfile = render(tmpl, {
+      INTERNAL_PORT: String(internalPort),
+      INSTALL_CMD: installCommand,
+      BUILD_STEP: mode === "build" ? `RUN ${buildCommand}` : "",
+      RUN_SHELL: JSON.stringify(startCommand),
+    });
 
     await writeFile(path.join(dir, "Dockerfile"), dockerfile, "utf8");
     return { internalPort };
@@ -100,19 +105,12 @@ CMD ["sh", "-lc", "${startCommand}"]
     const internalPort = meta?.internalPort && Number.isFinite(meta.internalPort) ? meta.internalPort : 8000;
     const startCommand = meta?.startCommand || `php artisan serve --host 0.0.0.0 --port ${internalPort}`;
     const installCommand = meta?.installCommand || "composer install --no-interaction --prefer-dist";
-    const dockerfile = `
-FROM php:8.3-cli
-WORKDIR /app
-RUN apt-get update && apt-get install -y --no-install-recommends git unzip curl && rm -rf /var/lib/apt/lists/*
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
-COPY . .
-RUN if [ -f composer.json ] && [ -n ${JSON.stringify(installCommand)} ]; then sh -lc ${JSON.stringify(
-      installCommand,
-    )}; fi
-ENV PORT=${internalPort}
-EXPOSE ${internalPort}
-CMD ["sh", "-lc", "${startCommand}"]
-`.trimStart();
+    const tmpl = await readFile(path.join(templateRoot, "php.Dockerfile.tmpl"), "utf8");
+    const dockerfile = render(tmpl, {
+      INTERNAL_PORT: String(internalPort),
+      INSTALL_SHELL: installCommand ? JSON.stringify(installCommand) : "''",
+      RUN_SHELL: JSON.stringify(startCommand),
+    });
 
     await writeFile(path.join(dir, "Dockerfile"), dockerfile, "utf8");
     return { internalPort };
@@ -138,21 +136,13 @@ CMD ["sh", "-lc", "${startCommand}"]
           ].join(" ")
         : devCommand;
 
-  const dockerfile = `
-FROM node:20-alpine
-WORKDIR /app
-COPY . .
-RUN if [ -n ${installShell} ]; then sh -lc ${installShell}; \\
-    elif [ -f package-lock.json ]; then npm ci; \\
-    elif [ -f pnpm-lock.yaml ]; then corepack enable && pnpm i --frozen-lockfile; \\
-    elif [ -f yarn.lock ]; then corepack enable && yarn --frozen-lockfile; \\
-    else npm i; fi
-ENV HOST=0.0.0.0
-ENV PORT=${internalPort}
-${mode === "build" ? `RUN ${buildCommand}` : ""}
-EXPOSE ${internalPort}
-CMD ["sh", "-lc", "${runCommand}"]
-`.trimStart();
+  const tmpl = await readFile(path.join(templateRoot, "node.Dockerfile.tmpl"), "utf8");
+  const dockerfile = render(tmpl, {
+    INTERNAL_PORT: String(internalPort),
+    INSTALL_SHELL: installShell || "''",
+    BUILD_STEP: mode === "build" ? `RUN ${buildCommand}` : "",
+    RUN_SHELL: JSON.stringify(runCommand),
+  });
 
   await writeFile(path.join(dir, "Dockerfile"), dockerfile, "utf8");
   return { internalPort };

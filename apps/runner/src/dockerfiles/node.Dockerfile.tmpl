@@ -1,0 +1,19 @@
+FROM node:20-alpine
+WORKDIR /app
+COPY . .
+
+# Install dependencies
+RUN if [ -n {{INSTALL_SHELL}} ]; then sh -lc {{INSTALL_SHELL}}; \
+    elif [ -f package-lock.json ]; then npm ci; \
+    elif [ -f pnpm-lock.yaml ]; then corepack enable && pnpm i --frozen-lockfile; \
+    elif [ -f yarn.lock ]; then corepack enable && yarn --frozen-lockfile; \
+    else npm i; fi
+
+ENV HOST=0.0.0.0
+ENV PORT={{INTERNAL_PORT}}
+
+{{BUILD_STEP}}
+
+EXPOSE {{INTERNAL_PORT}}
+CMD ["sh", "-lc", {{RUN_SHELL}}]
+

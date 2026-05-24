@@ -1,0 +1,16 @@
+{
+  "key": "django",
+  "version": "1",
+  "label": "Django",
+  "frameworkKind": "django",
+  "runtimeKind": "python",
+  "internalPort": 8000,
+  "healthcheckPath": "/",
+  "commands": {
+    "install": "pip install -r requirements.txt",
+    "build": "python -m compileall .",
+    "start": "python manage.py runserver 0.0.0.0:8000",
+    "dev": "python manage.py runserver 0.0.0.0:8000"
+  }
+}
+

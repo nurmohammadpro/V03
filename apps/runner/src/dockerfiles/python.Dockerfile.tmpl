@@ -1,0 +1,10 @@
+FROM python:3.12-slim
+WORKDIR /app
+COPY requirements.txt* ./
+RUN if [ -f requirements.txt ]; then {{INSTALL_CMD}}; fi
+COPY . .
+ENV PORT={{INTERNAL_PORT}}
+EXPOSE {{INTERNAL_PORT}}
+{{BUILD_STEP}}
+CMD ["sh", "-lc", {{RUN_SHELL}}]
+
