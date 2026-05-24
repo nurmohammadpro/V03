@@ -235,7 +235,13 @@ export async function buildRoutes(app: FastifyInstance) {
       })
       .returning();
 
-    const publicUrl = `${String(base).replace(/\/$/, "")}/p/${preview.id}/?t=${shareToken}`;
+    const previewDomain = process.env.PREVIEW_DOMAIN?.trim();
+    const scheme =
+      process.env.PREVIEW_SCHEME?.trim() ||
+      String(request.headers["x-forwarded-proto"] ?? "http");
+    const publicUrl = previewDomain
+      ? `${scheme}://${preview.id}.${previewDomain}/?t=${shareToken}`
+      : `${String(base).replace(/\/$/, "")}/p/${preview.id}/?t=${shareToken}`;
     await db.update(previewInstances).set({ url: publicUrl }).where(eq(previewInstances.id, preview.id));
 
     runnerQueue.enqueuePreview({ previewId: preview.id, userId: actor.userId });
@@ -276,7 +282,13 @@ export async function buildRoutes(app: FastifyInstance) {
     const shareToken = crypto.randomBytes(16).toString("hex");
     const ttlSeconds = parseInt(process.env.PREVIEW_TOKEN_TTL_SECONDS || "86400", 10);
     const expiresAt = Number.isFinite(ttlSeconds) && ttlSeconds > 0 ? Date.now() + ttlSeconds * 1000 : null;
-    const publicUrl = `${String(base).replace(/\/$/, "")}/p/${preview.id}/?t=${shareToken}`;
+    const previewDomain = process.env.PREVIEW_DOMAIN?.trim();
+    const scheme =
+      process.env.PREVIEW_SCHEME?.trim() ||
+      String(request.headers["x-forwarded-proto"] ?? "http");
+    const publicUrl = previewDomain
+      ? `${scheme}://${preview.id}.${previewDomain}/?t=${shareToken}`
+      : `${String(base).replace(/\/$/, "")}/p/${preview.id}/?t=${shareToken}`;
 
     const runnerRef =
       typeof preview.runnerRef === "object" && preview.runnerRef ? (preview.runnerRef as Record<string, unknown>) : {};

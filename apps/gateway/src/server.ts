@@ -11,6 +11,7 @@ import { envRoutes } from "./routes/env";
 import { auditRoutes } from "./routes/audit";
 import { generationRoutes } from "./routes/generations";
 import { buildRoutes } from "./routes/builds";
+import { previewHostProxyRoutes } from "./routes/previewHostProxy";
 import { previewProxyRoutes } from "./routes/previewProxy";
 import { registerPreviewWebsocketProxy } from "./routes/previewProxyWs";
 import { ensureAdminSystemSeeded } from "./db/bootstrap";
@@ -63,6 +64,7 @@ async function start() {
   await app.register(auditRoutes);
   await app.register(generationRoutes);
   await app.register(buildRoutes);
+  await app.register(previewHostProxyRoutes);
   await app.register(previewProxyRoutes);
   await app.register(chatRoutes);
   await app.register(adminRoutes);

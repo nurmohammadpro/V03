@@ -11,6 +11,17 @@ function parsePreviewIdFromUrl(url: string | undefined) {
   return match?.[1] ?? null;
 }
 
+function parsePreviewIdFromHost(hostHeader: string | undefined) {
+  const previewDomain = process.env.PREVIEW_DOMAIN?.trim();
+  if (!previewDomain || !hostHeader) return null;
+  const host = hostHeader.split(":")[0]?.toLowerCase() ?? "";
+  const domain = previewDomain.toLowerCase();
+  if (!host.endsWith(`.${domain}`)) return null;
+  const sub = host.slice(0, host.length - domain.length - 1);
+  const previewId = sub.split(".")[0] || null;
+  return previewId;
+}
+
 function getQueryParam(url: string, key: string) {
   const idx = url.indexOf("?");
   if (idx === -1) return null;
@@ -24,7 +35,7 @@ export function registerPreviewWebsocketProxy(server: HttpServer) {
 
   server.on("upgrade", async (req: IncomingMessage, socket: Socket, head: Buffer) => {
     try {
-      const previewId = parsePreviewIdFromUrl(req.url);
+      const previewId = parsePreviewIdFromUrl(req.url) || parsePreviewIdFromHost(req.headers.host);
       if (!previewId) return;
 
       const [preview] = await db.select().from(previewInstances).where(eq(previewInstances.id, previewId)).limit(1);
@@ -57,8 +68,9 @@ export function registerPreviewWebsocketProxy(server: HttpServer) {
       }
 
       const upstreamUrl = new URL(upstreamBase);
-      // Preserve original path after /p/:previewId
-      const remainder = req.url?.replace(/^\/p\/[^/]+/, "") || "/";
+      // If request is host-based, forward the path as-is; otherwise preserve remainder after /p/:previewId.
+      const hostBased = Boolean(parsePreviewIdFromHost(req.headers.host));
+      const remainder = hostBased ? (req.url?.split("?")[0] || "/") : (req.url?.replace(/^\/p\/[^/]+/, "") || "/");
       upstreamUrl.pathname = remainder.split("?")[0] || "/";
       // forward the query string as-is, but remove the token param
       const params = new URLSearchParams((req.url?.split("?")[1] ?? "") as string);
