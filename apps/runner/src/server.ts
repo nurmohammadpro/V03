@@ -148,16 +148,31 @@ async function writeDockerfile(dir: string, mode: "build" | "dev", runtime: Runt
   return { internalPort };
 }
 
-async function dockerBuild(dir: string, tag: string) {
+async function dockerImageExists(tag: string) {
   requireDocker();
-  await execFileAsync("docker", ["build", "-t", tag, "."], { cwd: dir, maxBuffer: 10 * 1024 * 1024 });
+  try {
+    await execFileAsync("docker", ["image", "inspect", tag], { maxBuffer: 1024 * 1024 });
+    return true;
+  } catch {
+    return false;
+  }
 }
 
-async function dockerRunDetached(tag: string, internalPort: number) {
+async function dockerBuild(dir: string, tag: string, labels: Record<string, string>) {
   requireDocker();
+  const labelArgs = Object.entries(labels).flatMap(([k, v]) => ["--label", `${k}=${v}`]);
+  await execFileAsync("docker", ["build", "-t", tag, ...labelArgs, "."], {
+    cwd: dir,
+    maxBuffer: 10 * 1024 * 1024,
+  });
+}
+
+async function dockerRunDetached(tag: string, internalPort: number, labels: Record<string, string>) {
+  requireDocker();
+  const labelArgs = Object.entries(labels).flatMap(([k, v]) => ["--label", `${k}=${v}`]);
   const { stdout } = await execFileAsync(
     "docker",
-    ["run", "-d", "-p", `0:${internalPort}`, "--rm", "--label", "v03.runner=true", tag],
+    ["run", "-d", "-p", `0:${internalPort}`, "--rm", "--label", "v03.runner=true", ...labelArgs, tag],
     { maxBuffer: 1024 * 1024 },
   );
   return stdout.trim();
@@ -251,6 +266,68 @@ async function cleanupOldRuns() {
   }
 }
 
+async function cleanupOldImages() {
+  const ttlSeconds = parseInt(process.env.RUNNER_IMAGE_CACHE_TTL_SECONDS || "86400", 10);
+  if (!Number.isFinite(ttlSeconds) || ttlSeconds <= 0) return;
+  const maxImages = parseInt(process.env.RUNNER_IMAGE_CACHE_MAX || "50", 10);
+
+  try {
+    const { stdout } = await execFileAsync(
+      "docker",
+      ["image", "ls", "--filter", "label=v03.runner.cache=true", "--format", "{{.Repository}}:{{.Tag}}"],
+      { maxBuffer: 1024 * 1024 },
+    );
+    const tags = stdout
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    const inspected: Array<{ tag: string; createdAtMs: number }> = [];
+    for (const tag of tags) {
+      try {
+        const { stdout: createdOut } = await execFileAsync(
+          "docker",
+          ["image", "inspect", "-f", "{{.Created}}", tag],
+          { maxBuffer: 1024 * 1024 },
+        );
+        const createdAt = Date.parse(createdOut.trim());
+        if (!Number.isFinite(createdAt)) continue;
+        inspected.push({ tag, createdAtMs: createdAt });
+      } catch {
+        // ignore per-image failures
+      }
+    }
+
+    const now = Date.now();
+    const expired = inspected.filter((i) => (now - i.createdAtMs) / 1000 > ttlSeconds);
+    for (const { tag } of expired) {
+      try {
+        await execFileAsync("docker", ["image", "rm", "-f", tag], { maxBuffer: 1024 * 1024 });
+      } catch {
+        // ignore
+      }
+    }
+
+    if (Number.isFinite(maxImages) && maxImages > 0) {
+      const remaining = inspected
+        .filter((i) => !expired.some((e) => e.tag === i.tag))
+        .sort((a, b) => a.createdAtMs - b.createdAtMs); // oldest first
+      const overflow = remaining.length - maxImages;
+      if (overflow > 0) {
+        for (const { tag } of remaining.slice(0, overflow)) {
+          try {
+            await execFileAsync("docker", ["image", "rm", "-f", tag], { maxBuffer: 1024 * 1024 });
+          } catch {
+            // ignore
+          }
+        }
+      }
+    }
+  } catch {
+    // ignore cleanup failures
+  }
+}
+
 app.register(cors, { origin: true, credentials: true });
 app.register(multipart, {
   limits: {
@@ -267,6 +344,7 @@ app.addContentTypeParser(
 app.get("/health", async () => ({ status: "ok", service: "runner", version: "1.0.0" }));
 
 setInterval(() => void cleanupOldRuns(), 60_000).unref?.();
+setInterval(() => void cleanupOldImages(), 5 * 60_000).unref?.();
 
 app.post("/runs", async (request, reply) => {
   const parts = request.parts();
@@ -304,6 +382,7 @@ app.post("/runs", async (request, reply) => {
 
   const bundlePath = path.join(runDir, "bundle.tgz");
   await writeFile(bundlePath, bundle.buffer);
+  const bundleHash = crypto.createHash("sha256").update(bundle.buffer).digest("hex");
 
   try {
     await execFileAsync("tar", ["-xzf", bundlePath, "-C", runDir], { maxBuffer: 1024 * 1024 });
@@ -316,16 +395,27 @@ app.post("/runs", async (request, reply) => {
   const runtime = meta?.runtimeKind || (await detectRuntime(runDir));
   const { internalPort } = await writeDockerfile(runDir, mode, runtime, meta);
 
-  const tag = `v03-run-${runId}`;
+  const tag = `v03-cache-${runtime}-${mode}-${bundleHash.slice(0, 24)}`;
   try {
-    await dockerBuild(runDir, tag);
+    const exists = await dockerImageExists(tag);
+    if (!exists) {
+      await dockerBuild(runDir, tag, {
+        "v03.runner.cache": "true",
+        "v03.bundleHash": bundleHash,
+        "v03.runtime": runtime,
+        "v03.mode": mode,
+      });
+    }
   } catch (err: any) {
     request.log.warn({ err }, "docker build failed");
     return reply.status(500).send({ error: "Docker build failed" });
   }
 
   try {
-    const containerId = await dockerRunDetached(tag, internalPort);
+    const containerId = await dockerRunDetached(tag, internalPort, {
+      "v03.bundleHash": bundleHash,
+      "v03.mode": mode,
+    });
     const hostPort = await dockerInspectPort(containerId, internalPort);
     const ready = await waitForReady({
       url: `http://localhost:${hostPort}`,
@@ -339,6 +429,7 @@ app.post("/runs", async (request, reply) => {
       url: `http://localhost:${hostPort}`,
       ports: { [`${internalPort}/tcp`]: hostPort },
       ready,
+      bundleHash,
     });
   } catch (err: any) {
     request.log.warn({ err }, "docker run failed");
@@ -356,6 +447,7 @@ app.post("/runs/raw", async (request, reply) => {
   if (!buffer || !Buffer.isBuffer(buffer) || buffer.length === 0) {
     return reply.status(400).send({ error: "Request body must be a tar.gz buffer" });
   }
+  const bundleHash = crypto.createHash("sha256").update(buffer).digest("hex");
 
   const runDir = await makeRunDir(runId);
   const bundlePath = path.join(runDir, "bundle.tgz");
@@ -372,16 +464,27 @@ app.post("/runs/raw", async (request, reply) => {
   const runtime = meta?.runtimeKind || (await detectRuntime(runDir));
   const { internalPort } = await writeDockerfile(runDir, mode, runtime, meta);
 
-  const tag = `v03-run-${runId}`;
+  const tag = `v03-cache-${runtime}-${mode}-${bundleHash.slice(0, 24)}`;
   try {
-    await dockerBuild(runDir, tag);
+    const exists = await dockerImageExists(tag);
+    if (!exists) {
+      await dockerBuild(runDir, tag, {
+        "v03.runner.cache": "true",
+        "v03.bundleHash": bundleHash,
+        "v03.runtime": runtime,
+        "v03.mode": mode,
+      });
+    }
   } catch (err: any) {
     request.log.warn({ err }, "docker build failed");
     return reply.status(500).send({ error: "Docker build failed" });
   }
 
   try {
-    const containerId = await dockerRunDetached(tag, internalPort);
+    const containerId = await dockerRunDetached(tag, internalPort, {
+      "v03.bundleHash": bundleHash,
+      "v03.mode": mode,
+    });
     const hostPort = await dockerInspectPort(containerId, internalPort);
     const ready = await waitForReady({
       url: `http://localhost:${hostPort}`,
@@ -395,6 +498,7 @@ app.post("/runs/raw", async (request, reply) => {
       url: `http://localhost:${hostPort}`,
       ports: { [`${internalPort}/tcp`]: hostPort },
       ready,
+      bundleHash,
     });
   } catch (err: any) {
     request.log.warn({ err }, "docker run failed");
