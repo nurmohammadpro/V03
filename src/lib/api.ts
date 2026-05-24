@@ -369,6 +369,18 @@ export const api = {
         summary: Record<string, unknown>;
       }>;
     }>(`/api/projects/${projectId}/generations`),
+
+  // Env vars (write-only values)
+  getProjectEnv: (projectId: string) =>
+    request<{
+      vars: Array<{ id: string; key: string; hasValue: boolean; updatedAt: string }>;
+    }>(`/api/projects/${projectId}/env`),
+
+  putProjectEnv: (projectId: string, vars: Array<{ key: string; value: string }>) =>
+    request<{ ok: boolean; updated: number }>(`/api/projects/${projectId}/env`, { method: "PUT", body: { vars } }),
+
+  deleteProjectEnv: (projectId: string, key: string) =>
+    request<{ ok: boolean }>(`/api/projects/${projectId}/env?key=${encodeURIComponent(key)}`, { method: "DELETE" }),
 };
 
 export default api;

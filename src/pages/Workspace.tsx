@@ -10,6 +10,7 @@ import { ThemeToggle } from "@/components/shared/ThemeToggle";
 import WorkspaceLayout from "@/components/workspace/WorkspaceLayout";
 import FileTree from "@/components/workspace/FileTree";
 import { CommandPalette } from "@/components/workspace/CommandPalette";
+import { EnvVarsDialog } from "@/components/workspace/EnvVarsDialog";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { createChatMessage } from "@/lib/sse";
 import { toast } from "sonner";
@@ -19,6 +20,7 @@ import {
   ArrowLeft,
   Code2,
   FolderTree,
+  KeyRound,
   MessageSquare,
   PanelLeftClose,
   PanelLeftOpen,
@@ -306,6 +308,7 @@ export default function Workspace(props: { params: { projectId: string } }) {
     return window.innerWidth >= 1280;
   });
   const [codePanelOpen, setCodePanelOpen] = useState(false);
+  const [envOpen, setEnvOpen] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<"files" | "chat">("files");
 
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -480,6 +483,7 @@ export default function Workspace(props: { params: { projectId: string } }) {
   return (
     <div className="min-h-[100dvh] bg-[var(--app-bg)] text-[var(--app-text)]">
       <CommandPalette />
+      <EnvVarsDialog open={envOpen} onOpenChange={setEnvOpen} projectId={projectId} />
       {sidebarOpen && (
         <button
           type="button"
@@ -550,6 +554,16 @@ export default function Workspace(props: { params: { projectId: string } }) {
                 },
               }))}
             />
+
+            <Button
+              type="button"
+              variant="outline"
+              className="h-9 rounded-[8px] border-0 bg-[var(--app-panel)] px-3 text-[var(--app-text-muted)] hover:bg-[var(--app-surface)] hover:text-[var(--app-text)]"
+              onClick={() => setEnvOpen(true)}
+            >
+              <KeyRound className="h-4 w-4" />
+              Env
+            </Button>
 
             <ThemeToggle />
 
