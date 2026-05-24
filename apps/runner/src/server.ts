@@ -167,7 +167,7 @@ async function dockerRunDetached(tag: string, internalPort: number) {
   requireDocker();
   const { stdout } = await execFileAsync(
     "docker",
-    ["run", "-d", "-p", `0:${internalPort}`, "--rm", tag],
+    ["run", "-d", "-p", `0:${internalPort}`, "--rm", "--label", "v03.runner=true", tag],
     { maxBuffer: 1024 * 1024 },
   );
   return stdout.trim();
@@ -224,6 +224,43 @@ async function dockerStop(containerId: string) {
   await execFileAsync("docker", ["stop", containerId], { maxBuffer: 1024 * 1024 });
 }
 
+async function cleanupOldRuns() {
+  const ttlSeconds = parseInt(process.env.RUNNER_TTL_SECONDS || "1800", 10);
+  if (!Number.isFinite(ttlSeconds) || ttlSeconds <= 0) return;
+
+  try {
+    const { stdout } = await execFileAsync(
+      "docker",
+      ["ps", "--filter", "label=v03.runner=true", "--format", "{{.ID}}"],
+      { maxBuffer: 1024 * 1024 },
+    );
+    const ids = stdout
+      .split("\n")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    for (const id of ids) {
+      try {
+        const { stdout: startedOut } = await execFileAsync(
+          "docker",
+          ["inspect", "-f", "{{.State.StartedAt}}", id],
+          { maxBuffer: 1024 * 1024 },
+        );
+        const startedAt = Date.parse(startedOut.trim());
+        if (!Number.isFinite(startedAt)) continue;
+        const ageSeconds = (Date.now() - startedAt) / 1000;
+        if (ageSeconds > ttlSeconds) {
+          await dockerStop(id);
+        }
+      } catch {
+        // ignore per-container failures
+      }
+    }
+  } catch {
+    // ignore cleanup failures
+  }
+}
+
 app.register(cors, { origin: true, credentials: true });
 app.register(multipart, {
   limits: {
@@ -238,6 +275,8 @@ app.addContentTypeParser(
 );
 
 app.get("/health", async () => ({ status: "ok", service: "runner", version: "1.0.0" }));
+
+setInterval(() => void cleanupOldRuns(), 60_000).unref?.();
 
 app.post("/runs", async (request, reply) => {
   const parts = request.parts();

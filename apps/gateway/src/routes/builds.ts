@@ -5,6 +5,7 @@ import path from "node:path";
 import { tmpdir } from "node:os";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
+import crypto from "node:crypto";
 import db from "../db";
 import { buildRuns, fileBlobs, previewInstances, projectFiles, projectFileVersions, projects } from "../db/schema";
 import { getRequestActor, requireAuthenticated } from "../middleware/auth";
@@ -291,7 +292,8 @@ export async function buildRoutes(app: FastifyInstance) {
       const base =
         PUBLIC_BASE_URL ||
         `${request.headers["x-forwarded-proto"] ?? "http"}://${request.headers["x-forwarded-host"] ?? request.headers.host}`;
-      const publicUrl = `${String(base).replace(/\/$/, "")}/p/${preview.id}/`;
+      const shareToken = crypto.randomBytes(16).toString("hex");
+      const publicUrl = `${String(base).replace(/\/$/, "")}/p/${preview.id}/?t=${shareToken}`;
 
       const [updated] = await db
         .update(previewInstances)
@@ -306,6 +308,7 @@ export async function buildRoutes(app: FastifyInstance) {
             containerId: runner.containerId,
             url: runner.url,
             ready: runner.ready ?? null,
+            shareToken,
           },
         })
         .where(eq(previewInstances.id, preview.id))

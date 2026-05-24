@@ -37,6 +37,14 @@ export async function previewProxyRoutes(app: FastifyInstance) {
       return reply.status(502).send("Preview upstream unavailable");
     }
 
+    const requireToken = (process.env.PREVIEW_REQUIRE_TOKEN ?? "true") === "true";
+    const expectedToken = typeof runnerRef.shareToken === "string" ? runnerRef.shareToken : null;
+    const providedToken = typeof (request.query as any)?.t === "string" ? String((request.query as any).t) : null;
+
+    if (requireToken && expectedToken && providedToken !== expectedToken) {
+      return reply.status(403).send("Invalid preview token");
+    }
+
     const upstreamUrl = new URL(upstreamBase);
     upstreamUrl.pathname = joinPath(upstreamUrl.pathname, wildcard ? `/${wildcard}` : "/");
     upstreamUrl.search = request.raw.url?.includes("?") ? request.raw.url.split("?").slice(1).join("?") : "";
