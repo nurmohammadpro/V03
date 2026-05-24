@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { and, desc, eq, inArray, isNull } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { tmpdir } from "node:os";
@@ -136,6 +136,9 @@ async function runnerStartRun(input: { runId: string; mode: "build" | "dev"; tar
 export async function buildRoutes(app: FastifyInstance) {
   app.addHook("onRequest", requireAuthenticated);
 
+  const maxPreviewsPerUser = parseInt(process.env.MAX_PREVIEWS_PER_USER || "2", 10);
+  const maxBuildsPerUser = parseInt(process.env.MAX_BUILDS_PER_USER || "1", 10);
+
   // POST /api/projects/:id/builds
   app.post("/api/projects/:id/builds", async (request, reply) => {
     const actor = getRequestActor(request);
@@ -145,6 +148,15 @@ export async function buildRoutes(app: FastifyInstance) {
     const project = await requireProjectAccess(id, actor);
     if (!project) return reply.status(404).send({ error: "Project not found" });
     if (project === "forbidden") return reply.status(403).send({ error: "Forbidden" });
+
+    const [{ count: activeBuilds }] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(buildRuns)
+      .where(and(eq(buildRuns.userId, actor.userId), inArray(buildRuns.status, ["queued", "running"] as any)));
+
+    if (Number.isFinite(maxBuildsPerUser) && activeBuilds >= maxBuildsPerUser) {
+      return reply.status(429).send({ error: "Build limit reached" });
+    }
 
     const [run] = await db
       .insert(buildRuns)
@@ -269,6 +281,15 @@ export async function buildRoutes(app: FastifyInstance) {
     const project = await requireProjectAccess(id, actor);
     if (!project) return reply.status(404).send({ error: "Project not found" });
     if (project === "forbidden") return reply.status(403).send({ error: "Forbidden" });
+
+    const [{ count: activePreviews }] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(previewInstances)
+      .where(and(eq(previewInstances.userId, actor.userId), inArray(previewInstances.status, ["starting", "running", "ready"] as any)));
+
+    if (Number.isFinite(maxPreviewsPerUser) && activePreviews >= maxPreviewsPerUser) {
+      return reply.status(429).send({ error: "Preview limit reached" });
+    }
 
     const [preview] = await db
       .insert(previewInstances)

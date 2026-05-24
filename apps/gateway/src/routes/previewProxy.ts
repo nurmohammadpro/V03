@@ -25,8 +25,8 @@ export async function previewProxyRoutes(app: FastifyInstance) {
     const connectionHeader = String(request.headers["connection"] ?? "").toLowerCase();
     const upgradeHeader = String(request.headers["upgrade"] ?? "").toLowerCase();
     if (connectionHeader.includes("upgrade") || upgradeHeader) {
-      // WebSocket proxying not implemented yet.
-      return reply.status(426).send("WebSocket upgrade not supported");
+      // WebSocket upgrades are handled at the server "upgrade" event.
+      return reply.status(426).send("Upgrade handled elsewhere");
     }
 
     const { previewId } = request.params as { previewId: string };

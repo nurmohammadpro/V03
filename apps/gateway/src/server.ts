@@ -10,6 +10,7 @@ import { fileRoutes } from "./routes/files";
 import { generationRoutes } from "./routes/generations";
 import { buildRoutes } from "./routes/builds";
 import { previewProxyRoutes } from "./routes/previewProxy";
+import { registerPreviewWebsocketProxy } from "./routes/previewProxyWs";
 import { ensureAdminSystemSeeded } from "./db/bootstrap";
 import "dotenv/config";
 
@@ -61,6 +62,8 @@ async function start() {
 
   // Health check
   app.get("/api/health", async () => ({ status: "ok", service: "v03-gateway", version: "1.0.0" }));
+
+  registerPreviewWebsocketProxy(app.server);
 
   const port = parseInt(process.env.PORT || "3001", 10);
   await app.listen({ port, host: "0.0.0.0" });
