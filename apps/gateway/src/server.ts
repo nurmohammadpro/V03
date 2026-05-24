@@ -13,6 +13,7 @@ import { previewProxyRoutes } from "./routes/previewProxy";
 import { registerPreviewWebsocketProxy } from "./routes/previewProxyWs";
 import { ensureAdminSystemSeeded } from "./db/bootstrap";
 import { runnerQueue } from "./runner/runnerQueue";
+import { cleanupGatewayArtifacts } from "./runner/exportProjectToTarGz";
 import "dotenv/config";
 
 const app = Fastify({ logger: true });
@@ -71,6 +72,8 @@ async function start() {
   } catch (err) {
     app.log.warn({ err }, "runner queue rehydrate failed");
   }
+
+  setInterval(() => void cleanupGatewayArtifacts(), 60_000).unref?.();
 
   const port = parseInt(process.env.PORT || "3001", 10);
   await app.listen({ port, host: "0.0.0.0" });

@@ -237,7 +237,7 @@ export class RunnerQueue {
 export const runnerQueue = new RunnerQueue();
 
 export async function countActiveRunsForUser(userId: string) {
-  const [{ builds }, { previews }] = await Promise.all([
+  const [[{ builds }], [{ previews }]] = await Promise.all([
     db
       .select({ builds: sql<number>`count(*)` })
       .from(buildRuns)
@@ -248,6 +248,5 @@ export async function countActiveRunsForUser(userId: string) {
       .where(and(eq(previewInstances.userId, userId), inArray(previewInstances.status, ["queued", "starting", "running", "ready"] as any))),
   ]);
 
-  return { builds: builds.builds, previews: previews.previews };
+  return { builds, previews };
 }
-
