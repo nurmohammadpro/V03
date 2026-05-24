@@ -61,6 +61,34 @@ type ProjectMeta = {
   healthcheckPath?: string;
 };
 
+function parseEnvFromHeader(request: any) {
+  const raw = request.headers?.["x-v03-env-b64"];
+  if (!raw) return {};
+  const b64 = Array.isArray(raw) ? raw[0] : String(raw);
+  if (!b64.trim()) return {};
+  let parsed: any;
+  try {
+    const json = Buffer.from(b64, "base64").toString("utf8");
+    parsed = JSON.parse(json);
+  } catch {
+    return {};
+  }
+  if (!parsed || typeof parsed !== "object") return {};
+
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(parsed)) {
+    const key = String(k || "").trim();
+    if (!key) continue;
+    if (key.length > 120) continue;
+    // Keep a strict, container-friendly key format.
+    if (!/^[A-Z_][A-Z0-9_]*$/.test(key)) continue;
+    const value = typeof v === "string" ? v : JSON.stringify(v);
+    if (value.length > 8192) continue;
+    out[key] = value;
+  }
+  return out;
+}
+
 async function readProjectMeta(dir: string): Promise<ProjectMeta | null> {
   const metaPath = path.join(dir, ".v03", "meta.json");
   if (!(await exists(metaPath))) return null;
@@ -167,12 +195,18 @@ async function dockerBuild(dir: string, tag: string, labels: Record<string, stri
   });
 }
 
-async function dockerRunDetached(tag: string, internalPort: number, labels: Record<string, string>) {
+async function dockerRunDetached(
+  tag: string,
+  internalPort: number,
+  labels: Record<string, string>,
+  env: Record<string, string>,
+) {
   requireDocker();
   const labelArgs = Object.entries(labels).flatMap(([k, v]) => ["--label", `${k}=${v}`]);
+  const envArgs = Object.entries(env).flatMap(([k, v]) => ["-e", `${k}=${v}`]);
   const { stdout } = await execFileAsync(
     "docker",
-    ["run", "-d", "-p", `0:${internalPort}`, "--rm", "--label", "v03.runner=true", ...labelArgs, tag],
+    ["run", "-d", "-p", `0:${internalPort}`, "--rm", "--label", "v03.runner=true", ...labelArgs, ...envArgs, tag],
     { maxBuffer: 1024 * 1024 },
   );
   return stdout.trim();
@@ -383,6 +417,7 @@ app.post("/runs", async (request, reply) => {
   const bundlePath = path.join(runDir, "bundle.tgz");
   await writeFile(bundlePath, bundle.buffer);
   const bundleHash = crypto.createHash("sha256").update(bundle.buffer).digest("hex");
+  const env = parseEnvFromHeader(request);
 
   try {
     await execFileAsync("tar", ["-xzf", bundlePath, "-C", runDir], { maxBuffer: 1024 * 1024 });
@@ -415,7 +450,7 @@ app.post("/runs", async (request, reply) => {
     const containerId = await dockerRunDetached(tag, internalPort, {
       "v03.bundleHash": bundleHash,
       "v03.mode": mode,
-    });
+    }, env);
     const hostPort = await dockerInspectPort(containerId, internalPort);
     const ready = await waitForReady({
       url: `http://localhost:${hostPort}`,
@@ -448,6 +483,7 @@ app.post("/runs/raw", async (request, reply) => {
     return reply.status(400).send({ error: "Request body must be a tar.gz buffer" });
   }
   const bundleHash = crypto.createHash("sha256").update(buffer).digest("hex");
+  const env = parseEnvFromHeader(request);
 
   const runDir = await makeRunDir(runId);
   const bundlePath = path.join(runDir, "bundle.tgz");
@@ -484,7 +520,7 @@ app.post("/runs/raw", async (request, reply) => {
     const containerId = await dockerRunDetached(tag, internalPort, {
       "v03.bundleHash": bundleHash,
       "v03.mode": mode,
-    });
+    }, env);
     const hostPort = await dockerInspectPort(containerId, internalPort);
     const ready = await waitForReady({
       url: `http://localhost:${hostPort}`,

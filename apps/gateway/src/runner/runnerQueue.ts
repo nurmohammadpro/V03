@@ -4,6 +4,7 @@ import db from "../db";
 import { buildRuns, previewInstances } from "../db/schema";
 import { exportProjectToTarGz } from "./exportProjectToTarGz";
 import { runnerStartRun } from "./runnerClient";
+import { getProjectEnvVarsPlaintext } from "../routes/env";
 
 type QueueItem = { kind: "build" | "preview"; id: string; userId: string };
 
@@ -153,7 +154,8 @@ export class RunnerQueue {
 
     try {
       const { tarPath } = await exportProjectToTarGz(run.projectId);
-      const runner = await runnerStartRun({ runId: run.id, mode: run.mode === "dev" ? "dev" : "build", tarPath });
+      const env = await getProjectEnvVarsPlaintext(run.projectId);
+      const runner = await runnerStartRun({ runId: run.id, mode: run.mode === "dev" ? "dev" : "build", tarPath, env });
 
       await db
         .update(buildRuns)
@@ -202,7 +204,8 @@ export class RunnerQueue {
 
     try {
       const { tarPath } = await exportProjectToTarGz(claimed.projectId);
-      const runner = await runnerStartRun({ runId: claimed.id, mode, tarPath });
+      const env = await getProjectEnvVarsPlaintext(claimed.projectId);
+      const runner = await runnerStartRun({ runId: claimed.id, mode, tarPath, env });
 
       await db
         .update(previewInstances)

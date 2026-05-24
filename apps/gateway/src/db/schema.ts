@@ -82,6 +82,22 @@ export const projectSnapshots = pgTable("project_snapshots", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const projectEnvVars = pgTable(
+  "project_env_vars",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    projectId: uuid("project_id").notNull().references(() => projects.id),
+    key: text("key").notNull(),
+    valueEnc: text("value_enc").notNull(), // encrypted JSON payload (base64 parts)
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    projectKeyUnique: uniqueIndex("project_env_vars_project_key_unique").on(table.projectId, table.key),
+    projectIdx: index("project_env_vars_project_id_idx").on(table.projectId),
+  }),
+);
+
 export const creditLedger = pgTable("credit_ledger", {
   id: uuid("id").defaultRandom().primaryKey(),
   userId: uuid("user_id").notNull().references(() => users.id),
