@@ -42,15 +42,16 @@ export function registerPreviewWebsocketProxy(server: HttpServer) {
       }
 
       const requireToken = (process.env.PREVIEW_REQUIRE_TOKEN ?? "true") === "true";
+      const isPublic = (runnerRef.isPublic as any) === true;
       const expectedToken = typeof runnerRef.shareToken === "string" ? runnerRef.shareToken : null;
       const expiresAt = typeof runnerRef.shareTokenExpiresAt === "number" ? runnerRef.shareTokenExpiresAt : null;
       const providedToken = req.url ? getQueryParam(req.url, "t") : null;
 
-      if (requireToken && expectedToken && providedToken !== expectedToken) {
+      if (requireToken && !isPublic && expectedToken && providedToken !== expectedToken) {
         socket.destroy();
         return;
       }
-      if (requireToken && expectedToken && expiresAt && Date.now() > expiresAt) {
+      if (requireToken && !isPublic && expectedToken && expiresAt && Date.now() > expiresAt) {
         socket.destroy();
         return;
       }
@@ -104,4 +105,3 @@ export function registerPreviewWebsocketProxy(server: HttpServer) {
     }
   });
 }
-

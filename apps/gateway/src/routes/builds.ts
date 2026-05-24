@@ -257,6 +257,111 @@ export async function buildRoutes(app: FastifyInstance) {
     return reply.send({ preview });
   });
 
+  // POST /api/previews/:id/rotate-token
+  app.post("/api/previews/:id/rotate-token", async (request, reply) => {
+    const actor = getRequestActor(request);
+    const { id } = request.params as { id: string };
+
+    const [preview] = await db.select().from(previewInstances).where(eq(previewInstances.id, id)).limit(1);
+    if (!preview) return reply.status(404).send({ error: "Preview not found" });
+
+    const project = await requireProjectAccess(preview.projectId, actor);
+    if (!project) return reply.status(404).send({ error: "Project not found" });
+    if (project === "forbidden") return reply.status(403).send({ error: "Forbidden" });
+
+    const base =
+      PUBLIC_BASE_URL ||
+      `${request.headers["x-forwarded-proto"] ?? "http"}://${request.headers["x-forwarded-host"] ?? request.headers.host}`;
+
+    const shareToken = crypto.randomBytes(16).toString("hex");
+    const ttlSeconds = parseInt(process.env.PREVIEW_TOKEN_TTL_SECONDS || "86400", 10);
+    const expiresAt = Number.isFinite(ttlSeconds) && ttlSeconds > 0 ? Date.now() + ttlSeconds * 1000 : null;
+    const publicUrl = `${String(base).replace(/\/$/, "")}/p/${preview.id}/?t=${shareToken}`;
+
+    const runnerRef =
+      typeof preview.runnerRef === "object" && preview.runnerRef ? (preview.runnerRef as Record<string, unknown>) : {};
+
+    const [updated] = await db
+      .update(previewInstances)
+      .set({
+        url: publicUrl,
+        runnerRef: {
+          ...runnerRef,
+          shareToken,
+          shareTokenExpiresAt: expiresAt,
+        },
+      })
+      .where(eq(previewInstances.id, preview.id))
+      .returning();
+
+    return reply.send({ ok: true, url: updated?.url ?? publicUrl });
+  });
+
+  // POST /api/previews/:id/revoke
+  app.post("/api/previews/:id/revoke", async (request, reply) => {
+    const actor = getRequestActor(request);
+    const { id } = request.params as { id: string };
+
+    const [preview] = await db.select().from(previewInstances).where(eq(previewInstances.id, id)).limit(1);
+    if (!preview) return reply.status(404).send({ error: "Preview not found" });
+
+    const project = await requireProjectAccess(preview.projectId, actor);
+    if (!project) return reply.status(404).send({ error: "Project not found" });
+    if (project === "forbidden") return reply.status(403).send({ error: "Forbidden" });
+
+    const runnerRef =
+      typeof preview.runnerRef === "object" && preview.runnerRef ? (preview.runnerRef as Record<string, unknown>) : {};
+
+    await db
+      .update(previewInstances)
+      .set({
+        runnerRef: {
+          ...runnerRef,
+          shareTokenExpiresAt: Date.now() - 1000,
+        },
+      })
+      .where(eq(previewInstances.id, preview.id));
+
+    return reply.send({ ok: true });
+  });
+
+  // PATCH /api/previews/:id/sharing
+  app.patch("/api/previews/:id/sharing", async (request, reply) => {
+    const actor = getRequestActor(request);
+    const { id } = request.params as { id: string };
+    const body = request.body as { isPublic?: boolean; tokenTtlSeconds?: number | null };
+
+    const [preview] = await db.select().from(previewInstances).where(eq(previewInstances.id, id)).limit(1);
+    if (!preview) return reply.status(404).send({ error: "Preview not found" });
+
+    const project = await requireProjectAccess(preview.projectId, actor);
+    if (!project) return reply.status(404).send({ error: "Project not found" });
+    if (project === "forbidden") return reply.status(403).send({ error: "Forbidden" });
+
+    const runnerRef =
+      typeof preview.runnerRef === "object" && preview.runnerRef ? (preview.runnerRef as Record<string, unknown>) : {};
+
+    const isPublic = typeof body.isPublic === "boolean" ? body.isPublic : (runnerRef.isPublic as any) === true;
+    const ttl =
+      body.tokenTtlSeconds == null
+        ? parseInt(process.env.PREVIEW_TOKEN_TTL_SECONDS || "86400", 10)
+        : Number(body.tokenTtlSeconds);
+    const expiresAt = Number.isFinite(ttl) && ttl > 0 ? Date.now() + ttl * 1000 : null;
+
+    await db
+      .update(previewInstances)
+      .set({
+        runnerRef: {
+          ...runnerRef,
+          isPublic,
+          shareTokenExpiresAt: expiresAt,
+        },
+      })
+      .where(eq(previewInstances.id, preview.id));
+
+    return reply.send({ ok: true });
+  });
+
   // GET /api/previews/:id/logs
   app.get("/api/previews/:id/logs", async (request, reply) => {
     const actor = getRequestActor(request);

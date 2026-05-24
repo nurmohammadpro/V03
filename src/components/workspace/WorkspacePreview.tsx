@@ -1,7 +1,8 @@
 import { useEffect, useMemo } from "react";
 import { useWorkspaceStore, type FileNode } from "@/stores/workspaceStore";
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink, PlaySquare, Sparkles } from "lucide-react";
+import { ExternalLink, Globe, Link2, PlaySquare, RefreshCcw, Sparkles } from "lucide-react";
+import { toast } from "sonner";
 
 function flattenFiles(nodes: FileNode[]): FileNode[] {
   return nodes.flatMap((node) => [node, ...(node.children ? flattenFiles(node.children) : [])]);
@@ -34,11 +35,14 @@ export default function WorkspacePreview() {
   const previewMode = useWorkspaceStore((s) => s.previewMode);
   const isPreviewStarting = useWorkspaceStore((s) => s.isPreviewStarting);
   const isPreviewReady = useWorkspaceStore((s) => s.isPreviewReady);
+  const previewIsPublic = useWorkspaceStore((s) => s.previewIsPublic);
   const startPreview = useWorkspaceStore((s) => s.startPreview);
   const stopPreview = useWorkspaceStore((s) => s.stopPreview);
   const restartPreview = useWorkspaceStore((s) => s.restartPreview);
   const refreshPreviewStatus = useWorkspaceStore((s) => s.refreshPreviewStatus);
   const setPreviewMode = useWorkspaceStore((s) => s.setPreviewMode);
+  const rotatePreviewLink = useWorkspaceStore((s) => s.rotatePreviewLink);
+  const setPreviewPublic = useWorkspaceStore((s) => s.setPreviewPublic);
 
   useEffect(() => {
     if (!previewUrl) return;
@@ -154,6 +158,42 @@ export default function WorkspacePreview() {
             </button>
           ) : (
             <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  void (async () => {
+                    try {
+                      await navigator.clipboard.writeText(previewUrl);
+                      toast.success("Preview link copied");
+                    } catch {
+                      toast.error("Failed to copy link");
+                    }
+                  })();
+                }}
+                className="inline-flex items-center gap-2 rounded-[8px] bg-[var(--app-panel)] px-3 py-1.5 text-xs text-[var(--app-text-muted)] hover:bg-[var(--app-panel-2)] hover:text-[var(--app-text)]"
+                title="Copy shareable URL"
+              >
+                <Link2 className="h-4 w-4" />
+                Copy link
+              </button>
+              <button
+                type="button"
+                onClick={() => void rotatePreviewLink().then(() => toast.success("Rotated link")).catch(() => toast.error("Failed to rotate link"))}
+                className="inline-flex items-center gap-2 rounded-[8px] bg-[var(--app-panel)] px-3 py-1.5 text-xs text-[var(--app-text-muted)] hover:bg-[var(--app-panel-2)] hover:text-[var(--app-text)]"
+                title="Rotate share token"
+              >
+                <RefreshCcw className="h-4 w-4" />
+                Rotate
+              </button>
+              <button
+                type="button"
+                onClick={() => void setPreviewPublic(!previewIsPublic).then(() => toast.success(previewIsPublic ? "Public off" : "Public on")).catch(() => toast.error("Failed to update sharing"))}
+                className="inline-flex items-center gap-2 rounded-[8px] bg-[var(--app-panel)] px-3 py-1.5 text-xs text-[var(--app-text-muted)] hover:bg-[var(--app-panel-2)] hover:text-[var(--app-text)]"
+                title="Toggle public preview (no token)"
+              >
+                <Globe className="h-4 w-4" />
+                {previewIsPublic ? "Public" : "Token"}
+              </button>
               <button
                 type="button"
                 onClick={() => void restartPreview()}

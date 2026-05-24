@@ -37,6 +37,7 @@ interface WorkspaceState {
   isPreviewStarting: boolean;
   previewLogs: string;
   isPreviewReady: boolean;
+  previewIsPublic: boolean;
 
   // UI
   outputTab: "preview" | "code" | "logs";
@@ -64,6 +65,8 @@ interface WorkspaceState {
   refreshPreviewLogs: () => Promise<void>;
   refreshPreviewStatus: () => Promise<void>;
   setPreviewMode: (mode: "build" | "dev") => void;
+  rotatePreviewLink: () => Promise<void>;
+  setPreviewPublic: (isPublic: boolean) => Promise<void>;
   setOutputTab: (tab: "preview" | "code" | "logs") => void;
   reset: () => void;
 }
@@ -90,6 +93,7 @@ const initialState = {
   isPreviewStarting: false,
   previewLogs: "",
   isPreviewReady: false,
+  previewIsPublic: false,
   outputTab: "preview" as const,
   layout: initialLayout,
 };
@@ -255,7 +259,14 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     try {
       const mode = get().previewMode;
       const res = await api.startPreview(projectId, mode);
-      set({ previewId: res.previewId, previewUrl: res.url, previewLogs: "", isPreviewReady: false, outputTab: "preview" });
+      set({
+        previewId: res.previewId,
+        previewUrl: res.url,
+        previewLogs: "",
+        isPreviewReady: false,
+        previewIsPublic: false,
+        outputTab: "preview",
+      });
       await get().refreshPreviewStatus();
     } finally {
       set({ isPreviewStarting: false });
@@ -266,7 +277,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     const previewId = get().previewId;
     if (!previewId) return;
     await api.stopPreview(previewId);
-    set({ previewId: null, previewUrl: null, previewLogs: "", isPreviewReady: false });
+    set({ previewId: null, previewUrl: null, previewLogs: "", isPreviewReady: false, previewIsPublic: false });
   },
 
   restartPreview: async () => {
@@ -289,10 +300,26 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     if (!previewId) return;
     const res = await api.getPreview(previewId);
     const status = res.preview?.status || "running";
-    set({ isPreviewReady: status === "ready" });
+    const runnerRef = (res.preview?.runnerRef || {}) as any;
+    const isPublic = runnerRef?.isPublic === true;
+    set({ isPreviewReady: status === "ready", previewIsPublic: isPublic });
   },
 
   setPreviewMode: (mode) => set({ previewMode: mode }),
+
+  rotatePreviewLink: async () => {
+    const previewId = get().previewId;
+    if (!previewId) return;
+    const res = await api.rotatePreviewToken(previewId);
+    if (res?.url) set({ previewUrl: res.url });
+  },
+
+  setPreviewPublic: async (isPublic) => {
+    const previewId = get().previewId;
+    if (!previewId) return;
+    await api.updatePreviewSharing(previewId, { isPublic });
+    set({ previewIsPublic: isPublic });
+  },
   setOutputTab: (tab) => set({ outputTab: tab }),
 
   reset: () => set(initialState),

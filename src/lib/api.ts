@@ -356,6 +356,15 @@ export const api = {
       `/api/previews/${previewId}`,
     ),
 
+  rotatePreviewToken: (previewId: string) =>
+    request<{ ok: boolean; url: string }>(`/api/previews/${previewId}/rotate-token`, { method: "POST" }),
+
+  revokePreviewToken: (previewId: string) =>
+    request<{ ok: boolean }>(`/api/previews/${previewId}/revoke`, { method: "POST" }),
+
+  updatePreviewSharing: (previewId: string, input: { isPublic?: boolean; tokenTtlSeconds?: number | null }) =>
+    request<{ ok: boolean }>(`/api/previews/${previewId}/sharing`, { method: "PATCH", body: input }),
+
   // Generations
   getProjectGenerations: (projectId: string) =>
     request<{

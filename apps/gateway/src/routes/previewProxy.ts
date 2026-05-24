@@ -45,16 +45,17 @@ export async function previewProxyRoutes(app: FastifyInstance) {
     }
 
     const requireToken = (process.env.PREVIEW_REQUIRE_TOKEN ?? "true") === "true";
+    const isPublic = (runnerRef.isPublic as any) === true;
     const expectedToken = typeof runnerRef.shareToken === "string" ? runnerRef.shareToken : null;
     const providedToken = typeof (request.query as any)?.t === "string" ? String((request.query as any).t) : null;
     const expiresAt =
       typeof runnerRef.shareTokenExpiresAt === "number" ? runnerRef.shareTokenExpiresAt : null;
 
-    if (requireToken && expectedToken && providedToken !== expectedToken) {
+    if (requireToken && !isPublic && expectedToken && providedToken !== expectedToken) {
       return reply.status(403).send("Invalid preview token");
     }
 
-    if (requireToken && expectedToken && expiresAt && Date.now() > expiresAt) {
+    if (requireToken && !isPublic && expectedToken && expiresAt && Date.now() > expiresAt) {
       return reply.status(410).send("Preview token expired");
     }
 
