@@ -500,13 +500,20 @@ export async function adminRoutes(app: FastifyInstance) {
     const models = providerIds.length
       ? await db.select().from(aiModels).where(inArray(aiModels.providerId, providerIds)).orderBy(aiModels.name)
       : [];
-    const secrets = providerIds.length
-      ? await db
+    let secretSet = new Set<string>();
+    if (providerIds.length) {
+      try {
+        const secrets = await db
           .select({ providerId: aiProviderSecrets.providerId })
           .from(aiProviderSecrets)
-          .where(inArray(aiProviderSecrets.providerId, providerIds))
-      : [];
-    const secretSet = new Set(secrets.map((secret) => secret.providerId));
+          .where(inArray(aiProviderSecrets.providerId, providerIds));
+        secretSet = new Set(secrets.map((secret) => secret.providerId));
+      } catch (err) {
+        // If the secrets table hasn’t been migrated yet, don’t take down the admin page.
+        app.log.warn({ err }, "ai_provider_secrets query failed");
+        secretSet = new Set<string>();
+      }
+    }
 
     return reply.send({
       providers: providers.map((provider) => ({

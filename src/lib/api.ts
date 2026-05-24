@@ -306,6 +306,12 @@ export const api = {
       body: modelKey ? { modelKey } : {},
     }),
 
+  createAiProvider: (body: { key: string; name: string; providerType: string; baseUrl?: string; weight?: number; status?: string; config?: Record<string, unknown> }) =>
+    request<{ provider: any }>(`/api/admin/ai/providers`, {
+      method: "POST",
+      body,
+    }),
+
   getAiRoutingRules: () =>
     request<{ rules: AiRoutingRule[] }>("/api/admin/ai/routing-rules"),
 

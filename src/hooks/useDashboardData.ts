@@ -257,6 +257,15 @@ export function useTestAiProvider() {
   });
 }
 
+export function useCreateAiProvider() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: { key: string; name: string; providerType: string; baseUrl?: string; weight?: number; status?: string; config?: Record<string, unknown> }) =>
+      api.createAiProvider(body),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["aiProviders"] }),
+  });
+}
+
 export function useAiRoutingRules() {
   const query = useQuery({
     queryKey: ["aiRoutingRules"],

@@ -4,6 +4,7 @@ import {
   useAiRoutingRules,
   useAdminStats,
   useClearAiProviderApiKey,
+  useCreateAiProvider,
   useSetAiProviderApiKey,
   useTestAiProvider,
   useUpdateAiProvider,
@@ -24,9 +25,16 @@ export default function AdminSystem() {
   const setApiKey = useSetAiProviderApiKey();
   const clearApiKey = useClearAiProviderApiKey();
   const testProvider = useTestAiProvider();
+  const createProvider = useCreateAiProvider();
   const [keyModalOpen, setKeyModalOpen] = React.useState(false);
   const [keyModalProviderId, setKeyModalProviderId] = React.useState<string | null>(null);
   const [keyValue, setKeyValue] = React.useState("");
+  const [createModalOpen, setCreateModalOpen] = React.useState(false);
+  const [createKey, setCreateKey] = React.useState("");
+  const [createName, setCreateName] = React.useState("");
+  const [createBaseUrl, setCreateBaseUrl] = React.useState("");
+  const [createDefaultModelKey, setCreateDefaultModelKey] = React.useState("");
+  const [createChatPath, setCreateChatPath] = React.useState("/chat/completions");
 
   const keyModalProvider = providers.find((p) => p.id === keyModalProviderId) ?? null;
 
@@ -100,9 +108,50 @@ export default function AdminSystem() {
     }
   }
 
+  function openCreateModal() {
+    setCreateKey("");
+    setCreateName("");
+    setCreateBaseUrl("");
+    setCreateDefaultModelKey("");
+    setCreateChatPath("/chat/completions");
+    setCreateModalOpen(true);
+  }
+
+  async function handleCreateProvider() {
+    const key = createKey.trim();
+    const name = createName.trim();
+    if (!key || !name) {
+      toast.error("Provider key and name are required.");
+      return;
+    }
+    try {
+      await createProvider.mutateAsync({
+        key,
+        name,
+        providerType: "llm",
+        baseUrl: createBaseUrl.trim() || undefined,
+        weight: 100,
+        status: "active",
+        config: {
+          ...(createDefaultModelKey.trim() ? { defaultModelKey: createDefaultModelKey.trim() } : {}),
+          ...(createChatPath.trim() ? { chatCompletionsPath: createChatPath.trim() } : {}),
+        },
+      });
+      toast.success("Provider created.");
+      setCreateModalOpen(false);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not create provider.");
+    }
+  }
+
   return (
     <AdminShell title="AI Management" subtitle="Providers, models, routing policy, and cost-quality control.">
       <div className="space-y-6">
+        <div className="flex flex-wrap items-center justify-end gap-2">
+          <Button type="button" onClick={openCreateModal}>
+            Add provider
+          </Button>
+        </div>
         <section className="grid gap-4 md:grid-cols-4">
           {[
             { label: "Queue depth", value: stats.queueDepth, note: "Pending generation jobs" },
@@ -283,6 +332,47 @@ export default function AdminSystem() {
             </DialogClose>
             <Button type="button" onClick={handleSaveKey}>
               Save key
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={createModalOpen} onOpenChange={setCreateModalOpen}>
+        <DialogContent className="max-w-[560px]">
+          <DialogHeader>
+            <DialogTitle>Add AI provider</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <p className="text-sm text-[var(--app-text)]">Provider key</p>
+              <Input value={createKey} onChange={(e) => setCreateKey(e.target.value)} placeholder="e.g. zai, openai, deepseek" spellCheck={false} />
+              <p className="text-xs text-[var(--app-text-muted)]">Stable identifier used by ai-worker routing.</p>
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm text-[var(--app-text)]">Display name</p>
+              <Input value={createName} onChange={(e) => setCreateName(e.target.value)} placeholder="e.g. Z.ai (GLM)" spellCheck={false} />
+            </div>
+            <div className="space-y-2 sm:col-span-2">
+              <p className="text-sm text-[var(--app-text)]">Base URL</p>
+              <Input value={createBaseUrl} onChange={(e) => setCreateBaseUrl(e.target.value)} placeholder="e.g. https://api.z.ai/api/paas/v4" spellCheck={false} />
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm text-[var(--app-text)]">Default model key</p>
+              <Input value={createDefaultModelKey} onChange={(e) => setCreateDefaultModelKey(e.target.value)} placeholder="e.g. glm-4.6-coding-lite" spellCheck={false} />
+            </div>
+            <div className="space-y-2">
+              <p className="text-sm text-[var(--app-text)]">Chat path</p>
+              <Input value={createChatPath} onChange={(e) => setCreateChatPath(e.target.value)} placeholder="/chat/completions" spellCheck={false} />
+            </div>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <DialogClose asChild>
+              <Button type="button" variant="outline">
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button type="button" onClick={handleCreateProvider}>
+              Create provider
             </Button>
           </DialogFooter>
         </DialogContent>
