@@ -204,9 +204,46 @@ async function dockerRunDetached(
   requireDocker();
   const labelArgs = Object.entries(labels).flatMap(([k, v]) => ["--label", `${k}=${v}`]);
   const envArgs = Object.entries(env).flatMap(([k, v]) => ["-e", `${k}=${v}`]);
+  const memoryMb = parseInt(process.env.RUNNER_CONTAINER_MEMORY_MB || "1024", 10);
+  const cpus = parseFloat(process.env.RUNNER_CONTAINER_CPUS || "1");
+  const pidsLimit = parseInt(process.env.RUNNER_CONTAINER_PIDS || "512", 10);
+  const networkMode = (process.env.RUNNER_NETWORK_MODE || "bridge").trim(); // bridge | none
+
+  const hardeningArgs: string[] = [
+    "--init",
+    "--security-opt",
+    "no-new-privileges",
+    "--cap-drop",
+    "ALL",
+  ];
+  if (Number.isFinite(pidsLimit) && pidsLimit > 0) {
+    hardeningArgs.push("--pids-limit", String(pidsLimit));
+  }
+  if (Number.isFinite(memoryMb) && memoryMb > 0) {
+    hardeningArgs.push("--memory", `${Math.floor(memoryMb)}m`);
+  }
+  if (Number.isFinite(cpus) && cpus > 0) {
+    hardeningArgs.push("--cpus", String(cpus));
+  }
+  if (networkMode === "none") {
+    hardeningArgs.push("--network", "none");
+  }
+
   const { stdout } = await execFileAsync(
     "docker",
-    ["run", "-d", "-p", `0:${internalPort}`, "--rm", "--label", "v03.runner=true", ...labelArgs, ...envArgs, tag],
+    [
+      "run",
+      "-d",
+      "-p",
+      `0:${internalPort}`,
+      "--rm",
+      "--label",
+      "v03.runner=true",
+      ...hardeningArgs,
+      ...labelArgs,
+      ...envArgs,
+      tag,
+    ],
     { maxBuffer: 1024 * 1024 },
   );
   return stdout.trim();
