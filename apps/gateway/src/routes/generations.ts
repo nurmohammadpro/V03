@@ -12,6 +12,7 @@ import {
   projects,
 } from "../db/schema";
 import { getRequestActor, requireAuthenticated } from "../middleware/auth";
+import { getUserLimit } from "../billing/limits";
 
 const AI_WORKER_URL = process.env.AI_WORKER_URL || "http://localhost:8001";
 
@@ -386,6 +387,19 @@ export async function generationRoutes(app: FastifyInstance) {
     const project = await requireProjectAccess(id, actor);
     if (!project) return reply.status(404).send({ error: "Project not found" });
     if (project === "forbidden") return reply.status(403).send({ error: "Forbidden" });
+
+    // Plan limit (MVP): weekly generation cap
+    const weeklyLimit = await getUserLimit(actor.userId, "weekly_generations");
+    if (weeklyLimit && weeklyLimit > 0) {
+      const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const [{ count }] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(generationRuns)
+        .where(and(eq(generationRuns.userId, actor.userId), sql`${generationRuns.createdAt} >= ${since}`));
+      if (count >= weeklyLimit) {
+        return reply.status(402).send({ error: "Weekly generation limit reached", limit: weeklyLimit });
+      }
+    }
 
     const intent: GenerationIntent = body.intent ?? "component";
     const applyMode: ApplyMode = body.applyMode ?? "propose";

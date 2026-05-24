@@ -8,6 +8,7 @@ import { chatRoutes } from "./routes/chat";
 import { adminRoutes } from "./routes/admin";
 import { fileRoutes } from "./routes/files";
 import { envRoutes } from "./routes/env";
+import { auditRoutes } from "./routes/audit";
 import { generationRoutes } from "./routes/generations";
 import { buildRoutes } from "./routes/builds";
 import { previewProxyRoutes } from "./routes/previewProxy";
@@ -58,6 +59,7 @@ async function start() {
   await app.register(projectRoutes);
   await app.register(fileRoutes);
   await app.register(envRoutes);
+  await app.register(auditRoutes);
   await app.register(generationRoutes);
   await app.register(buildRoutes);
   await app.register(previewProxyRoutes);

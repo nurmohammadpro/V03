@@ -4,6 +4,7 @@ import { projects, projectSnapshots } from "../db/schema";
 import { eq } from "drizzle-orm";
 import { getRequestActor, requireAuthenticated } from "../middleware/auth";
 import { bootstrapProjectFromTemplate } from "../templates/bootstrap";
+import { enforceActiveProjectsLimit } from "../billing/limits";
 
 type FrameworkKind = "nextjs" | "react-vite" | "mern" | "django" | "laravel" | "nestjs";
 
@@ -118,6 +119,11 @@ export async function projectRoutes(app: FastifyInstance) {
     const { name, frameworkKind } = request.body as { name?: string; frameworkKind?: FrameworkKind };
     if (!name) {
       return reply.status(400).send({ error: "Name is required" });
+    }
+
+    const limitCheck = await enforceActiveProjectsLimit(actor.userId);
+    if (!limitCheck.ok) {
+      return reply.status(402).send({ error: limitCheck.error, limit: limitCheck.limit });
     }
 
     const defaults = defaultsForFramework(frameworkKind ?? "nextjs");

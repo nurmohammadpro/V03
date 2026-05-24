@@ -381,6 +381,18 @@ export const api = {
 
   deleteProjectEnv: (projectId: string, key: string) =>
     request<{ ok: boolean }>(`/api/projects/${projectId}/env?key=${encodeURIComponent(key)}`, { method: "DELETE" }),
+
+  // Project audit
+  getProjectAudit: (projectId: string, limit = 50) =>
+    request<{
+      events: Array<{
+        id: string;
+        action: string;
+        metadata: Record<string, unknown>;
+        actorUserId: string;
+        createdAt: string;
+      }>;
+    }>(`/api/projects/${projectId}/audit?limit=${limit}`),
 };
 
 export default api;
