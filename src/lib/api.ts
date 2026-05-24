@@ -88,6 +88,18 @@ export const api = {
   deleteProject: (id: string) =>
     request<{ ok: boolean }>(`/api/projects/${id}`, { method: "DELETE" }),
 
+  archiveProject: (id: string, archived = true) =>
+    request<{ project: { id: string; archivedAt: string | null } }>(`/api/projects/${id}/archive`, {
+      method: "PATCH",
+      body: { archived },
+    }),
+
+  duplicateProject: (id: string, name?: string) =>
+    request<{ project: { id: string; name: string } }>(`/api/projects/${id}/duplicate`, {
+      method: "POST",
+      body: name ? { name } : {},
+    }),
+
   // Admin
   getAdminBootstrap: () =>
     request<{

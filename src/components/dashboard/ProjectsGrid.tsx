@@ -15,7 +15,7 @@ import {
   FolderKanban,
 } from "lucide-react";
 import type { Project } from "@/lib/types";
-import { useDeleteProject } from "@/hooks/useProjects";
+import { useArchiveProject, useDeleteProject, useDuplicateProject } from "@/hooks/useProjects";
 import { toast } from "sonner";
 
 interface ProjectsGridProps {
@@ -41,6 +41,8 @@ function ProjectCardSkeleton() {
 function ProjectCard({ project }: { project: Project }) {
   const [, navigate] = useLocation();
   const deleteProject = useDeleteProject();
+  const archiveProject = useArchiveProject();
+  const duplicateProject = useDuplicateProject();
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
 
   return (
@@ -74,12 +76,26 @@ function ProjectCard({ project }: { project: Project }) {
               {
                 label: "Duplicate",
                 icon: <Copy className="w-3.5 h-3.5" />,
-                onSelect: () => toast.info("Duplicate action is not wired yet"),
+                onSelect: () =>
+                  duplicateProject.mutate(
+                    { id: project.id },
+                    {
+                      onSuccess: (p) => {
+                        toast.success("Project duplicated");
+                        navigate(`/workspace/${p.id}`);
+                      },
+                      onError: (err: any) => toast.error(err?.message || "Failed to duplicate project"),
+                    },
+                  ),
               },
               {
                 label: "Archive",
                 icon: <Archive className="w-3.5 h-3.5" />,
-                onSelect: () => toast.info("Archive action is not wired yet"),
+                onSelect: () =>
+                  archiveProject.mutate(project.id, {
+                    onSuccess: () => toast.success("Project archived"),
+                    onError: (err: any) => toast.error(err?.message || "Failed to archive project"),
+                  }),
               },
               {
                 label: "Delete",

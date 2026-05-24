@@ -30,6 +30,7 @@ export const projects = pgTable("projects", {
   defaultPort: integer("default_port").default(3000).notNull(),
   healthcheckPath: text("healthcheck_path").default("/").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
+  archivedAt: timestamp("archived_at"),
 });
 
 export const projectFiles = pgTable(

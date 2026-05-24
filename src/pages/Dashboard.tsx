@@ -23,7 +23,7 @@ import {
 
 export default function Dashboard() {
   const { user, loading, logout } = useAuth();
-  const { data: projects = [], isLoading: projectsLoading } = useProjects();
+  const { data: projects = [], isLoading: projectsLoading, error: projectsError } = useProjects();
   const { activities, loading: activitiesLoading } = useActivityFeed();
   const { stats: userStats, loading: statsLoading } = useUserStats();
   const [createOpen, setCreateOpen] = useState(false);
@@ -40,6 +40,16 @@ export default function Dashboard() {
 
   if (loading || user?.isAdmin) {
     return null;
+  }
+
+  if (projectsError) {
+    return (
+      <AppShell title="Dashboard" subtitle="Projects, usage, and active workspace context." navSections={WORKSPACE_NAV_SECTIONS}>
+        <div className="rounded-[8px] bg-[var(--app-panel)] p-6 text-sm text-[var(--app-text-muted)]">
+          Failed to load projects. Please refresh.
+        </div>
+      </AppShell>
+    );
   }
 
   return (
