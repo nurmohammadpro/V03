@@ -106,6 +106,9 @@ export async function previewHostProxyRoutes(app: FastifyInstance) {
   };
 
   // Catch-all for preview subdomains (only triggers when PREVIEW_DOMAIN matches host)
-  app.all("/*", handler);
+  // Avoid registering an OPTIONS catch-all because @fastify/cors may already register it.
+  const methods = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"] as const;
+  for (const method of methods) {
+    app.route({ method, url: "/*", handler });
+  }
 }
-
