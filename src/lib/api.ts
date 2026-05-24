@@ -75,12 +75,12 @@ export const api = {
 
   // Projects
   getProjects: () =>
-    request<{ projects: Array<{ id: string; name: string; framework: string; createdAt: string }> }>(
+    request<{ projects: Array<{ id: string; userId: string; name: string; framework: string | null; frameworkKind: string; createdAt: string }> }>(
       "/api/projects"
     ),
 
   createProject: (name: string, frameworkKind?: string) =>
-    request<{ project: { id: string; name: string; framework: string; createdAt: string } }>(
+    request<{ project: { id: string; userId: string; name: string; framework: string | null; frameworkKind: string; createdAt: string } }>(
       "/api/projects",
       { method: "POST", body: { name, frameworkKind } }
     ),

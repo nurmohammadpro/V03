@@ -74,7 +74,7 @@ export default function Dashboard() {
           }
           badge={
             <Badge className="rounded-[6px] border-0 bg-[var(--app-accent-soft)] px-2 py-0.5 text-[10px] font-normal text-[var(--app-accent)]">
-              Pro
+              {(user?.plan || "free").toUpperCase()}
             </Badge>
           }
           onSignOut={handleSignOut}

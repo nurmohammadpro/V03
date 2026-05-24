@@ -167,7 +167,35 @@ export function useSubscriptionPlans() {
     queryKey: ["adminPlans"],
     queryFn: async () => {
       const res = await api.getAdminPlans();
-      return res.plans as unknown as SubscriptionPlan[];
+      const plans = (res.plans ?? []) as Array<any>;
+      return plans.map((p) => ({
+        id: String(p.id),
+        key: String(p.key),
+        name: String(p.name),
+        description: String(p.description ?? ""),
+        status: String(p.status) as any,
+        billingModel: String(p.billingModel) as any,
+        seatsIncluded: Number((p.metadata && p.metadata.seatsIncluded) || 1),
+        features: Array.isArray(p.features)
+          ? p.features.map((f: any) => ({
+              id: String(f.id),
+              key: String(f.key),
+              label: String(f.label),
+              featureType: (String(f.featureType ?? f.feature_type ?? "boolean") as any),
+              value: String(f.value ?? ""),
+            }))
+          : [],
+        prices: Array.isArray(p.prices)
+          ? p.prices.map((pr: any) => ({
+              id: String(pr.id),
+              market: String(pr.market) as any,
+              currency: String(pr.currency),
+              billingCycle: String(pr.billingCycle) as any,
+              amount: Number(pr.amountMinor ?? pr.amount_minor ?? 0) / 100,
+              isActive: Boolean(pr.isActive ?? pr.is_active ?? true),
+            }))
+          : [],
+      })) as SubscriptionPlan[];
     },
     staleTime: 10_000,
   });

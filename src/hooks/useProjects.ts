@@ -8,11 +8,16 @@ export function useProjects() {
     queryKey: ["projects"],
     queryFn: async () => {
       const res = await api.getProjects();
-      return res.projects.map((p) => ({
-        ...p,
-        status: "active" as const,
-        userId: "",
-      }));
+      return res.projects.map(
+        (p): Project => ({
+          id: p.id,
+          name: p.name,
+          framework: p.framework ?? p.frameworkKind,
+          userId: p.userId,
+          createdAt: p.createdAt,
+          status: "active",
+        }),
+      );
     },
     staleTime: 30_000,
   });

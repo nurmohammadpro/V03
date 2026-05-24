@@ -95,7 +95,7 @@ export default function AdminBilling() {
             market: price.market,
             currency: price.currency.trim(),
             billingCycle: price.billingCycle,
-            amountMinor: Number(price.amount) || 0,
+            amountMinor: Math.round((Number(price.amount) || 0) * 100),
             isActive: price.isActive,
           })),
         }),
