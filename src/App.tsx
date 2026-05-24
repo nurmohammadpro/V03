@@ -21,6 +21,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import { PublicLayout } from "./components/public/PublicLayout";
 import Home from "./pages/Home";
+import LoaderDemo from "./pages/LoaderDemo";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +56,7 @@ function Router() {
       <Route path={"/admin/activity"} component={AdminActivity} />
       <Route path={"/admin/services"} component={AdminServices} />
       <Route path={"/workspace/:projectId"} component={Workspace} />
+      <Route path={"/loader-demo"} component={publicPage(LoaderDemo)} />
       <Route path={"/404"} component={publicPage(NotFound)} />
       <Route component={publicPage(NotFound)} />
     </Switch>

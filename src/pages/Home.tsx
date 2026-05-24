@@ -6,7 +6,7 @@ import { Navbar } from '@/components/Navbar';
 import { PromptHero } from '@/components/PromptHero';
 import { Footer } from '@/components/Footer';
 import { AuthModal } from '@/components/AuthModal';
-import { NeuralNetwork } from '@/components/NeuralNetwork';
+import { UniverseLoader } from '@/components/UniverseLoader';
 import { Button } from '@/components/ui/button';
 import { User } from 'lucide-react';
 import { toast } from 'sonner';
@@ -63,7 +63,7 @@ export default function Home() {
         }`}
         aria-hidden="true"
       >
-        <NeuralNetwork onComplete={() => setShowIntro(false)} />
+        <UniverseLoader onComplete={() => setShowIntro(false)} />
       </div>
 
       <div className="relative w-full h-screen flex flex-col" style={{ zIndex: "var(--z-content)" }}>
