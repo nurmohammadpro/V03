@@ -12,6 +12,7 @@ import { buildRoutes } from "./routes/builds";
 import { previewProxyRoutes } from "./routes/previewProxy";
 import { registerPreviewWebsocketProxy } from "./routes/previewProxyWs";
 import { ensureAdminSystemSeeded } from "./db/bootstrap";
+import { runnerQueue } from "./runner/runnerQueue";
 import "dotenv/config";
 
 const app = Fastify({ logger: true });
@@ -64,6 +65,12 @@ async function start() {
   app.get("/api/health", async () => ({ status: "ok", service: "v03-gateway", version: "1.0.0" }));
 
   registerPreviewWebsocketProxy(app.server);
+
+  try {
+    await runnerQueue.rehydrateFromDb();
+  } catch (err) {
+    app.log.warn({ err }, "runner queue rehydrate failed");
+  }
 
   const port = parseInt(process.env.PORT || "3001", 10);
   await app.listen({ port, host: "0.0.0.0" });
