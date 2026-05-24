@@ -24,6 +24,7 @@ interface ExpandingStar {
 export function UniverseLoader({ onComplete, duration = 4000 }: UniverseLoaderProps) {
   const [phase, setPhase] = useState<'spark' | 'expansion' | 'complete' | 'finished'>('spark');
   const [showReady, setShowReady] = useState(false);
+  const [canComplete, setCanComplete] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationRef = useRef<number | null>(null);
   const starsRef = useRef<ExpandingStar[]>([]);
@@ -143,13 +144,19 @@ export function UniverseLoader({ onComplete, duration = 4000 }: UniverseLoaderPr
 
     initExpandingStars();
 
-    // Phase transitions
+    // Phase transitions with minimum 1500ms duration
     const expansionTimer = setTimeout(() => setPhase('expansion'), 800);
-    const completeTimer = setTimeout(() => setPhase('complete'), 3500);
-    const readyTimer = setTimeout(() => setShowReady(true), 3700);
-    const finishTimer = setTimeout(() => {
-      setPhase('finished');
-      onComplete?.();
+    const minDurationTimer = setTimeout(() => setCanComplete(true), 1500); // Minimum 1500ms
+    const readyTimer = setTimeout(() => {
+      if (canComplete) {
+        setShowReady(true);
+        setPhase('complete');
+        // Complete after showing ready text
+        setTimeout(() => {
+          setPhase('finished');
+          onComplete?.();
+        }, 300);
+      }
     }, duration);
 
     // Animation loop
@@ -263,14 +270,13 @@ export function UniverseLoader({ onComplete, duration = 4000 }: UniverseLoaderPr
     return () => {
       window.removeEventListener('resize', resizeCanvas);
       clearTimeout(expansionTimer);
-      clearTimeout(completeTimer);
+      clearTimeout(minDurationTimer);
       clearTimeout(readyTimer);
-      clearTimeout(finishTimer);
       if (animationRef.current) {
         cancelAnimationFrame(animationRef.current);
       }
     };
-  }, [onComplete, duration, phase]);
+  }, [onComplete, duration, phase, canComplete]);
 
   return (
     <div ref={containerRef} className="relative w-full h-screen flex items-center justify-center bg-[#05070b]">
