@@ -1,9 +1,10 @@
-"""AI Worker - FastAPI server for code generation (mock mode for now)"""
+"""AI Worker - FastAPI server for code generation (LLM-backed with fallback templates)."""
 import json
 import os
 import uuid
-from typing import AsyncGenerator
+from typing import AsyncGenerator, Any
 
+import httpx
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
@@ -99,6 +100,88 @@ FRAMEWORK_TEMPLATES = {
     },
 }
 
+ZAI_BASE_URL = os.getenv("ZAI_BASE_URL", "https://api.z.ai/api/paas/v4").rstrip("/")
+ZAI_MODEL = os.getenv("ZAI_MODEL", "glm-4.6")
+ZAI_API_KEY = os.getenv("ZAI_API_KEY", "").strip()
+AI_ENGINE = os.getenv("AI_ENGINE", "zai").strip().lower()  # zai | mock
+
+
+def _extract_json(text: str) -> dict[str, Any] | None:
+    """Try to parse a JSON object from a string (best-effort)."""
+    text = (text or "").strip()
+    if not text:
+        return None
+    # First try direct JSON.
+    try:
+        parsed = json.loads(text)
+        if isinstance(parsed, dict):
+            return parsed
+    except Exception:
+        pass
+
+    # Attempt to recover JSON inside code fences or extra text.
+    start = text.find("{")
+    end = text.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        blob = text[start : end + 1]
+        try:
+            parsed = json.loads(blob)
+            if isinstance(parsed, dict):
+                return parsed
+        except Exception:
+            return None
+    return None
+
+
+async def call_zai_builder(prompt: str, framework: str) -> dict[str, Any]:
+    if not ZAI_API_KEY:
+        raise HTTPException(status_code=500, detail="ZAI_API_KEY is not configured on ai-worker")
+
+    system = (
+        "You are a senior software engineer inside a web app builder.\n"
+        "Return ONLY valid JSON (no markdown) with keys:\n"
+        "- text: a short progress + summary string\n"
+        "- files: an array of nodes. Node is either:\n"
+        "  - {\"type\":\"directory\",\"name\":string,\"path\":string,\"children\":files[]}\n"
+        "  - {\"type\":\"file\",\"name\":string,\"path\":string,\"content\":string,\"language\":string}\n"
+        "Paths must be POSIX-style and relative (no leading slash)."
+    )
+
+    user = (
+        f"Framework: {framework}\n"
+        f"User request: {prompt}\n\n"
+        "Generate a runnable, conventional project scaffold (not pseudo code). "
+        "Include package/config files as needed. Keep it minimal but working."
+    )
+
+    payload = {
+        "model": ZAI_MODEL,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        "temperature": 0.2,
+    }
+
+    url = f"{ZAI_BASE_URL}/chat/completions"
+    headers = {"Authorization": f"Bearer {ZAI_API_KEY}", "Content-Type": "application/json"}
+    timeout = httpx.Timeout(90.0)
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        resp = await client.post(url, headers=headers, json=payload)
+        if resp.status_code >= 400:
+            raise HTTPException(status_code=502, detail=f"Z.ai error {resp.status_code}: {resp.text[:400]}")
+        data = resp.json()
+
+    content = (
+        (((data.get("choices") or [{}])[0]).get("message") or {}).get("content")
+        if isinstance(data, dict)
+        else None
+    )
+    parsed = _extract_json(content or "")
+    if not parsed or "files" not in parsed:
+        raise HTTPException(status_code=502, detail="Model did not return valid JSON file payload")
+    return parsed
+
 
 class GenerateRequest(BaseModel):
     prompt: str
@@ -114,9 +197,24 @@ async def health():
 async def generate_events(req: GenerateRequest) -> AsyncGenerator[dict, None]:
     """SSE event generator for code generation."""
     framework = req.framework
-    template = FRAMEWORK_TEMPLATES.get(framework, FRAMEWORK_TEMPLATES["Next.js"])
-    text = template["text"]
-    files = template["files"]
+
+    text = ""
+    files: list[dict[str, Any]] = []
+
+    if AI_ENGINE == "zai":
+        try:
+            result = await call_zai_builder(req.prompt, framework)
+            text = str(result.get("text") or "Generation complete.")
+            files = list(result.get("files") or [])
+        except Exception as exc:
+            # Fallback to templates if provider fails.
+            template = FRAMEWORK_TEMPLATES.get(framework, FRAMEWORK_TEMPLATES["Next.js"])
+            text = f"{template['text']}\n\n(LLM fallback: {type(exc).__name__})"
+            files = template["files"]
+    else:
+        template = FRAMEWORK_TEMPLATES.get(framework, FRAMEWORK_TEMPLATES["Next.js"])
+        text = template["text"]
+        files = template["files"]
 
     yield {"event": "init", "data": json.dumps({"projectId": req.project_id or str(uuid.uuid4()), "framework": framework, "status": "started"})}
 
