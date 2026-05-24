@@ -31,12 +31,14 @@ export default function WorkspacePreview() {
   const activeFilePath = useWorkspaceStore((s) => s.activeFilePath);
   const activeFileContent = useWorkspaceStore((s) => s.activeFileContent);
   const previewUrl = useWorkspaceStore((s) => s.previewUrl);
+  const previewMode = useWorkspaceStore((s) => s.previewMode);
   const isPreviewStarting = useWorkspaceStore((s) => s.isPreviewStarting);
   const isPreviewReady = useWorkspaceStore((s) => s.isPreviewReady);
   const startPreview = useWorkspaceStore((s) => s.startPreview);
   const stopPreview = useWorkspaceStore((s) => s.stopPreview);
   const restartPreview = useWorkspaceStore((s) => s.restartPreview);
   const refreshPreviewStatus = useWorkspaceStore((s) => s.refreshPreviewStatus);
+  const setPreviewMode = useWorkspaceStore((s) => s.setPreviewMode);
 
   useEffect(() => {
     if (!previewUrl) return;
@@ -110,6 +112,36 @@ export default function WorkspacePreview() {
             {previewModel.framework}
           </Badge>
           <div className="flex-1" />
+          <div className="inline-flex overflow-hidden rounded-[10px] border border-[var(--app-border)] bg-[var(--app-panel)] text-xs">
+            <button
+              type="button"
+              disabled={Boolean(previewUrl) || isPreviewStarting}
+              onClick={() => setPreviewMode("dev")}
+              className={[
+                "px-2.5 py-1.5 transition",
+                previewMode === "dev" ? "bg-[var(--app-panel-2)] text-[var(--app-text)]" : "text-[var(--app-text-muted)] hover:text-[var(--app-text)]",
+                Boolean(previewUrl) ? "cursor-not-allowed opacity-60" : "",
+              ].join(" ")}
+              title="Dev preview (HMR)"
+            >
+              Dev
+            </button>
+            <button
+              type="button"
+              disabled={Boolean(previewUrl) || isPreviewStarting}
+              onClick={() => setPreviewMode("build")}
+              className={[
+                "px-2.5 py-1.5 transition",
+                previewMode === "build"
+                  ? "bg-[var(--app-panel-2)] text-[var(--app-text)]"
+                  : "text-[var(--app-text-muted)] hover:text-[var(--app-text)]",
+                Boolean(previewUrl) ? "cursor-not-allowed opacity-60" : "",
+              ].join(" ")}
+              title="Build preview (production-like)"
+            >
+              Build
+            </button>
+          </div>
           {!previewUrl ? (
             <button
               type="button"

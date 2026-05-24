@@ -33,6 +33,7 @@ interface WorkspaceState {
   // Preview
   previewId: string | null;
   previewUrl: string | null;
+  previewMode: "build" | "dev";
   isPreviewStarting: boolean;
   previewLogs: string;
   isPreviewReady: boolean;
@@ -62,6 +63,7 @@ interface WorkspaceState {
   restartPreview: () => Promise<void>;
   refreshPreviewLogs: () => Promise<void>;
   refreshPreviewStatus: () => Promise<void>;
+  setPreviewMode: (mode: "build" | "dev") => void;
   setOutputTab: (tab: "preview" | "code" | "logs") => void;
   reset: () => void;
 }
@@ -84,6 +86,7 @@ const initialState = {
   isGenerating: false,
   previewId: null,
   previewUrl: null,
+  previewMode: "build" as const,
   isPreviewStarting: false,
   previewLogs: "",
   isPreviewReady: false,
@@ -250,7 +253,8 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     if (!projectId) return;
     set({ isPreviewStarting: true });
     try {
-      const res = await api.startPreview(projectId);
+      const mode = get().previewMode;
+      const res = await api.startPreview(projectId, mode);
       set({ previewId: res.previewId, previewUrl: res.url, previewLogs: "", isPreviewReady: false, outputTab: "preview" });
       await get().refreshPreviewStatus();
     } finally {
@@ -288,6 +292,7 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
     set({ isPreviewReady: status === "ready" });
   },
 
+  setPreviewMode: (mode) => set({ previewMode: mode }),
   setOutputTab: (tab) => set({ outputTab: tab }),
 
   reset: () => set(initialState),

@@ -276,7 +276,8 @@ export async function buildRoutes(app: FastifyInstance) {
   app.post("/api/projects/:id/previews", async (request, reply) => {
     const actor = getRequestActor(request);
     const { id } = request.params as { id: string };
-    const body = request.body as { provider?: "docker" | string };
+    const body = request.body as { mode?: "build" | "dev"; provider?: "docker" | string };
+    const mode: "build" | "dev" = body.mode === "dev" ? "dev" : "build";
 
     const project = await requireProjectAccess(id, actor);
     if (!project) return reply.status(404).send({ error: "Project not found" });
@@ -308,7 +309,7 @@ export async function buildRoutes(app: FastifyInstance) {
 
     try {
       const { tarPath } = await exportProjectToTarGz(id);
-      const runner = await runnerStartRun({ runId: preview.id, mode: "build", tarPath });
+      const runner = await runnerStartRun({ runId: preview.id, mode, tarPath });
 
       const base =
         PUBLIC_BASE_URL ||
@@ -332,6 +333,7 @@ export async function buildRoutes(app: FastifyInstance) {
             containerId: runner.containerId,
             url: runner.url,
             ready: runner.ready ?? null,
+            mode,
             shareToken,
             shareTokenExpiresAt: expiresAt,
           },

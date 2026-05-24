@@ -339,8 +339,11 @@ export const api = {
     ),
 
   // Previews
-  startPreview: (projectId: string) =>
-    request<{ previewId: string; status: string; url: string }>(`/api/projects/${projectId}/previews`, { method: "POST", body: {} }),
+  startPreview: (projectId: string, mode: "build" | "dev" = "build") =>
+    request<{ previewId: string; status: string; url: string }>(`/api/projects/${projectId}/previews`, {
+      method: "POST",
+      body: { mode },
+    }),
 
   stopPreview: (previewId: string) =>
     request<{ ok: boolean }>(`/api/previews/${previewId}`, { method: "DELETE" }),
