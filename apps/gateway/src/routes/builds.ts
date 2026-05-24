@@ -293,6 +293,9 @@ export async function buildRoutes(app: FastifyInstance) {
         PUBLIC_BASE_URL ||
         `${request.headers["x-forwarded-proto"] ?? "http"}://${request.headers["x-forwarded-host"] ?? request.headers.host}`;
       const shareToken = crypto.randomBytes(16).toString("hex");
+      const ttlSeconds = parseInt(process.env.PREVIEW_TOKEN_TTL_SECONDS || "86400", 10);
+      const expiresAt =
+        Number.isFinite(ttlSeconds) && ttlSeconds > 0 ? Date.now() + ttlSeconds * 1000 : null;
       const publicUrl = `${String(base).replace(/\/$/, "")}/p/${preview.id}/?t=${shareToken}`;
 
       const [updated] = await db
@@ -309,6 +312,7 @@ export async function buildRoutes(app: FastifyInstance) {
             url: runner.url,
             ready: runner.ready ?? null,
             shareToken,
+            shareTokenExpiresAt: expiresAt,
           },
         })
         .where(eq(previewInstances.id, preview.id))

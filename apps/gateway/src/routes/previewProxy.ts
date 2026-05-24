@@ -40,9 +40,15 @@ export async function previewProxyRoutes(app: FastifyInstance) {
     const requireToken = (process.env.PREVIEW_REQUIRE_TOKEN ?? "true") === "true";
     const expectedToken = typeof runnerRef.shareToken === "string" ? runnerRef.shareToken : null;
     const providedToken = typeof (request.query as any)?.t === "string" ? String((request.query as any).t) : null;
+    const expiresAt =
+      typeof runnerRef.shareTokenExpiresAt === "number" ? runnerRef.shareTokenExpiresAt : null;
 
     if (requireToken && expectedToken && providedToken !== expectedToken) {
       return reply.status(403).send("Invalid preview token");
+    }
+
+    if (requireToken && expectedToken && expiresAt && Date.now() > expiresAt) {
+      return reply.status(410).send("Preview token expired");
     }
 
     const upstreamUrl = new URL(upstreamBase);
@@ -72,12 +78,17 @@ export async function previewProxyRoutes(app: FastifyInstance) {
     // Rewrite Location headers to stay on public URL
     const publicBase = getPublicBaseUrl(request);
     const proxyPrefix = `${publicBase}/p/${previewId}`;
+    const tokenSuffix = providedToken ? `?t=${encodeURIComponent(providedToken)}` : "";
 
     for (const [key, value] of res.headers.entries()) {
       if (key.toLowerCase() === "location") {
         try {
           const loc = new URL(value, upstreamBase);
-          const rewritten = `${proxyPrefix}${loc.pathname}${loc.search}${loc.hash}`;
+          const hasTokenInSearch = loc.searchParams.has("t");
+          const rewrittenSearch = loc.search
+            ? `${loc.search}${!hasTokenInSearch && providedToken ? `&t=${encodeURIComponent(providedToken)}` : ""}`
+            : tokenSuffix;
+          const rewritten = `${proxyPrefix}${loc.pathname}${rewrittenSearch}${loc.hash}`;
           reply.header("location", rewritten);
         } catch {
           reply.header("location", value);
