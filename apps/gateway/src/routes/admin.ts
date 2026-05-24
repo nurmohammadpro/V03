@@ -642,12 +642,24 @@ export async function adminRoutes(app: FastifyInstance) {
   app.patch("/api/admin/services/:id", { preHandler: requireAdmin(["services.write"]) }, async (request, reply) => {
     const actor = getRequestActor(request);
     const { id } = request.params as { id: string };
-    const body = request.body as Partial<typeof serviceIntegrations.$inferInsert>;
+    const body = request.body as { status?: string; note?: string };
+
+    const [existing] = await db.select().from(serviceIntegrations).where(eq(serviceIntegrations.id, id)).limit(1);
+    if (!existing) {
+      return reply.status(404).send({ error: "Service not found" });
+    }
+
+    const nextConfig =
+      typeof existing.config === "object" && existing.config ? { ...(existing.config as Record<string, unknown>) } : {};
+    if (typeof body.note === "string") {
+      nextConfig.note = body.note;
+    }
 
     const [service] = await db
       .update(serviceIntegrations)
       .set({
-        ...body,
+        status: typeof body.status === "string" ? body.status : existing.status,
+        config: nextConfig,
         updatedAt: new Date(),
       })
       .where(eq(serviceIntegrations.id, id))

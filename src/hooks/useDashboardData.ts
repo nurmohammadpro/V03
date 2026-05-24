@@ -180,7 +180,25 @@ export function useAiProviders() {
     queryKey: ["aiProviders"],
     queryFn: async () => {
       const res = await api.getAiProviders();
-      return res.providers as unknown as AiProvider[];
+      const providers = (res.providers ?? []) as Array<any>;
+      return providers.map((p) => {
+        const cfg = (p.config && typeof p.config === "object" ? p.config : {}) as Record<string, any>;
+        return {
+          id: String(p.id),
+          key: String(p.key),
+          name: String(p.name),
+          providerType: String(p.providerType),
+          status: String(p.status) as any,
+          baseUrl: String(p.baseUrl ?? ""),
+          authMode: String(p.authMode ?? "api_key") as any,
+          secretRef: String(p.secretRef ?? ""),
+          weight: Number(p.weight ?? 0),
+          health: Number(cfg.health ?? 0),
+          monthlySpend: Number(cfg.monthlySpend ?? 0),
+          successRate: Number(cfg.successRate ?? 0),
+          models: Array.isArray(p.models) ? (p.models as any) : [],
+        } as AiProvider;
+      });
     },
     staleTime: 10_000,
   });
