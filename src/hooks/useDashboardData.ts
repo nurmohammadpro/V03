@@ -54,14 +54,21 @@ export function useUserStats() {
 }
 
 export function useAdminStats() {
-  const query = useQuery({
+  const bootstrapQuery = useQuery({
     queryKey: ["adminBootstrap"],
     queryFn: api.getAdminBootstrap,
     staleTime: 10_000,
   });
 
-  const bootstrap = query.data;
-  const stats: AdminStats = {
+  const metricsQuery = useQuery({
+    queryKey: ["adminMetrics"],
+    queryFn: async () => (await api.getAdminMetrics()).stats,
+    staleTime: 10_000,
+    refetchInterval: 15_000,
+  });
+
+  const bootstrap = bootstrapQuery.data;
+  const stats: AdminStats = metricsQuery.data ?? {
     totalUsers: bootstrap?.summary.totalUsers ?? 0,
     totalProjects: bootstrap?.summary.totalProjects ?? 0,
     generationsToday: 0,
@@ -76,16 +83,18 @@ export function useAdminStats() {
     projectGrowth: 0,
     generationGrowth: 0,
     revenueGrowth: 0,
-    userTrend: buildFlatTrend(30, bootstrap?.summary.totalUsers ?? 0),
+    userTrend: buildFlatTrend(30, 0),
     revenueTrend: buildFlatTrend(30, 0),
   };
 
   return {
     stats,
-    loading: query.isLoading,
+    loading: bootstrapQuery.isLoading || metricsQuery.isLoading,
     bootstrap,
     totalAdmins: bootstrap?.summary.totalAdmins ?? 0,
-    refresh: async () => void query.refetch(),
+    refresh: async () => {
+      await Promise.all([bootstrapQuery.refetch(), metricsQuery.refetch()]);
+    },
   };
 }
 

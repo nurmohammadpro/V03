@@ -102,6 +102,11 @@ export const api = {
       };
     }>("/api/admin/bootstrap"),
 
+  getAdminMetrics: () =>
+    request<{
+      stats: import("@/lib/types").AdminStats;
+    }>("/api/admin/metrics"),
+
   getAdminUsers: () =>
     request<{
       users: Array<{

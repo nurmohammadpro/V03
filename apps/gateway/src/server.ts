@@ -6,6 +6,7 @@ import { authRoutes } from "./routes/auth";
 import { projectRoutes } from "./routes/projects";
 import { chatRoutes } from "./routes/chat";
 import { adminRoutes } from "./routes/admin";
+import { adminMetricsRoutes } from "./routes/adminMetrics";
 import { dashboardRoutes } from "./routes/dashboard";
 import { fileRoutes } from "./routes/files";
 import { envRoutes } from "./routes/env";
@@ -70,6 +71,7 @@ async function start() {
   await app.register(previewProxyRoutes);
   await app.register(chatRoutes);
   await app.register(adminRoutes);
+  await app.register(adminMetricsRoutes);
 
   // Health check
   app.get("/api/health", async () => ({ status: "ok", service: "v03-gateway", version: "1.0.0" }));
