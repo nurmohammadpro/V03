@@ -18,7 +18,7 @@ fi
 
 # Start ai-worker (FastAPI)
 pushd /app/apps/ai-worker >/dev/null
-python3 -m uvicorn main:app --host 127.0.0.1 --port 8001 &
+/opt/ai-worker-venv/bin/uvicorn main:app --host 127.0.0.1 --port 8001 &
 AI_WORKER_PID=$!
 popd >/dev/null
 

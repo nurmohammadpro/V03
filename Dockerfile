@@ -22,7 +22,7 @@ FROM node:20-bookworm-slim
 WORKDIR /app
 
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends nginx python3 python3-pip ca-certificates gettext-base \
+  && apt-get install -y --no-install-recommends nginx python3 python3-venv ca-certificates gettext-base \
   && rm -rf /var/lib/apt/lists/*
 
 # Frontend + nginx config template
@@ -39,7 +39,8 @@ RUN npm ci --omit=dev
 # AI worker
 WORKDIR /app/apps/ai-worker
 COPY apps/ai-worker/requirements.txt /app/apps/ai-worker/requirements.txt
-RUN pip3 install --no-cache-dir -r /app/apps/ai-worker/requirements.txt
+RUN python3 -m venv /opt/ai-worker-venv \
+  && /opt/ai-worker-venv/bin/pip install --no-cache-dir -r /app/apps/ai-worker/requirements.txt
 COPY apps/ai-worker/main.py /app/apps/ai-worker/main.py
 
 # Entrypoint
