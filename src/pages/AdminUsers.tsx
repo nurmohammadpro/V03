@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { UsersTable } from "@/components/dashboard/UsersTable";
 import {
   useAdminRbac,
-  useAdminUserProfiles,
+  useAdminUserProfile,
   useAdminUsers,
   useAssignAdminRole,
   useUpdateAdminUserPlan,
@@ -14,23 +14,18 @@ import type { User } from "@/lib/types";
 
 export default function AdminUsers() {
   const { users, loading } = useAdminUsers();
-  const { profiles } = useAdminUserProfiles();
   const { roles, permissions } = useAdminRbac();
   const updateStatus = useUpdateAdminUserStatus();
   const updatePlan = useUpdateAdminUserPlan();
   const assignRole = useAssignAdminRole();
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
+  const { profile: selectedProfile } = useAdminUserProfile(selectedUserId);
 
   useEffect(() => {
     if (!selectedUserId && users.length > 0) {
       setSelectedUserId(users[0].id);
     }
   }, [users, selectedUserId]);
-
-  const selectedProfile = useMemo(() => {
-    if (!selectedUserId) return profiles[0] ?? null;
-    return profiles.find((profile) => profile.id === selectedUserId) ?? profiles[0] ?? null;
-  }, [profiles, selectedUserId]);
 
   const supportAdminRole = roles.find((role) => role.key === "support_admin") ?? roles[0];
 

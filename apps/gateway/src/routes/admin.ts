@@ -1,6 +1,7 @@
 import { FastifyInstance } from "fastify";
 import db from "../db";
 import {
+  adminAuditLogs,
   adminPermissions,
   adminRoles,
   aiModels,
@@ -187,6 +188,56 @@ export async function adminRoutes(app: FastifyInstance) {
       adminAssignments: assignments,
       subscription,
       projectCount: projectCount?.value ?? 0,
+    });
+  });
+
+  app.get("/api/admin/audit-logs", { preHandler: requireAdmin(["analytics.read"]) }, async (request, reply) => {
+    const actor = getRequestActor(request);
+    const query = request.query as { limit?: string };
+    const limit = Math.min(200, Math.max(1, parseInt(query.limit || "50", 10) || 50));
+
+    const rows = await db
+      .select({
+        id: adminAuditLogs.id,
+        actorUserId: adminAuditLogs.actorUserId,
+        actorRoleKey: adminAuditLogs.actorRoleKey,
+        action: adminAuditLogs.action,
+        targetType: adminAuditLogs.targetType,
+        targetId: adminAuditLogs.targetId,
+        metadata: adminAuditLogs.metadata,
+        createdAt: adminAuditLogs.createdAt,
+      })
+      .from(adminAuditLogs)
+      .orderBy(desc(adminAuditLogs.createdAt))
+      .limit(limit);
+
+    const actorIds = [...new Set(rows.map((r) => r.actorUserId))];
+    const actors = actorIds.length
+      ? await db
+          .select({ id: users.id, email: users.email })
+          .from(users)
+          .where(inArray(users.id, actorIds))
+      : [];
+    const actorEmailById = new Map(actors.map((a) => [a.id, a.email]));
+
+    await writeAdminAuditLog({
+      request,
+      actor,
+      action: "audit.list",
+      targetType: "admin_audit_log",
+      metadata: { limit },
+    });
+
+    return reply.send({
+      logs: rows.map((row) => ({
+        id: row.id,
+        actorName: actorEmailById.get(row.actorUserId) ?? row.actorUserId,
+        actorRole: row.actorRoleKey,
+        action: row.action,
+        targetType: row.targetType,
+        targetName: row.targetId ?? "",
+        timestamp: row.createdAt,
+      })),
     });
   });
 

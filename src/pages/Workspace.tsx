@@ -300,6 +300,8 @@ export default function Workspace(props: { params: { projectId: string } }) {
   const files = useWorkspaceStore((s) => s.files);
   const setProjectId = useWorkspaceStore((s) => s.setProjectId);
   const refreshFileTree = useWorkspaceStore((s) => s.refreshFileTree);
+  const isPreviewStarting = useWorkspaceStore((s) => s.isPreviewStarting);
+  const isPreviewReady = useWorkspaceStore((s) => s.isPreviewReady);
 
   const projectId = props?.params?.projectId;
 
@@ -353,9 +355,11 @@ export default function Workspace(props: { params: { projectId: string } }) {
 
   const statusLabel = useMemo(() => {
     if (isGenerating) return "Generating";
+    if (isPreviewStarting) return "Starting preview";
+    if (isPreviewReady) return "Preview ready";
     if (activeFileContent) return "Ready";
     return "Idle";
-  }, [activeFileContent, isGenerating]);
+  }, [activeFileContent, isGenerating, isPreviewReady, isPreviewStarting]);
 
   const sendMessage = useCallback(
     async (content: string) => {

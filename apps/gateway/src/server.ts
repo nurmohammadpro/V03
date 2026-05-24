@@ -6,6 +6,7 @@ import { authRoutes } from "./routes/auth";
 import { projectRoutes } from "./routes/projects";
 import { chatRoutes } from "./routes/chat";
 import { adminRoutes } from "./routes/admin";
+import { dashboardRoutes } from "./routes/dashboard";
 import { fileRoutes } from "./routes/files";
 import { envRoutes } from "./routes/env";
 import { auditRoutes } from "./routes/audit";
@@ -58,6 +59,7 @@ async function start() {
 
   // Routes
   await app.register(authRoutes);
+  await app.register(dashboardRoutes);
   await app.register(projectRoutes);
   await app.register(fileRoutes);
   await app.register(envRoutes);

@@ -65,6 +65,14 @@ async function request<T>(path: string, options: ApiOptions = {}): Promise<T> {
 export const api = {
   getMe: () => request<{ user: AuthActor }>("/api/auth/me"),
 
+  // Dashboard
+  getDashboardStats: () =>
+    request<{ stats: { projectsCount: number; totalGenerations: number; generationsToday: number; dailyLimit: number; storageUsed: number; storageLimit: number } }>(
+      "/api/dashboard/stats",
+    ),
+  getActivityFeed: (limit = 30) =>
+    request<{ activities: Array<any> }>(`/api/activity?limit=${limit}`),
+
   // Projects
   getProjects: () =>
     request<{ projects: Array<{ id: string; name: string; framework: string; createdAt: string }> }>(
@@ -110,6 +118,43 @@ export const api = {
         projectsCount: number;
       }>;
     }>("/api/admin/users"),
+
+  getAdminUserDetail: (id: string) =>
+    request<{
+      user: {
+        id: string;
+        email: string;
+        fullName: string | null;
+        status: string;
+        plan: string;
+        createdAt: string;
+        updatedAt: string;
+        avatarUrl: string | null;
+        metadata: Record<string, unknown>;
+      };
+      adminAssignments: Array<{
+        assignmentId: string;
+        roleId: string;
+        roleKey: string;
+        roleName: string;
+        assignedAt: string;
+      }>;
+      subscription: any | null;
+      projectCount: number;
+    }>(`/api/admin/users/${id}`),
+
+  getAdminAuditLogs: (limit = 50) =>
+    request<{
+      logs: Array<{
+        id: string;
+        actorName: string;
+        actorRole: string;
+        action: string;
+        targetType: string;
+        targetName: string;
+        timestamp: string;
+      }>;
+    }>(`/api/admin/audit-logs?limit=${limit}`),
 
   getAdminPlans: () =>
     request<{
