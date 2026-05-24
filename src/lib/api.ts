@@ -273,6 +273,7 @@ export const api = {
         authMode: string;
         secretRef: string | null;
         weight: number;
+        hasApiKey?: boolean;
         config: Record<string, unknown>;
         models: Array<{
           id: string;
@@ -287,6 +288,23 @@ export const api = {
         }>;
       }>;
     }>("/api/admin/ai/providers"),
+
+  setAiProviderApiKey: (id: string, apiKey: string) =>
+    request<{ ok: boolean }>(`/api/admin/ai/providers/${id}/api-key`, {
+      method: "PUT",
+      body: { apiKey },
+    }),
+
+  clearAiProviderApiKey: (id: string) =>
+    request<{ ok: boolean }>(`/api/admin/ai/providers/${id}/api-key`, {
+      method: "DELETE",
+    }),
+
+  testAiProvider: (id: string, modelKey?: string) =>
+    request<{ ok: boolean; status: number; error?: string }>(`/api/admin/ai/providers/${id}/test`, {
+      method: "POST",
+      body: modelKey ? { modelKey } : {},
+    }),
 
   getAiRoutingRules: () =>
     request<{ rules: AiRoutingRule[] }>("/api/admin/ai/routing-rules"),

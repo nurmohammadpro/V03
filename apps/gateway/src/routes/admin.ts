@@ -5,6 +5,7 @@ import {
   adminPermissions,
   adminRoles,
   aiModels,
+  aiProviderSecrets,
   aiProviders,
   aiRoutingRules,
   planFeatures,
@@ -19,6 +20,7 @@ import {
 } from "../db/schema";
 import { and, desc, eq, ilike, inArray, isNull, sql } from "drizzle-orm";
 import { getRequestActor, requireAdmin, writeAdminAuditLog } from "../middleware/auth";
+import { decryptProviderSecret, encryptProviderSecret } from "../secrets/aiProviderCrypto";
 
 export async function adminRoutes(app: FastifyInstance) {
   app.addHook("onRequest", requireAdmin());
@@ -498,13 +500,158 @@ export async function adminRoutes(app: FastifyInstance) {
     const models = providerIds.length
       ? await db.select().from(aiModels).where(inArray(aiModels.providerId, providerIds)).orderBy(aiModels.name)
       : [];
+    const secrets = providerIds.length
+      ? await db
+          .select({ providerId: aiProviderSecrets.providerId })
+          .from(aiProviderSecrets)
+          .where(inArray(aiProviderSecrets.providerId, providerIds))
+      : [];
+    const secretSet = new Set(secrets.map((secret) => secret.providerId));
 
     return reply.send({
       providers: providers.map((provider) => ({
         ...provider,
+        hasApiKey: secretSet.has(provider.id),
         models: models.filter((model) => model.providerId === provider.id),
       })),
     });
+  });
+
+  app.put("/api/admin/ai/providers/:id/api-key", { preHandler: requireAdmin(["ai.write"]) }, async (request, reply) => {
+    const actor = getRequestActor(request);
+    const { id } = request.params as { id: string };
+    const body = request.body as { apiKey?: string };
+
+    if (!body.apiKey || !body.apiKey.trim()) {
+      return reply.status(400).send({ error: "apiKey is required" });
+    }
+
+    const [provider] = await db.select().from(aiProviders).where(eq(aiProviders.id, id)).limit(1);
+    if (!provider) return reply.status(404).send({ error: "Provider not found" });
+
+    const apiKeyEnc = encryptProviderSecret(body.apiKey.trim());
+
+    await db
+      .insert(aiProviderSecrets)
+      .values({ providerId: id, apiKeyEnc })
+      .onConflictDoUpdate({
+        target: aiProviderSecrets.providerId,
+        set: { apiKeyEnc, updatedAt: new Date() },
+      });
+
+    await writeAdminAuditLog({
+      request,
+      actor,
+      action: "ai.providers.secret.set",
+      targetType: "ai_provider",
+      targetId: id,
+      metadata: { key: provider.key },
+    });
+
+    return reply.send({ ok: true });
+  });
+
+  app.delete("/api/admin/ai/providers/:id/api-key", { preHandler: requireAdmin(["ai.write"]) }, async (request, reply) => {
+    const actor = getRequestActor(request);
+    const { id } = request.params as { id: string };
+
+    const [provider] = await db.select().from(aiProviders).where(eq(aiProviders.id, id)).limit(1);
+    if (!provider) return reply.status(404).send({ error: "Provider not found" });
+
+    await db.delete(aiProviderSecrets).where(eq(aiProviderSecrets.providerId, id));
+
+    await writeAdminAuditLog({
+      request,
+      actor,
+      action: "ai.providers.secret.clear",
+      targetType: "ai_provider",
+      targetId: id,
+      metadata: { key: provider.key },
+    });
+
+    return reply.send({ ok: true });
+  });
+
+  app.post("/api/admin/ai/providers/:id/test", { preHandler: requireAdmin(["ai.write"]) }, async (request, reply) => {
+    const actor = getRequestActor(request);
+    const { id } = request.params as { id: string };
+    const body = request.body as { modelKey?: string };
+
+    const [provider] = await db.select().from(aiProviders).where(eq(aiProviders.id, id)).limit(1);
+    if (!provider) return reply.status(404).send({ error: "Provider not found" });
+
+    const [secret] = await db.select().from(aiProviderSecrets).where(eq(aiProviderSecrets.providerId, id)).limit(1);
+    if (!secret) return reply.status(400).send({ error: "Provider API key not configured" });
+
+    const apiKey = decryptProviderSecret(secret.apiKeyEnc);
+
+    const config = (provider.config ?? {}) as Record<string, unknown>;
+    const chatCompletionsPath =
+      typeof config.chatCompletionsPath === "string"
+        ? (config.chatCompletionsPath as string)
+        : provider.key === "openai"
+          ? "/v1/chat/completions"
+          : "/chat/completions";
+
+    const [model] = body.modelKey
+      ? await db
+          .select()
+          .from(aiModels)
+          .where(and(eq(aiModels.providerId, provider.id), eq(aiModels.key, body.modelKey)))
+          .limit(1)
+      : await db
+          .select()
+          .from(aiModels)
+          .where(and(eq(aiModels.providerId, provider.id), eq(aiModels.status, "active")))
+          .orderBy(aiModels.name)
+          .limit(1);
+
+    const modelKey =
+      typeof body.modelKey === "string" && body.modelKey.trim()
+        ? body.modelKey.trim()
+        : typeof config.defaultModelKey === "string"
+          ? (config.defaultModelKey as string)
+          : model?.key ?? null;
+
+    if (!modelKey) return reply.status(400).send({ error: "No model configured for provider" });
+
+    const baseUrl = provider.baseUrl || "";
+    if (!baseUrl) return reply.status(400).send({ error: "Provider baseUrl is not configured" });
+
+    const url = `${baseUrl.replace(/\/$/, "")}${chatCompletionsPath.startsWith("/") ? "" : "/"}${chatCompletionsPath}`;
+
+    const resp = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: modelKey,
+        messages: [
+          { role: "system", content: "You are a health check." },
+          { role: "user", content: "Reply with the single word: pong" },
+        ],
+        temperature: 0,
+        max_tokens: 5,
+      }),
+    });
+
+    await writeAdminAuditLog({
+      request,
+      actor,
+      action: "ai.providers.test",
+      targetType: "ai_provider",
+      targetId: id,
+      metadata: { key: provider.key, ok: resp.ok, status: resp.status, modelKey },
+    });
+
+    if (!resp.ok) {
+      const text = await resp.text();
+      return reply.status(502).send({ ok: false, status: resp.status, error: text.slice(0, 400) });
+    }
+
+    return reply.send({ ok: true, status: resp.status });
   });
 
   app.post("/api/admin/ai/providers", { preHandler: requireAdmin(["ai.write"]) }, async (request, reply) => {

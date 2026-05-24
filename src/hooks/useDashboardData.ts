@@ -224,6 +224,7 @@ export function useAiProviders() {
           health: Number(cfg.health ?? 0),
           monthlySpend: Number(cfg.monthlySpend ?? 0),
           successRate: Number(cfg.successRate ?? 0),
+          hasApiKey: Boolean(p.hasApiKey ?? false),
           models: Array.isArray(p.models) ? (p.models as any) : [],
         } as AiProvider;
       });
@@ -232,6 +233,28 @@ export function useAiProviders() {
   });
 
   return { providers: query.data ?? [], loading: query.isLoading };
+}
+
+export function useSetAiProviderApiKey() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: { providerId: string; apiKey: string }) => api.setAiProviderApiKey(args.providerId, args.apiKey),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["aiProviders"] }),
+  });
+}
+
+export function useClearAiProviderApiKey() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: { providerId: string }) => api.clearAiProviderApiKey(args.providerId),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["aiProviders"] }),
+  });
+}
+
+export function useTestAiProvider() {
+  return useMutation({
+    mutationFn: async (args: { providerId: string; modelKey?: string }) => api.testAiProvider(args.providerId, args.modelKey),
+  });
 }
 
 export function useAiRoutingRules() {

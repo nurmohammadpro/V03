@@ -186,6 +186,7 @@ export interface AiProvider {
   health: number;
   monthlySpend: number;
   successRate: number;
+  hasApiKey?: boolean;
   models: AiModel[];
 }
 

@@ -154,7 +154,7 @@ const AI_PROVIDER_DEFS = [
     authMode: "api_key",
     secretRef: "vault://ai/deepseek/prod",
     weight: 60,
-    config: { health: 99.4, monthlySpend: 842, successRate: 98.7 },
+    config: { health: 99.4, monthlySpend: 842, successRate: 98.7, defaultModelKey: "deepseek-v4-flash", chatCompletionsPath: "/chat/completions" },
     models: [
       {
         key: "deepseek-v4-flash",
@@ -177,7 +177,7 @@ const AI_PROVIDER_DEFS = [
     authMode: "api_key",
     secretRef: "vault://ai/openai/prod",
     weight: 25,
-    config: { health: 97.8, monthlySpend: 1240, successRate: 97.9 },
+    config: { health: 97.8, monthlySpend: 1240, successRate: 97.9, defaultModelKey: "gpt-fast", chatCompletionsPath: "/v1/chat/completions" },
     models: [
       {
         key: "gpt-fast",
@@ -187,6 +187,29 @@ const AI_PROVIDER_DEFS = [
         outputCostPerMillion: 150,
         latencyTier: "fast",
         qualityTier: "premium",
+        config: {},
+      },
+    ],
+  },
+  {
+    key: "zai",
+    name: "Z.ai (GLM)",
+    providerType: "llm",
+    status: "active",
+    baseUrl: "https://api.z.ai/api/paas/v4",
+    authMode: "api_key",
+    secretRef: "vault://ai/zai/prod",
+    weight: 15,
+    config: { health: 99.0, monthlySpend: 0, successRate: 99.0, defaultModelKey: "glm-4.6-coding-lite", chatCompletionsPath: "/chat/completions" },
+    models: [
+      {
+        key: "glm-4.6-coding-lite",
+        name: "GLM 4.6 Coding Lite",
+        status: "active",
+        inputCostPerMillion: null,
+        outputCostPerMillion: null,
+        latencyTier: "fast",
+        qualityTier: "balanced",
         config: {},
       },
     ],

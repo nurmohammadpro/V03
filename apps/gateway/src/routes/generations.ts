@@ -1,8 +1,11 @@
 import { FastifyInstance } from "fastify";
-import { and, eq, isNull, like, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, like, sql } from "drizzle-orm";
 import crypto from "node:crypto";
 import db from "../db";
 import {
+  aiModels,
+  aiProviderSecrets,
+  aiProviders,
   fileBlobs,
   generationFileOps,
   generationEvents,
@@ -41,6 +44,54 @@ function normalizePath(input: string) {
     throw new Error("Invalid path");
   }
   return withoutLeading;
+}
+
+async function pickProviderAndModel() {
+  const providers = await db.select().from(aiProviders).where(eq(aiProviders.status, "active"));
+  if (!providers.length) return null;
+
+  const providerIds = providers.map((p) => p.id);
+  const secrets = await db
+    .select({ providerId: aiProviderSecrets.providerId })
+    .from(aiProviderSecrets)
+    .where(inArray(aiProviderSecrets.providerId, providerIds));
+  const secretSet = new Set(secrets.map((s) => s.providerId));
+
+  const candidates = providers.filter((p) => secretSet.has(p.id));
+  if (!candidates.length) return null;
+
+  // Weighted random by `weight` (default 100), falling back to uniform.
+  const weights = candidates.map((p) => Math.max(0, Number(p.weight ?? 0)));
+  const total = weights.reduce((a, b) => a + b, 0);
+  let chosen = candidates[0];
+  if (total > 0) {
+    let r = Math.random() * total;
+    for (let i = 0; i < candidates.length; i += 1) {
+      r -= weights[i];
+      if (r <= 0) {
+        chosen = candidates[i];
+        break;
+      }
+    }
+  } else {
+    chosen = candidates[Math.floor(Math.random() * candidates.length)];
+  }
+
+  const models = await db
+    .select({ key: aiModels.key })
+    .from(aiModels)
+    .where(and(eq(aiModels.providerId, chosen.id), eq(aiModels.status, "active")))
+    .limit(50);
+
+  const config = (chosen.config ?? {}) as Record<string, unknown>;
+  const defaultModelKey =
+    typeof config.defaultModelKey === "string" ? (config.defaultModelKey as string) : (models[0]?.key ?? null);
+
+  return {
+    providerId: chosen.id,
+    providerKey: chosen.key,
+    modelKey: defaultModelKey,
+  };
 }
 
 async function requireProjectAccess(projectId: string, actor: { userId: string; isAdmin: boolean }) {
@@ -268,6 +319,8 @@ export async function generationRoutes(app: FastifyInstance) {
     const intent: GenerationIntent = body.intent ?? "component";
     const applyMode: ApplyMode = body.applyMode ?? "propose";
 
+    const selection = await pickProviderAndModel();
+
     const [run] = await db
       .insert(generationRuns)
       .values({
@@ -279,6 +332,8 @@ export async function generationRoutes(app: FastifyInstance) {
         applyMode,
         status: "running",
         prompt: body.prompt,
+        providerId: selection?.providerId ?? null,
+        modelKey: selection?.modelKey ?? null,
         summary: {},
       })
       .returning();
@@ -293,6 +348,8 @@ export async function generationRoutes(app: FastifyInstance) {
           project_id: id,
           intent,
           target_path: body.targetPath ?? null,
+          provider_key: selection?.providerKey ?? null,
+          model_key: selection?.modelKey ?? null,
         }),
       });
 
@@ -404,6 +461,8 @@ export async function generationRoutes(app: FastifyInstance) {
     const intent: GenerationIntent = body.intent ?? "component";
     const applyMode: ApplyMode = body.applyMode ?? "propose";
 
+    const selection = await pickProviderAndModel();
+
     const [run] = await db
       .insert(generationRuns)
       .values({
@@ -415,6 +474,8 @@ export async function generationRoutes(app: FastifyInstance) {
         applyMode,
         status: "running",
         prompt: body.prompt,
+        providerId: selection?.providerId ?? null,
+        modelKey: selection?.modelKey ?? null,
         summary: {},
       })
       .returning();
@@ -472,6 +533,8 @@ export async function generationRoutes(app: FastifyInstance) {
           project_id: id,
           intent,
           target_path: body.targetPath ?? null,
+          provider_key: selection?.providerKey ?? null,
+          model_key: selection?.modelKey ?? null,
         }),
         signal: controller.signal,
       });

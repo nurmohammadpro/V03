@@ -1,6 +1,18 @@
 import { AdminShell } from "@/components/admin/AdminShell";
-import { useAiProviders, useAiRoutingRules, useAdminStats, useUpdateAiProvider, useUpdateAiRoutingRule } from "@/hooks/useDashboardData";
+import {
+  useAiProviders,
+  useAiRoutingRules,
+  useAdminStats,
+  useClearAiProviderApiKey,
+  useSetAiProviderApiKey,
+  useTestAiProvider,
+  useUpdateAiProvider,
+  useUpdateAiRoutingRule,
+} from "@/hooks/useDashboardData";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import * as React from "react";
 import { toast } from "sonner";
 
 export default function AdminSystem() {
@@ -9,6 +21,14 @@ export default function AdminSystem() {
   const { rules } = useAiRoutingRules();
   const updateProvider = useUpdateAiProvider();
   const updateRule = useUpdateAiRoutingRule();
+  const setApiKey = useSetAiProviderApiKey();
+  const clearApiKey = useClearAiProviderApiKey();
+  const testProvider = useTestAiProvider();
+  const [keyModalOpen, setKeyModalOpen] = React.useState(false);
+  const [keyModalProviderId, setKeyModalProviderId] = React.useState<string | null>(null);
+  const [keyValue, setKeyValue] = React.useState("");
+
+  const keyModalProvider = providers.find((p) => p.id === keyModalProviderId) ?? null;
 
   async function handleToggleProvider(providerId: string, status: string) {
     const nextStatus = status === "active" ? "disabled" : "active";
@@ -36,6 +56,47 @@ export default function AdminSystem() {
       toast.success(`Routing rule ${!isActive ? "enabled" : "disabled"}.`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Could not update routing rule.");
+    }
+  }
+
+  function openKeyModal(providerId: string) {
+    setKeyModalProviderId(providerId);
+    setKeyValue("");
+    setKeyModalOpen(true);
+  }
+
+  async function handleSaveKey() {
+    if (!keyModalProvider) return;
+    if (!keyValue.trim()) {
+      toast.error("API key is required.");
+      return;
+    }
+    try {
+      await setApiKey.mutateAsync({ providerId: keyModalProvider.id, apiKey: keyValue.trim() });
+      toast.success("API key saved.");
+      setKeyModalOpen(false);
+      setKeyValue("");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not save API key.");
+    }
+  }
+
+  async function handleClearKey(providerId: string) {
+    try {
+      await clearApiKey.mutateAsync({ providerId });
+      toast.success("API key cleared.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not clear API key.");
+    }
+  }
+
+  async function handleTestProvider(providerId: string) {
+    try {
+      const res = await testProvider.mutateAsync({ providerId });
+      if (res.ok) toast.success("Provider test succeeded.");
+      else toast.error(res.error || "Provider test failed.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Provider test failed.");
     }
   }
 
@@ -110,6 +171,42 @@ export default function AdminSystem() {
                       <p className="mt-2 text-sm text-[var(--app-text)]">${provider.monthlySpend}</p>
                     </div>
                   </div>
+                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-[8px] bg-[var(--app-panel)] p-3">
+                    <div className="text-sm text-[var(--app-text-muted)]">
+                      API key:{" "}
+                      <span className="text-[var(--app-text)]">{provider.hasApiKey ? "configured" : "not set"}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => openKeyModal(provider.id)}
+                        className="rounded-[8px] border-0 bg-[var(--app-panel-2)] text-[var(--app-text-muted)] hover:bg-[var(--app-surface)] hover:text-[var(--app-text)]"
+                      >
+                        {provider.hasApiKey ? "Update key" : "Set key"}
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleTestProvider(provider.id)}
+                        className="rounded-[8px] border-0 bg-[var(--app-panel-2)] text-[var(--app-text-muted)] hover:bg-[var(--app-surface)] hover:text-[var(--app-text)]"
+                      >
+                        Test
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleClearKey(provider.id)}
+                        className="rounded-[8px] border-0 bg-[var(--app-panel-2)] text-[var(--app-text-muted)] hover:bg-[var(--app-surface)] hover:text-[var(--app-text)]"
+                        disabled={!provider.hasApiKey}
+                      >
+                        Clear
+                      </Button>
+                    </div>
+                  </div>
                   <div className="mt-4 space-y-2">
                     {provider.models.length > 0 ? (
                       provider.models.map((model) => (
@@ -160,6 +257,36 @@ export default function AdminSystem() {
           </div>
         </section>
       </div>
+
+      <Dialog open={keyModalOpen} onOpenChange={setKeyModalOpen}>
+        <DialogContent className="max-w-[520px]">
+          <DialogHeader>
+            <DialogTitle>{keyModalProvider?.name ? `Set API key — ${keyModalProvider.name}` : "Set API key"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            <p className="text-sm text-[var(--app-text)]">API key (write-only)</p>
+            <Input
+              id="providerApiKey"
+              value={keyValue}
+              onChange={(e) => setKeyValue(e.target.value)}
+              placeholder="Paste API key…"
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <p className="text-xs text-[var(--app-text-muted)]">This value is stored encrypted and cannot be viewed later.</p>
+          </div>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <DialogClose asChild>
+              <Button type="button" variant="outline">
+                Cancel
+              </Button>
+            </DialogClose>
+            <Button type="button" onClick={handleSaveKey}>
+              Save key
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </AdminShell>
   );
 }

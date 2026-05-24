@@ -242,6 +242,21 @@ export const aiModels = pgTable("ai_models", {
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
 });
 
+export const aiProviderSecrets = pgTable(
+  "ai_provider_secrets",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    providerId: uuid("provider_id").notNull().references(() => aiProviders.id),
+    apiKeyEnc: text("api_key_enc").notNull(),
+    createdAt: timestamp("created_at").defaultNow().notNull(),
+    updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    providerUnique: uniqueIndex("ai_provider_secrets_provider_unique").on(table.providerId),
+    providerIdx: index("ai_provider_secrets_provider_id_idx").on(table.providerId),
+  }),
+);
+
 export const aiRoutingRules = pgTable("ai_routing_rules", {
   id: uuid("id").defaultRandom().primaryKey(),
   key: text("key").notNull().unique(),

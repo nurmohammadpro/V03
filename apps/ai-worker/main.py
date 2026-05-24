@@ -103,7 +103,10 @@ FRAMEWORK_TEMPLATES = {
 ZAI_BASE_URL = os.getenv("ZAI_BASE_URL", "https://api.z.ai/api/paas/v4").rstrip("/")
 ZAI_MODEL = os.getenv("ZAI_MODEL", "glm-4.6")
 ZAI_API_KEY = os.getenv("ZAI_API_KEY", "").strip()
-AI_ENGINE = os.getenv("AI_ENGINE", "zai").strip().lower()  # zai | mock
+AI_ENGINE = os.getenv("AI_ENGINE", "zai").strip().lower()  # gateway | zai | mock
+
+GATEWAY_URL = os.getenv("GATEWAY_URL", "http://localhost:3001").rstrip("/")
+INTERNAL_API_TOKEN = os.getenv("INTERNAL_API_TOKEN", "").strip()
 
 
 def _extract_json(text: str) -> dict[str, Any] | None:
@@ -183,10 +186,85 @@ async def call_zai_builder(prompt: str, framework: str) -> dict[str, Any]:
     return parsed
 
 
+async def fetch_provider_from_gateway(provider_key: str) -> dict[str, Any]:
+    if not INTERNAL_API_TOKEN:
+        raise HTTPException(status_code=500, detail="INTERNAL_API_TOKEN is not configured on ai-worker")
+
+    url = f"{GATEWAY_URL}/api/internal/ai/providers/{provider_key}"
+    timeout = httpx.Timeout(20.0)
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        resp = await client.get(url, headers={"x-internal-token": INTERNAL_API_TOKEN})
+        if resp.status_code >= 400:
+            raise HTTPException(status_code=502, detail=f"Gateway provider lookup failed ({resp.status_code}): {resp.text[:300]}")
+        return resp.json()
+
+
+async def call_openai_compatible_builder(
+    *,
+    prompt: str,
+    framework: str,
+    base_url: str,
+    api_key: str,
+    model: str,
+    chat_path: str,
+) -> dict[str, Any]:
+    system = (
+        "You are a senior software engineer inside a web app builder.\n"
+        "Return ONLY valid JSON (no markdown) with keys:\n"
+        "- text: a short progress + summary string\n"
+        "- files: an array of nodes. Node is either:\n"
+        "  - {\"type\":\"directory\",\"name\":string,\"path\":string,\"children\":files[]}\n"
+        "  - {\"type\":\"file\",\"name\":string,\"path\":string,\"content\":string,\"language\":string}\n"
+        "Paths must be POSIX-style and relative (no leading slash)."
+    )
+
+    user = (
+        f"Framework: {framework}\n"
+        f"User request: {prompt}\n\n"
+        "Generate a runnable, conventional project scaffold (not pseudo code). "
+        "Include package/config files as needed. Keep it minimal but working."
+    )
+
+    payload = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        "temperature": 0.2,
+    }
+
+    base_url = (base_url or "").rstrip("/")
+    chat_path = (chat_path or "/chat/completions").strip()
+    if not chat_path.startswith("/"):
+        chat_path = "/" + chat_path
+    url = f"{base_url}{chat_path}"
+
+    headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+    timeout = httpx.Timeout(90.0)
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        resp = await client.post(url, headers=headers, json=payload)
+        if resp.status_code >= 400:
+            raise HTTPException(status_code=502, detail=f"Provider error {resp.status_code}: {resp.text[:400]}")
+        data = resp.json()
+
+    content = (
+        (((data.get("choices") or [{}])[0]).get("message") or {}).get("content")
+        if isinstance(data, dict)
+        else None
+    )
+    parsed = _extract_json(content or "")
+    if not parsed or "files" not in parsed:
+        raise HTTPException(status_code=502, detail="Model did not return valid JSON file payload")
+    return parsed
+
+
 class GenerateRequest(BaseModel):
     prompt: str
     framework: str = "Next.js"
     project_id: str | None = None
+    provider_key: str | None = None
+    model_key: str | None = None
 
 
 @app.get("/health")
@@ -201,7 +279,33 @@ async def generate_events(req: GenerateRequest) -> AsyncGenerator[dict, None]:
     text = ""
     files: list[dict[str, Any]] = []
 
-    if AI_ENGINE == "zai":
+    if AI_ENGINE == "gateway":
+        provider_key = (req.provider_key or "zai").strip()
+        try:
+            provider_bundle = await fetch_provider_from_gateway(provider_key)
+            provider = provider_bundle.get("provider") or {}
+            api_key = str(provider_bundle.get("apiKey") or "")
+            base_url = str(provider.get("baseUrl") or "")
+            chat_path = str(provider.get("chatCompletionsPath") or "/chat/completions")
+            model = (req.model_key or provider.get("defaultModelKey") or "").strip()
+            if not model:
+                raise HTTPException(status_code=500, detail="No model configured for provider")
+
+            result = await call_openai_compatible_builder(
+                prompt=req.prompt,
+                framework=framework,
+                base_url=base_url,
+                api_key=api_key,
+                model=model,
+                chat_path=chat_path,
+            )
+            text = str(result.get("text") or "Generation complete.")
+            files = list(result.get("files") or [])
+        except Exception as exc:
+            template = FRAMEWORK_TEMPLATES.get(framework, FRAMEWORK_TEMPLATES["Next.js"])
+            text = f"{template['text']}\n\n(LLM fallback: {type(exc).__name__})"
+            files = template["files"]
+    elif AI_ENGINE == "zai":
         try:
             result = await call_zai_builder(req.prompt, framework)
             text = str(result.get("text") or "Generation complete.")
