@@ -11,7 +11,7 @@ import {
   useUpdateAiRoutingRule,
 } from "@/hooks/useDashboardData";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import * as React from "react";
 import { toast } from "sonner";
@@ -311,6 +311,7 @@ export default function AdminSystem() {
         <DialogContent className="max-w-[520px]">
           <DialogHeader>
             <DialogTitle>{keyModalProvider?.name ? `Set API key — ${keyModalProvider.name}` : "Set API key"}</DialogTitle>
+            <DialogDescription>Stores the key encrypted. The value is write-only and cannot be viewed later.</DialogDescription>
           </DialogHeader>
           <div className="space-y-2">
             <p className="text-sm text-[var(--app-text)]">API key (write-only)</p>
@@ -341,6 +342,7 @@ export default function AdminSystem() {
         <DialogContent className="max-w-[560px]">
           <DialogHeader>
             <DialogTitle>Add AI provider</DialogTitle>
+            <DialogDescription>Add a new OpenAI-compatible provider entry, then set its API key and test it.</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
