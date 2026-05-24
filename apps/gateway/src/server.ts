@@ -86,8 +86,13 @@ async function start() {
     app.log.warn({ err }, "runner queue rehydrate failed");
   }
 
-  setInterval(() => void cleanupGatewayArtifacts(), 60_000).unref?.();
-  setInterval(() => void stopExpiredPreviews(), 30_000).unref?.();
+  setInterval(() => {
+    cleanupGatewayArtifacts().catch((err) => app.log.warn({ err }, "cleanup gateway artifacts failed"));
+  }, 60_000).unref?.();
+
+  setInterval(() => {
+    stopExpiredPreviews().catch((err) => app.log.warn({ err }, "stop expired previews failed"));
+  }, 30_000).unref?.();
 
   const port = parseInt(process.env.PORT || "3001", 10);
   await app.listen({ port, host: "0.0.0.0" });
