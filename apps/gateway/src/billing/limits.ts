@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import db from "../db";
 import { planFeatures, plans, projects, users } from "../db/schema";
 
@@ -28,10 +28,12 @@ export async function getUserLimit(userId: string, key: string) {
 export async function enforceActiveProjectsLimit(userId: string) {
   const limit = (await getUserLimit(userId, "active_projects")) ?? null;
   if (!limit || limit <= 0) return { ok: true as const };
-  const rows = await db.select({ id: projects.id }).from(projects).where(eq(projects.userId, userId));
+  const rows = await db
+    .select({ id: projects.id })
+    .from(projects)
+    .where(and(eq(projects.userId, userId), isNull(projects.archivedAt)));
   if (rows.length >= limit) {
     return { ok: false as const, error: "Project limit reached", limit };
   }
   return { ok: true as const, limit };
 }
-
