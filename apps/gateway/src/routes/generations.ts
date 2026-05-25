@@ -615,6 +615,15 @@ export async function generationRoutes(app: FastifyInstance) {
       const decoder = new TextDecoder();
       let buffer = "";
 
+      const findDelimiter = (input: string) => {
+        const lf = input.indexOf("\n\n");
+        const crlf = input.indexOf("\r\n\r\n");
+        if (lf === -1 && crlf === -1) return null;
+        if (lf === -1) return { idx: crlf, len: 4 };
+        if (crlf === -1) return { idx: lf, len: 2 };
+        return lf < crlf ? { idx: lf, len: 2 } : { idx: crlf, len: 4 };
+      };
+
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -626,10 +635,11 @@ export async function generationRoutes(app: FastifyInstance) {
         reply.raw.write(chunk);
 
         // Parse any completed SSE blocks
-        let idx: number;
-        while ((idx = buffer.indexOf("\n\n")) !== -1) {
-          const block = buffer.slice(0, idx);
-          buffer = buffer.slice(idx + 2);
+        while (true) {
+          const delim = findDelimiter(buffer);
+          if (!delim) break;
+          const block = buffer.slice(0, delim.idx);
+          buffer = buffer.slice(delim.idx + delim.len);
 
           const parsed = parseSseBlock(block);
           if (!parsed) continue;
