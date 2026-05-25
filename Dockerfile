@@ -29,6 +29,9 @@ RUN apt-get update \
 COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf.template /etc/nginx/templates/default.conf.template
 
+# Project templates used for bootstrapping new projects
+COPY --from=builder /app/templates /app/templates
+
 # Gateway build
 COPY --from=builder /app/apps/gateway/dist /app/apps/gateway/dist
 COPY --from=builder /app/apps/gateway/package.json /app/apps/gateway/package.json

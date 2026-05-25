@@ -1,4 +1,5 @@
 import { readdir, readFile, stat } from "node:fs/promises";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
 import db from "../db";
@@ -6,8 +7,19 @@ import { fileBlobs, projectFiles, projectFileVersions } from "../db/schema";
 import { and, eq, isNull } from "drizzle-orm";
 
 function repoTemplatesRoot() {
-  // apps/gateway/src/templates -> repo root/templates
-  return path.resolve(process.cwd(), "..", "..", "templates");
+  const override = process.env.TEMPLATES_DIR;
+  if (override) return override;
+
+  // Default: apps/gateway/* -> repo root/templates
+  const repoRelative = path.resolve(process.cwd(), "..", "..", "templates");
+  if (existsSync(repoRelative)) return repoRelative;
+
+  // Docker/runtime fallbacks.
+  if (existsSync("/app/templates")) return "/app/templates";
+  if (existsSync("/templates")) return "/templates";
+
+  // Last resort: keep previous behavior for debugging.
+  return repoRelative;
 }
 
 async function walk(dir: string, relPrefix = ""): Promise<Array<{ relPath: string; type: "file" | "dir"; absPath: string }>> {
@@ -105,4 +117,3 @@ export async function bootstrapProjectFromTemplate(input: {
     });
   }
 }
-
