@@ -125,6 +125,33 @@ export const creditLedger = pgTable("credit_ledger", {
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
+export const coupons = pgTable("coupons", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  codeHash: text("code_hash").notNull().unique(),
+  label: text("label"),
+  overrides: jsonb("overrides").default({}).notNull(), // { weekly_generations: "9999", ... }
+  maxRedemptions: integer("max_redemptions"),
+  redeemedCount: integer("redeemed_count").default(0).notNull(),
+  isActive: boolean("is_active").default(true).notNull(),
+  expiresAt: timestamp("expires_at"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const couponRedemptions = pgTable(
+  "coupon_redemptions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    couponId: uuid("coupon_id").notNull().references(() => coupons.id),
+    userId: uuid("user_id").notNull().references(() => users.id),
+    redeemedAt: timestamp("redeemed_at").defaultNow().notNull(),
+  },
+  (table) => ({
+    couponUserUnique: uniqueIndex("coupon_redemptions_coupon_user_unique").on(table.couponId, table.userId),
+    userIdx: index("coupon_redemptions_user_id_idx").on(table.userId),
+  }),
+);
+
 export const adminRoles = pgTable("admin_roles", {
   id: uuid("id").defaultRandom().primaryKey(),
   key: text("key").notNull().unique(),

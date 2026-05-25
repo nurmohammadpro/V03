@@ -17,6 +17,7 @@ import { previewHostProxyRoutes } from "./routes/previewHostProxy";
 import { previewProxyRoutes } from "./routes/previewProxy";
 import { registerPreviewWebsocketProxy } from "./routes/previewProxyWs";
 import { internalAiRoutes } from "./routes/internalAi";
+import { couponRoutes } from "./routes/coupons";
 import { ensureAdminSystemSeeded } from "./db/bootstrap";
 import { runnerQueue } from "./runner/runnerQueue";
 import { cleanupGatewayArtifacts } from "./runner/exportProjectToTarGz";
@@ -69,6 +70,7 @@ async function start() {
   await app.register(generationRoutes);
   await app.register(buildRoutes);
   await app.register(internalAiRoutes);
+  await app.register(couponRoutes);
   await app.register(previewHostProxyRoutes);
   await app.register(previewProxyRoutes);
   await app.register(chatRoutes);
