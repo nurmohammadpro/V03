@@ -28,7 +28,7 @@ export async function dashboardRoutes(app: FastifyInstance) {
       db
         .select({ generationsToday: sql<number>`count(*)` })
         .from(generationRuns)
-        .where(and(eq(generationRuns.userId, actor.userId), sql`${generationRuns.createdAt} >= ${today}`)),
+        .where(and(eq(generationRuns.userId, actor.userId), sql`${generationRuns.createdAt} >= ${today.toISOString()}`)),
     ]);
 
     const weekly = await getUserLimit(actor.userId, "weekly_generations");
@@ -142,4 +142,3 @@ export async function dashboardRoutes(app: FastifyInstance) {
     return reply.send({ activities });
   });
 }
-
