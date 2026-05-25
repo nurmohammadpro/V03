@@ -14,6 +14,7 @@ import type {
   UserStats,
 } from "@/lib/types";
 import api from "@/lib/api";
+import type { Coupon, UserCoupon } from "@/lib/types";
 
 function buildFlatTrend(days = 30, value = 0) {
   const out: Array<{ date: string; value: number }> = [];
@@ -51,6 +52,73 @@ export function useUserStats() {
   });
 
   return { stats: (query.data ?? { projectsCount: 0, totalGenerations: 0, generationsToday: 0, dailyLimit: 0, storageUsed: 0, storageLimit: 0 }) as UserStats, loading: query.isLoading };
+}
+
+export function useMyCoupon() {
+  const query = useQuery({
+    queryKey: ["myCoupon"],
+    queryFn: async () => {
+      const res = await api.getMyCoupon();
+      return res.coupon as UserCoupon | null;
+    },
+    staleTime: 10_000,
+  });
+  return { coupon: query.data ?? null, loading: query.isLoading };
+}
+
+export function useRedeemCoupon() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: { code: string }) => api.redeemCoupon(args.code),
+    onSuccess: async () => {
+      await client.invalidateQueries({ queryKey: ["myCoupon"] });
+      await client.invalidateQueries({ queryKey: ["dashboardStats"] });
+    },
+  });
+}
+
+export function useAdminCoupons() {
+  const query = useQuery({
+    queryKey: ["adminCoupons"],
+    queryFn: async () => {
+      const res = await api.getAdminCoupons();
+      return (res.coupons ?? []) as Coupon[];
+    },
+    staleTime: 10_000,
+  });
+  return { coupons: query.data ?? [], loading: query.isLoading };
+}
+
+export function useCreateAdminCoupon() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: {
+      code: string;
+      label?: string | null;
+      overrides?: Record<string, unknown>;
+      maxRedemptions?: number | null;
+      expiresAt?: string | null;
+      isActive?: boolean | null;
+    }) => api.createAdminCoupon(body),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["adminCoupons"] }),
+  });
+}
+
+export function useUpdateAdminCoupon() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: async (args: {
+      id: string;
+      body: Partial<{
+        label: string | null;
+        overrides: Record<string, unknown>;
+        maxRedemptions: number | null;
+        expiresAt: string | null;
+        isActive: boolean;
+      }>;
+    }) => api.updateAdminCoupon(args.id, args.body),
+    onSuccess: () => client.invalidateQueries({ queryKey: ["adminCoupons"] }),
+  });
 }
 
 export function useAdminStats() {

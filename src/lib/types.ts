@@ -85,6 +85,26 @@ export interface UserStats {
   storageLimit: number;
 }
 
+export interface Coupon {
+  id: string;
+  label: string | null;
+  overrides: Record<string, unknown>;
+  maxRedemptions: number | null;
+  redeemedCount: number;
+  isActive: boolean;
+  expiresAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UserCoupon {
+  id: string;
+  label: string | null;
+  overrides: Record<string, unknown>;
+  expiresAt: string | null;
+  redeemedAt: string;
+}
+
 export interface AdminRole {
   id: string;
   key: string;

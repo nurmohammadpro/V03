@@ -65,6 +65,32 @@ async function request<T>(path: string, options: ApiOptions = {}): Promise<T> {
 export const api = {
   getMe: () => request<{ user: AuthActor }>("/api/auth/me"),
 
+  // Coupons
+  getMyCoupon: () => request<{ coupon: import("@/lib/types").UserCoupon | null }>("/api/coupons/me"),
+  redeemCoupon: (code: string) =>
+    request<{ ok: boolean; already: boolean; couponId: string; overrides: Record<string, unknown> }>("/api/coupons/redeem", {
+      method: "POST",
+      body: { code },
+    }),
+  getAdminCoupons: () => request<{ coupons: import("@/lib/types").Coupon[] }>("/api/admin/coupons"),
+  createAdminCoupon: (body: {
+    code: string;
+    label?: string | null;
+    overrides?: Record<string, unknown>;
+    maxRedemptions?: number | null;
+    expiresAt?: string | null;
+    isActive?: boolean | null;
+  }) =>
+    request<{ ok: boolean; couponId: string }>("/api/admin/coupons", {
+      method: "POST",
+      body,
+    }),
+  updateAdminCoupon: (id: string, body: Partial<{ label: string | null; overrides: Record<string, unknown>; maxRedemptions: number | null; expiresAt: string | null; isActive: boolean }>) =>
+    request<{ coupon: import("@/lib/types").Coupon }>(`/api/admin/coupons/${id}`, {
+      method: "PATCH",
+      body,
+    }),
+
   // Dashboard
   getDashboardStats: () =>
     request<{ stats: { projectsCount: number; totalGenerations: number; generationsToday: number; dailyLimit: number; storageUsed: number; storageLimit: number } }>(

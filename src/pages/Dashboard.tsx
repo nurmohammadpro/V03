@@ -10,6 +10,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { useProjects } from "@/hooks/useProjects";
 import { useActivityFeed, useUserStats } from "@/hooks/useDashboardData";
+import { useMyCoupon, useRedeemCoupon } from "@/hooks/useDashboardData";
 import { WORKSPACE_NAV_SECTIONS } from "@/config/navigation";
 import {
   ArrowRight,
@@ -20,13 +21,17 @@ import {
   Wand2,
   Zap,
 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function Dashboard() {
   const { user, loading, logout } = useAuth();
   const { data: projects = [], isLoading: projectsLoading, error: projectsError } = useProjects();
   const { activities, loading: activitiesLoading } = useActivityFeed();
   const { stats: userStats, loading: statsLoading } = useUserStats();
+  const { coupon: myCoupon } = useMyCoupon();
+  const redeemCoupon = useRedeemCoupon();
   const [createOpen, setCreateOpen] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
 
   const handleSignOut = async () => {
     await logout();
@@ -243,6 +248,61 @@ export default function Dashboard() {
                   style={{ width: `${Math.min(100, (userStats.projectsCount / 20) * 100)}%` }}
                 />
               </div>
+            </div>
+
+            <div className="rounded-[8px] bg-[var(--app-panel)] p-5 backdrop-blur-xl">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-sm font-normal text-[var(--app-text)]">Coupons</p>
+                  <p className="mt-2 text-sm text-[var(--app-text-muted)]">
+                    Redeem a coupon code to temporarily increase limits for testing.
+                  </p>
+                </div>
+                <div className="flex h-9 w-9 items-center justify-center rounded-[7px] bg-[var(--app-panel-2)] text-[var(--app-text-muted)]">
+                  <Sparkles className="h-4 w-4" />
+                </div>
+              </div>
+
+              {myCoupon ? (
+                <div className="mt-4 rounded-[8px] bg-[var(--app-panel-2)] p-3 text-sm text-[var(--app-text-muted)]">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span>
+                      Active coupon: <span className="text-[var(--app-text)]">{myCoupon.label || myCoupon.id}</span>
+                    </span>
+                    <span className="text-xs text-[var(--app-text-dim)]">
+                      {myCoupon.expiresAt ? `Expires ${new Date(myCoupon.expiresAt).toLocaleDateString()}` : "No expiry"}
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="mt-4 flex gap-2">
+                  <input
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value)}
+                    placeholder="Enter coupon code…"
+                    className="h-10 flex-1 rounded-[8px] border-0 bg-[var(--app-panel-2)] px-3 text-sm text-[var(--app-text)] outline-none placeholder:text-[var(--app-text-dim)]"
+                    spellCheck={false}
+                  />
+                  <Button
+                    type="button"
+                    disabled={!couponCode.trim() || redeemCoupon.isPending}
+                    onClick={async () => {
+                      const code = couponCode.trim();
+                      if (!code) return;
+                      try {
+                        const res = await redeemCoupon.mutateAsync({ code });
+                        toast.success(res.already ? "Coupon already redeemed." : "Coupon redeemed.");
+                        setCouponCode("");
+                      } catch (error) {
+                        toast.error(error instanceof Error ? error.message : "Could not redeem coupon.");
+                      }
+                    }}
+                    className="rounded-[8px] bg-[var(--app-accent)] px-4 text-white hover:bg-[color-mix(in_srgb,var(--app-accent)_88%,white)]"
+                  >
+                    Redeem
+                  </Button>
+                </div>
+              )}
             </div>
           </section>
         )}

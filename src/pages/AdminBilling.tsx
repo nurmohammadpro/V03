@@ -1,6 +1,9 @@
 import { AdminShell } from "@/components/admin/AdminShell";
 import {
   useAdminStats,
+  useAdminCoupons,
+  useCreateAdminCoupon,
+  useUpdateAdminCoupon,
   useReplaceAdminPlanFeatures,
   useReplaceAdminPlanPrices,
   useSubscriptionPlans,
@@ -16,9 +19,17 @@ import { useMemo, useState } from "react";
 export default function AdminBilling() {
   const { stats } = useAdminStats();
   const { plans } = useSubscriptionPlans();
+  const { coupons } = useAdminCoupons();
+  const createCoupon = useCreateAdminCoupon();
+  const updateCoupon = useUpdateAdminCoupon();
   const updatePlan = useUpdateAdminPlan();
   const replaceFeatures = useReplaceAdminPlanFeatures();
   const replacePrices = useReplaceAdminPlanPrices();
+  const [couponCode, setCouponCode] = useState("");
+  const [couponLabel, setCouponLabel] = useState("");
+  const [couponWeeklyGenerations, setCouponWeeklyGenerations] = useState("999999");
+  const [couponMaxRedemptions, setCouponMaxRedemptions] = useState("10");
+  const [couponExpiresAt, setCouponExpiresAt] = useState("");
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
   const [draftName, setDraftName] = useState("");
   const [draftDescription, setDraftDescription] = useState("");
@@ -134,6 +145,130 @@ export default function AdminBilling() {
   return (
     <AdminShell title="Subscriptions" subtitle="Plans, pricing, feature packaging, and payer-side health.">
       <div className="space-y-6">
+        <section className="rounded-[8px] bg-[var(--app-panel)] p-5">
+          <div className="flex flex-wrap items-start justify-between gap-4">
+            <div>
+              <p className="text-sm text-[var(--app-text)]">Coupons</p>
+              <p className="mt-2 text-sm text-[var(--app-text-muted)]">
+                Create QA coupons to override limits (e.g. weekly generations) without changing plan tiers.
+              </p>
+            </div>
+            <Button
+              type="button"
+              onClick={async () => {
+                const code = couponCode.trim();
+                if (!code) {
+                  toast.error("Coupon code is required.");
+                  return;
+                }
+                const weekly = couponWeeklyGenerations.trim();
+                const maxRaw = couponMaxRedemptions.trim();
+                const maxRedemptions = maxRaw ? Number(maxRaw) : null;
+                const expiresAt = couponExpiresAt.trim() ? new Date(couponExpiresAt.trim()).toISOString() : null;
+                try {
+                  await createCoupon.mutateAsync({
+                    code,
+                    label: couponLabel.trim() || null,
+                    overrides: weekly ? { weekly_generations: weekly } : {},
+                    maxRedemptions: Number.isFinite(maxRedemptions as any) ? (maxRedemptions as any) : null,
+                    expiresAt,
+                  });
+                  toast.success("Coupon created.");
+                  setCouponCode("");
+                  setCouponLabel("");
+                } catch (error) {
+                  toast.error(error instanceof Error ? error.message : "Could not create coupon.");
+                }
+              }}
+              className="rounded-[8px] bg-[var(--app-accent)] px-4 text-white hover:bg-[color-mix(in_srgb,var(--app-accent)_88%,white)]"
+              disabled={createCoupon.isPending}
+            >
+              Create coupon
+            </Button>
+          </div>
+
+          <div className="mt-4 grid gap-3 md:grid-cols-5">
+            <Input
+              value={couponCode}
+              onChange={(e) => setCouponCode(e.target.value)}
+              placeholder="CODE (e.g. TEST-UNLIMITED)"
+              className="rounded-[8px] border-0 bg-[var(--app-panel-2)] text-[var(--app-text)]"
+              spellCheck={false}
+            />
+            <Input
+              value={couponLabel}
+              onChange={(e) => setCouponLabel(e.target.value)}
+              placeholder="Label (optional)"
+              className="rounded-[8px] border-0 bg-[var(--app-panel-2)] text-[var(--app-text)]"
+              spellCheck={false}
+            />
+            <Input
+              value={couponWeeklyGenerations}
+              onChange={(e) => setCouponWeeklyGenerations(e.target.value)}
+              placeholder="weekly_generations"
+              className="rounded-[8px] border-0 bg-[var(--app-panel-2)] text-[var(--app-text)]"
+              spellCheck={false}
+            />
+            <Input
+              value={couponMaxRedemptions}
+              onChange={(e) => setCouponMaxRedemptions(e.target.value)}
+              placeholder="Max redemptions"
+              className="rounded-[8px] border-0 bg-[var(--app-panel-2)] text-[var(--app-text)]"
+              spellCheck={false}
+            />
+            <Input
+              value={couponExpiresAt}
+              onChange={(e) => setCouponExpiresAt(e.target.value)}
+              placeholder="Expires (YYYY-MM-DD)"
+              className="rounded-[8px] border-0 bg-[var(--app-panel-2)] text-[var(--app-text)]"
+              spellCheck={false}
+            />
+          </div>
+
+          <div className="mt-5 space-y-3">
+            {coupons.length === 0 ? (
+              <div className="rounded-[8px] bg-[var(--app-panel-2)] p-4 text-sm text-[var(--app-text-muted)]">
+                No coupons created yet.
+              </div>
+            ) : (
+              coupons.map((c) => (
+                <div key={c.id} className="rounded-[8px] bg-[var(--app-panel-2)] p-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm text-[var(--app-text)]">{c.label || c.id}</p>
+                      <p className="mt-1 text-xs text-[var(--app-text-dim)]">
+                        Redeemed: {c.redeemedCount}
+                        {c.maxRedemptions != null ? ` / ${c.maxRedemptions}` : ""} ·{" "}
+                        {c.expiresAt ? `Expires ${new Date(c.expiresAt).toLocaleDateString()}` : "No expiry"}
+                      </p>
+                      <p className="mt-2 text-sm text-[var(--app-text-muted)]">
+                        Overrides: <span className="text-[var(--app-text)]">{JSON.stringify(c.overrides)}</span>
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="rounded-[8px] border-0 bg-[var(--app-panel)] text-[var(--app-text-muted)] hover:bg-[var(--app-surface)] hover:text-[var(--app-text)]"
+                      onClick={async () => {
+                        try {
+                          await updateCoupon.mutateAsync({ id: c.id, body: { isActive: !c.isActive } });
+                          toast.success(c.isActive ? "Coupon disabled." : "Coupon enabled.");
+                        } catch (error) {
+                          toast.error(error instanceof Error ? error.message : "Could not update coupon.");
+                        }
+                      }}
+                      disabled={updateCoupon.isPending}
+                    >
+                      {c.isActive ? "Disable" : "Enable"}
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+
         <section className="grid gap-4 md:grid-cols-4">
           {[
             { label: "Revenue", value: `$${stats.revenue.toLocaleString()}`, note: "Current monthly run rate" },
