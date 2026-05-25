@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { AccountPopup } from "@/components/shared/AccountPopup";
 import { ActionMenu } from "@/components/shared/ActionMenu";
@@ -286,6 +286,7 @@ function WorkspaceMessage({ role, content, isStreaming }: { role: "user" | "assi
 
 export default function Workspace(props: { params: { projectId: string } }) {
   const { user, loading, logout } = useAuth();
+  const [, setLocation] = useLocation();
   const messages = useWorkspaceStore((s) => s.messages);
   const selectedFramework = useWorkspaceStore((s) => s.selectedFramework);
   const isGenerating = useWorkspaceStore((s) => s.isGenerating);
@@ -304,6 +305,7 @@ export default function Workspace(props: { params: { projectId: string } }) {
   const isPreviewReady = useWorkspaceStore((s) => s.isPreviewReady);
 
   const projectId = props?.params?.projectId;
+  const createdProjectRef = useRef(false);
 
   const [input, setInput] = useState("");
   const [framework, setFramework] = useState(selectedFramework);
@@ -329,10 +331,39 @@ export default function Workspace(props: { params: { projectId: string } }) {
 
   useEffect(() => {
     if (!projectId) return;
+    if (projectId === "new") {
+      if (createdProjectRef.current) return;
+      if (loading) return;
+      if (!user || user.isAdmin) return;
+      createdProjectRef.current = true;
+
+      const frameworkKind =
+        framework === "MERN"
+          ? "mern"
+          : framework === "Laravel"
+            ? "laravel"
+            : framework === "Django"
+              ? "django"
+              : framework === "NestJS"
+                ? "nestjs"
+                : "nextjs";
+
+      void api
+        .createProject(`New project ${new Date().toISOString().slice(0, 10)}`, frameworkKind)
+        .then((res) => {
+          setLocation(`/workspace/${res.project.id}`);
+        })
+        .catch((err: any) => {
+          createdProjectRef.current = false;
+          toast.error(err?.message || "Could not create project");
+        });
+
+      return;
+    }
     setProjectId(projectId);
     void refreshFileTree();
     void api.getProjectGenerations(projectId).then((res) => setGenerationRuns(res.runs)).catch(() => {});
-  }, [projectId, refreshFileTree, setProjectId]);
+  }, [framework, loading, projectId, refreshFileTree, setLocation, setProjectId, user, user?.isAdmin]);
 
   useEffect(() => {
     if (loading || !user?.isAdmin) return;
