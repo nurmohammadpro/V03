@@ -459,9 +459,21 @@ export default function Workspace(props: { params: { projectId: string } }) {
               if (text) appendToLastAssistantMessage(text);
             }
 
+            if (parsed.event === "workspace_ready") {
+              const files = (parsed.data as any)?.files;
+              if (Array.isArray(files) && files.length > 0) {
+                setFiles(buildFileNodes(files));
+              }
+            }
+
             if (parsed.event === "done") {
               const text = typeof (parsed.data as any)?.text === "string" ? (parsed.data as any).text : "";
               if (text) updateLastAssistantMessage(text);
+              // Set files from done event if workspace_ready wasn't sent
+              const files = (parsed.data as any)?.files;
+              if (Array.isArray(files) && files.length > 0) {
+                setFiles(buildFileNodes(files));
+              }
               await refreshFileTree();
               const res2 = await api.getProjectGenerations(projectId);
               setGenerationRuns(res2.runs);

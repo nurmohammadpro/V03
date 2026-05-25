@@ -15,7 +15,7 @@ import {
   projects,
 } from "../db/schema";
 import { getRequestActor, requireAuthenticated } from "../middleware/auth";
-import { getUserLimit } from "../billing/limits";
+import { getUserLimit, enforceActiveProjectsLimit } from "../billing/limits";
 
 const AI_WORKER_URL = process.env.AI_WORKER_URL || "http://localhost:8001";
 
@@ -487,7 +487,7 @@ export async function generationRoutes(app: FastifyInstance) {
   // Create a run (streaming) and persist SSE events
   app.post("/api/projects/:id/generations/stream", async (request, reply) => {
     const actor = getRequestActor(request);
-    const { id } = request.params as { id: string };
+    let { id } = request.params as { id: string };
     const body = request.body as {
       prompt?: string;
       intent?: GenerationIntent;
@@ -498,6 +498,33 @@ export async function generationRoutes(app: FastifyInstance) {
 
     if (!body.prompt || !body.prompt.trim()) {
       return reply.status(400).send({ error: "prompt is required" });
+    }
+
+    // Auto-create project when id is "new"
+    if (id === "new") {
+      const limitCheck = await enforceActiveProjectsLimit(actor.userId);
+      if (!limitCheck.ok) {
+        return reply.status(402).send({ error: limitCheck.error, limit: limitCheck.limit });
+      }
+      const [createdProject] = await db
+        .insert(projects)
+        .values({
+          userId: actor.userId,
+          name: "New Project",
+          framework: "Next.js",
+          frameworkKind: "nextjs",
+          runtimeKind: "node",
+          templateKey: "nextjs-default",
+          templateVersion: "1",
+          installCommand: "npm install",
+          buildCommand: "npm run build",
+          startCommand: "npm start",
+          devCommand: "npm run dev",
+          defaultPort: 3000,
+          healthcheckPath: "/",
+        })
+        .returning();
+      id = createdProject.id;
     }
 
     const project = await requireProjectAccess(id, actor);
