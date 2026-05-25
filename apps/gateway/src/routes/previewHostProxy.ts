@@ -107,7 +107,8 @@ export async function previewHostProxyRoutes(app: FastifyInstance) {
 
   // Catch-all for preview subdomains (only triggers when PREVIEW_DOMAIN matches host)
   // Avoid registering an OPTIONS catch-all because @fastify/cors may already register it.
-  const methods = ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"] as const;
+  // Fastify auto-creates HEAD routes for GET by default; registering HEAD explicitly can cause duplicates.
+  const methods = ["GET", "POST", "PUT", "PATCH", "DELETE"] as const;
   for (const method of methods) {
     app.route({ method, url: "/*", handler });
   }
