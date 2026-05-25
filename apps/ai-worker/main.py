@@ -108,6 +108,20 @@ AI_ENGINE = os.getenv("AI_ENGINE", "zai").strip().lower()  # gateway | zai | moc
 GATEWAY_URL = os.getenv("GATEWAY_URL", "http://localhost:3001").rstrip("/")
 INTERNAL_API_TOKEN = os.getenv("INTERNAL_API_TOKEN", "").strip()
 
+@app.get("/health")
+async def health() -> dict[str, Any]:
+    return {
+        "ok": True,
+        "service": "v03-ai-worker",
+        "version": "1.0.0",
+        "ai_engine": AI_ENGINE,
+        "zai_model": ZAI_MODEL,
+        "zai_base_url": ZAI_BASE_URL,
+        "gateway_url": GATEWAY_URL,
+        "has_zai_api_key": bool(ZAI_API_KEY),
+        "has_internal_api_token": bool(INTERNAL_API_TOKEN),
+    }
+
 
 def _extract_json(text: str) -> dict[str, Any] | None:
     """Try to parse a JSON object from a string (best-effort)."""

@@ -4,6 +4,7 @@ import crypto from "node:crypto";
 import db from "../db";
 import { fileBlobs, projectFiles, projectFileVersions, projects } from "../db/schema";
 import { getRequestActor, requireAuthenticated } from "../middleware/auth";
+import { bootstrapProjectFromTemplate } from "../templates/bootstrap";
 
 function normalizePath(input: string) {
   const trimmed = input.trim().replace(/\\/g, "/");
@@ -65,7 +66,7 @@ export async function fileRoutes(app: FastifyInstance) {
       return reply.status(403).send({ error: "Forbidden" });
     }
 
-    const rows = await db
+    let rows = await db
       .select({
         id: projectFiles.id,
         path: projectFiles.path,
@@ -76,6 +77,40 @@ export async function fileRoutes(app: FastifyInstance) {
       .from(projectFiles)
       .where(and(eq(projectFiles.projectId, id), isNull(projectFiles.deletedAt)))
       .orderBy(projectFiles.path);
+
+    if (
+      rows.length === 0 &&
+      typeof (project as any).templateKey === "string" &&
+      (project as any).templateKey &&
+      (typeof (project as any).templateVersion === "string" || typeof (project as any).templateVersion === "number") &&
+      String((project as any).templateVersion)
+    ) {
+      const templateKey = String((project as any).templateKey);
+      const templateVersion = String((project as any).templateVersion);
+
+      try {
+        request.log.info({ projectId: id, templateKey, templateVersion }, "Project tree empty; bootstrapping template");
+        await bootstrapProjectFromTemplate({
+          projectId: id,
+          actorUserId: actor.userId,
+          templateKey,
+          templateVersion,
+        });
+        rows = await db
+          .select({
+            id: projectFiles.id,
+            path: projectFiles.path,
+            fileType: projectFiles.fileType,
+            parentPath: projectFiles.parentPath,
+            updatedAt: projectFiles.updatedAt,
+          })
+          .from(projectFiles)
+          .where(and(eq(projectFiles.projectId, id), isNull(projectFiles.deletedAt)))
+          .orderBy(projectFiles.path);
+      } catch (err: any) {
+        request.log.error({ err, projectId: id, templateKey, templateVersion }, "Template bootstrap failed for empty project");
+      }
+    }
 
     return reply.send({ files: rows });
   });
@@ -275,4 +310,3 @@ export async function fileRoutes(app: FastifyInstance) {
     return reply.send({ ok: true });
   });
 }
-

@@ -46,6 +46,29 @@ function normalizePath(input: string) {
   return withoutLeading;
 }
 
+function formatFetchError(err: any) {
+  const base: Record<string, unknown> = {
+    name: err?.name,
+    message: err?.message,
+    stack: typeof err?.stack === "string" ? err.stack : undefined,
+  };
+
+  const cause = (err as any)?.cause;
+  if (cause && typeof cause === "object") {
+    base.cause = {
+      name: (cause as any).name,
+      message: (cause as any).message,
+      code: (cause as any).code,
+      errno: (cause as any).errno,
+      syscall: (cause as any).syscall,
+      address: (cause as any).address,
+      port: (cause as any).port,
+    };
+  }
+
+  return base;
+}
+
 async function pickProviderAndModel() {
   const providers = await db.select().from(aiProviders).where(eq(aiProviders.status, "active"));
   if (!providers.length) return null;
@@ -270,6 +293,29 @@ async function applyOpsToProject(input: {
 export async function generationRoutes(app: FastifyInstance) {
   app.addHook("onRequest", requireAuthenticated);
 
+  // GET /api/system/ai-worker/health
+  // Lightweight connectivity check to help debug "fetch failed" errors in production.
+  app.get("/api/system/ai-worker/health", async (request, reply) => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 3000);
+    try {
+      const res = await fetch(`${AI_WORKER_URL}/health`, { signal: controller.signal });
+      const text = await res.text();
+      let payload: unknown = text;
+      try {
+        payload = JSON.parse(text);
+      } catch {
+        // keep raw text
+      }
+      return reply.send({ ok: res.ok, status: res.status, aiWorkerUrl: AI_WORKER_URL, payload });
+    } catch (err: any) {
+      request.log.error({ err: formatFetchError(err), aiWorkerUrl: AI_WORKER_URL }, "AI worker health check failed");
+      return reply.status(502).send({ ok: false, aiWorkerUrl: AI_WORKER_URL, error: err?.message || "fetch failed" });
+    } finally {
+      clearTimeout(timeout);
+    }
+  });
+
   // List runs for project
   app.get("/api/projects/:id/generations", async (request, reply) => {
     const actor = getRequestActor(request);
@@ -339,19 +385,28 @@ export async function generationRoutes(app: FastifyInstance) {
       .returning();
 
     try {
-      const workerResponse = await fetch(`${AI_WORKER_URL}/generate/sync`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: body.prompt,
-          framework: body.framework ?? project.framework ?? "Next.js",
-          project_id: id,
-          intent,
-          target_path: body.targetPath ?? null,
-          provider_key: selection?.providerKey ?? null,
-          model_key: selection?.modelKey ?? null,
-        }),
-      });
+      let workerResponse: Response;
+      try {
+        workerResponse = await fetch(`${AI_WORKER_URL}/generate/sync`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prompt: body.prompt,
+            framework: body.framework ?? project.framework ?? "Next.js",
+            project_id: id,
+            intent,
+            target_path: body.targetPath ?? null,
+            provider_key: selection?.providerKey ?? null,
+            model_key: selection?.modelKey ?? null,
+          }),
+        });
+      } catch (err: any) {
+        request.log.error(
+          { err: formatFetchError(err), aiWorkerUrl: AI_WORKER_URL, projectId: id, runId: run.id },
+          "AI worker fetch failed (sync)",
+        );
+        throw err;
+      }
 
       if (!workerResponse.ok) {
         throw new Error(`AI worker responded with ${workerResponse.status}`);
@@ -412,6 +467,10 @@ export async function generationRoutes(app: FastifyInstance) {
         ops,
       });
     } catch (err: any) {
+      request.log.error(
+        { err: formatFetchError(err), aiWorkerUrl: AI_WORKER_URL, projectId: id, runId: run.id },
+        "Generation failed (sync)",
+      );
       await db
         .update(generationRuns)
         .set({
@@ -524,20 +583,29 @@ export async function generationRoutes(app: FastifyInstance) {
     };
 
     try {
-      const workerResponse = await fetch(`${AI_WORKER_URL}/generate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt: body.prompt,
-          framework: body.framework ?? project.framework ?? "Next.js",
-          project_id: id,
-          intent,
-          target_path: body.targetPath ?? null,
-          provider_key: selection?.providerKey ?? null,
-          model_key: selection?.modelKey ?? null,
-        }),
-        signal: controller.signal,
-      });
+      let workerResponse: Response;
+      try {
+        workerResponse = await fetch(`${AI_WORKER_URL}/generate`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prompt: body.prompt,
+            framework: body.framework ?? project.framework ?? "Next.js",
+            project_id: id,
+            intent,
+            target_path: body.targetPath ?? null,
+            provider_key: selection?.providerKey ?? null,
+            model_key: selection?.modelKey ?? null,
+          }),
+          signal: controller.signal,
+        });
+      } catch (err: any) {
+        request.log.error(
+          { err: formatFetchError(err), aiWorkerUrl: AI_WORKER_URL, projectId: id, runId: run.id },
+          "AI worker fetch failed (stream)",
+        );
+        throw err;
+      }
 
       if (!workerResponse.ok || !workerResponse.body) {
         throw new Error(`AI worker responded with ${workerResponse.status}`);
@@ -600,6 +668,10 @@ export async function generationRoutes(app: FastifyInstance) {
         })
         .where(eq(generationRuns.id, run.id));
     } catch (err: any) {
+      request.log.error(
+        { err: formatFetchError(err), aiWorkerUrl: AI_WORKER_URL, projectId: id, runId: run.id },
+        "Generation failed (stream)",
+      );
       await db
         .update(generationRuns)
         .set({
@@ -609,7 +681,12 @@ export async function generationRoutes(app: FastifyInstance) {
         })
         .where(eq(generationRuns.id, run.id));
 
-      const errorPayload = JSON.stringify({ error: "AI worker unavailable", detail: err.message || null, runId: run.id });
+      const errorPayload = JSON.stringify({
+        error: "AI worker unavailable",
+        detail: err.message || null,
+        runId: run.id,
+        requestId: request.id,
+      });
       reply.raw.write(`event: error\ndata: ${errorPayload}\n\n`);
     } finally {
       if (!reply.raw.destroyed) {
