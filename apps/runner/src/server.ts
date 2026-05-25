@@ -8,6 +8,7 @@ import path from "node:path";
 import { promisify } from "node:util";
 import crypto from "node:crypto";
 import { access } from "node:fs/promises";
+import { Readable } from "node:stream";
 
 const execFileAsync = promisify(execFile);
 
@@ -262,6 +263,29 @@ async function dockerInspectPort(containerId: string, internalPort: number) {
     throw new Error("Failed to read container port mapping");
   }
   return parseInt(match[1], 10);
+}
+
+async function dockerInspectFirstPublishedPort(containerId: string) {
+  requireDocker();
+  const { stdout } = await execFileAsync("docker", ["port", containerId], { maxBuffer: 1024 * 1024 });
+  const lines = stdout
+    .split("\n")
+    .map((l) => l.trim())
+    .filter(Boolean);
+  const first = lines[0] || "";
+  // Example: "3000/tcp -> 0.0.0.0:49153"
+  const internalMatch = first.match(/^(\d+)\/tcp\s+->\s+/);
+  const hostMatch = first.match(/:(\d+)\s*$/);
+  if (!internalMatch || !hostMatch) {
+    throw new Error("Failed to read container port mapping");
+  }
+  return { internalPort: parseInt(internalMatch[1], 10), hostPort: parseInt(hostMatch[1], 10) };
+}
+
+function joinPath(prefix: string, rest: string) {
+  const a = prefix.endsWith("/") ? prefix.slice(0, -1) : prefix;
+  const b = rest.startsWith("/") ? rest : `/${rest}`;
+  return `${a}${b}`;
 }
 
 async function waitForReady(input: { url: string; path: string; timeoutMs?: number }) {
@@ -578,6 +602,67 @@ app.post("/runs/raw", async (request, reply) => {
     return reply.status(500).send({ error: "Docker run failed" });
   }
 });
+
+// Proxy HTTP traffic to a running container (by containerId).
+// This lets the gateway proxy previews without needing host networking.
+const proxyHandler = async (request: any, reply: any) => {
+  const { containerId } = request.params as { containerId: string };
+  const wildcard = (request.params as any)["*"] as string | undefined;
+
+  let hostPort: number;
+  try {
+    hostPort = (await dockerInspectFirstPublishedPort(containerId)).hostPort;
+  } catch (err: any) {
+    request.log.warn({ err, containerId }, "proxy port lookup failed");
+    return reply.status(502).send("Preview upstream unavailable");
+  }
+
+  const upstreamBase = `http://127.0.0.1:${hostPort}`;
+  const upstreamUrl = new URL(upstreamBase);
+  upstreamUrl.pathname = joinPath(upstreamUrl.pathname, wildcard ? `/${wildcard}` : "/");
+  upstreamUrl.search = request.raw.url?.includes("?") ? request.raw.url.split("?").slice(1).join("?") : "";
+
+  const allowedRequestHeaders = new Set([
+    "accept",
+    "accept-language",
+    "content-type",
+    "user-agent",
+    "referer",
+    "origin",
+    "cache-control",
+    "cookie",
+    "authorization",
+  ]);
+
+  const headers: Record<string, string> = {};
+  for (const [key, value] of Object.entries(request.headers)) {
+    if (!value) continue;
+    const lower = key.toLowerCase();
+    if (!allowedRequestHeaders.has(lower)) continue;
+    headers[key] = Array.isArray(value) ? value.join(",") : String(value);
+  }
+
+  const method = request.method;
+  const body = method === "GET" || method === "HEAD" ? undefined : (request.raw as any);
+
+  const res = await fetch(upstreamUrl, { method, headers, body, redirect: "manual" } as any);
+  for (const [key, value] of res.headers.entries()) {
+    reply.header(key, value);
+  }
+  reply.status(res.status);
+  if (!res.body) return reply.send();
+
+  const nodeStream = Readable.fromWeb(res.body as any);
+  return new Promise<void>((resolve, reject) => {
+    nodeStream.on("error", reject);
+    reply.raw.on("close", resolve);
+    nodeStream.pipe(reply.raw);
+  });
+};
+
+app.all("/proxy/:containerId", proxyHandler);
+app.all("/proxy/:containerId/", proxyHandler);
+app.all("/proxy/:containerId/*", proxyHandler);
 
 app.get("/runs/:id/logs", async (request, reply) => {
   const { id } = request.params as { id: string };

@@ -25,13 +25,20 @@ export async function runnerStartRun(input: {
     throw new Error(payload.error || `Runner error ${res.status}`);
   }
 
-  return res.json() as Promise<{
+  const data = (await res.json()) as {
     containerId: string;
     url: string;
     ports: Record<string, number>;
     status: string;
     ready?: boolean;
-  }>;
+  };
+
+  // Always return a gateway-reachable URL by proxying through the runner itself.
+  // This avoids relying on the runner's localhost/hostPort being reachable from the gateway container.
+  return {
+    ...data,
+    url: `${RUNNER_URL}/proxy/${data.containerId}`,
+  };
 }
 
 export function getRunnerUrl() {
