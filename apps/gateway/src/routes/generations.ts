@@ -452,7 +452,7 @@ export async function generationRoutes(app: FastifyInstance) {
       const [{ count }] = await db
         .select({ count: sql<number>`count(*)` })
         .from(generationRuns)
-        .where(and(eq(generationRuns.userId, actor.userId), sql`${generationRuns.createdAt} >= ${since}`));
+        .where(and(eq(generationRuns.userId, actor.userId), sql`${generationRuns.createdAt} >= ${since.toISOString()}`));
       if (count >= weeklyLimit) {
         return reply.status(402).send({ error: "Weekly generation limit reached", limit: weeklyLimit });
       }
