@@ -450,6 +450,24 @@ export const api = {
       { method: "PUT", body: { content, message } },
     ),
 
+  // GitHub
+  getGitHubUrl: () =>
+    request<{ url: string; state: string }>("/api/auth/github/url"),
+  storeGitHubToken: (code: string) =>
+    request<{ ok: boolean; login: string; avatarUrl: string }>("/api/auth/github/token", {
+      method: "POST",
+      body: { code },
+    }),
+  getGitHubStatus: () =>
+    request<{ connected: boolean; login: string | null; avatarUrl: string | null }>("/api/auth/github/status"),
+  disconnectGitHub: () =>
+    request<{ ok: boolean }>("/api/auth/github/disconnect", { method: "POST" }),
+  pushToGitHub: (projectId: string, input: { repoName?: string; description?: string; isPrivate?: boolean }) =>
+    request<{ ok: boolean; repoUrl: string; repoName: string; commitMessage: string }>(
+      `/api/projects/${projectId}/github/push`,
+      { method: "POST", body: input },
+    ),
+
   // Previews
   startPreview: (projectId: string, mode: "build" | "dev" = "build") =>
     request<{ previewId: string; status: string; url: string }>(`/api/projects/${projectId}/previews`, {

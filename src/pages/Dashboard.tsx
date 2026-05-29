@@ -22,6 +22,7 @@ import {
   Zap,
 } from "lucide-react";
 import { toast } from "sonner";
+import api from "@/lib/api";
 
 export default function Dashboard() {
   const { user, loading, logout } = useAuth();
@@ -32,6 +33,37 @@ export default function Dashboard() {
   const redeemCoupon = useRedeemCoupon();
   const [createOpen, setCreateOpen] = useState(false);
   const [couponCode, setCouponCode] = useState("");
+
+  // Handle GitHub OAuth callback
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("github_code");
+    if (!code) return;
+
+    // Clean URL immediately
+    const cleanUrl = window.location.pathname + window.location.hash;
+    window.history.replaceState({}, "", cleanUrl);
+
+    // If the user came from a workspace, redirect back there after connecting
+    const returnUrl = sessionStorage.getItem("v03-github-redirect");
+
+    api
+      .storeGitHubToken(code)
+      .then((res) => {
+        toast.success(`Connected GitHub as ${res.login}`);
+        if (returnUrl) {
+          sessionStorage.removeItem("v03-github-redirect");
+          window.location.href = returnUrl;
+        }
+      })
+      .catch((err: any) => {
+        toast.error(err?.message || "Failed to connect GitHub");
+        if (returnUrl) {
+          sessionStorage.removeItem("v03-github-redirect");
+          window.location.href = returnUrl;
+        }
+      });
+  }, []);
 
   const handleSignOut = async () => {
     await logout();

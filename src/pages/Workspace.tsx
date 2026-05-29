@@ -12,6 +12,7 @@ import FileTree from "@/components/workspace/FileTree";
 import { CommandPalette } from "@/components/workspace/CommandPalette";
 import { EnvVarsDialog } from "@/components/workspace/EnvVarsDialog";
 import { AuditDialog } from "@/components/workspace/AuditDialog";
+import { PushToGitHubDialog } from "@/components/workspace/PushToGitHubDialog";
 import { useWorkspaceStore } from "@/stores/workspaceStore";
 import { createChatMessage } from "@/lib/sse";
 import { toast } from "sonner";
@@ -246,6 +247,14 @@ const MOCK_RESPONSES: Record<string, { text: string; files: any[] }> = {
   },
 };
 
+function GitHubLogo({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} fill="currentColor" aria-hidden="true">
+      <path d="M12 2C6.48 2 2 6.59 2 12.25c0 4.53 2.87 8.37 6.84 9.72.5.1.68-.22.68-.5 0-.25-.01-1.06-.01-1.92-2.78.62-3.37-1.22-3.37-1.22-.45-1.18-1.11-1.5-1.11-1.5-.91-.64.07-.63.07-.63 1 .08 1.53 1.06 1.53 1.06.9 1.56 2.35 1.11 2.92.85.09-.67.35-1.11.63-1.37-2.22-.26-4.55-1.14-4.55-5.07 0-1.12.39-2.03 1.03-2.75-.1-.26-.45-1.31.1-2.73 0 0 .84-.28 2.75 1.05A9.33 9.33 0 0 1 12 7.27c.85 0 1.7.12 2.5.36 1.9-1.33 2.74-1.05 2.74-1.05.55 1.42.2 2.47.1 2.73.64.72 1.03 1.63 1.03 2.75 0 3.94-2.34 4.8-4.57 5.05.36.31.68.92.68 1.86 0 1.34-.01 2.42-.01 2.75 0 .27.18.6.69.5A10.25 10.25 0 0 0 22 12.25C22 6.59 17.52 2 12 2Z" />
+    </svg>
+  );
+}
+
 function buildFileNodes(files: any[]): any[] {
   return files.map((file: any) => {
     if (file.type === "directory" && file.children) {
@@ -317,6 +326,7 @@ export default function Workspace(props: { params: { projectId: string } }) {
   const [codePanelOpen, setCodePanelOpen] = useState(false);
   const [envOpen, setEnvOpen] = useState(false);
   const [auditOpen, setAuditOpen] = useState(false);
+  const [gitHubDialogOpen, setGitHubDialogOpen] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<"files" | "chat">("files");
 
   const chatEndRef = useRef<HTMLDivElement>(null);
@@ -550,8 +560,13 @@ export default function Workspace(props: { params: { projectId: string } }) {
   return (
     <div className="min-h-[100dvh] bg-[var(--app-bg)] text-[var(--app-text)]">
       <CommandPalette />
-      <EnvVarsDialog open={envOpen} onOpenChange={setEnvOpen} projectId={projectId} />
-      <AuditDialog open={auditOpen} onOpenChange={setAuditOpen} projectId={projectId} />
+      <EnvVarsDialog open={envOpen} onOpenChange={setEnvOpen} projectId={projectId} />            <AuditDialog open={auditOpen} onOpenChange={setAuditOpen} projectId={projectId} />
+      <PushToGitHubDialog
+        open={gitHubDialogOpen}
+        onOpenChange={setGitHubDialogOpen}
+        projectId={projectId}
+        projectName={files[0]?.name || "v03-project"}
+      />
       {sidebarOpen && (
         <button
           type="button"
@@ -644,18 +659,29 @@ export default function Workspace(props: { params: { projectId: string } }) {
             </Button>
 
             {files.length > 0 && (
-              <Button
-                type="button"
-                variant="outline"
-                className="h-9 rounded-[8px] border-0 bg-[var(--app-panel)] px-3 text-[var(--app-text-muted)] hover:bg-[var(--app-surface)] hover:text-[var(--app-text)]"
-                onClick={() => {
-                  const url = api.downloadProject(projectId);
-                  window.open(url, "_blank");
-                }}
-              >
-                <Download className="h-4 w-4" />
-                Export
-              </Button>
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-9 rounded-[8px] border-0 bg-[var(--app-panel)] px-3 text-[var(--app-text-muted)] hover:bg-[var(--app-surface)] hover:text-[var(--app-text)]"
+                  onClick={() => setGitHubDialogOpen(true)}
+                >
+                  <GitHubLogo className="h-4 w-4" />
+                  GitHub
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-9 rounded-[8px] border-0 bg-[var(--app-panel)] px-3 text-[var(--app-text-muted)] hover:bg-[var(--app-surface)] hover:text-[var(--app-text)]"
+                  onClick={() => {
+                    const url = api.downloadProject(projectId);
+                    window.open(url, "_blank");
+                  }}
+                >
+                  <Download className="h-4 w-4" />
+                  Export
+                </Button>
+              </>
             )}
 
             <ThemeToggle />
