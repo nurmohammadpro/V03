@@ -24,7 +24,10 @@ import { cleanupGatewayArtifacts } from "./runner/exportProjectToTarGz";
 import { stopExpiredPreviews } from "./runner/previewTtl";
 import "dotenv/config";
 
-const app = Fastify({ logger: true });
+const app = Fastify({
+  logger: true,
+  trustProxy: true, // trust X-Forwarded-For from nginx for correct rate-limiting IPs
+});
 
 async function start() {
   if (process.env.BOOTSTRAP_ADMIN_SYSTEM === "true") {
@@ -35,7 +38,7 @@ async function start() {
 
   // ── Global Rate Limiting ─────────────────────────────
   await app.register(rateLimit, {
-    max: 100,
+    max: 300,
     timeWindow: "1 minute",
     keyGenerator: (request: FastifyRequest) => request.ip,
     errorResponseBuilder: (request: FastifyRequest, context: any) => ({
@@ -43,6 +46,44 @@ async function start() {
       error: "Too Many Requests",
       message: `Rate limit exceeded. Try again in ${context.after}`,
     }),
+  });
+
+  // ── Security Headers (CSP, XSS, clickjacking) ───────
+  app.addHook("onRequest", async (request, reply) => {
+    reply.header("Content-Security-Policy", "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' blob: https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; frame-src 'self' blob:; object-src 'none'; base-uri 'self'");
+    reply.header("X-Content-Type-Options", "nosniff");
+    reply.header("X-Frame-Options", "DENY");
+    reply.header("X-XSS-Protection", "1; mode=block");
+    reply.header("Referrer-Policy", "strict-origin-when-cross-origin");
+    reply.header("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  });
+
+  // ── CSRF Protection (origin check for state-changing requests) ─
+  app.addHook("onRequest", async (request, reply) => {
+    if (["GET", "HEAD", "OPTIONS"].includes(request.method)) return;
+
+    // Allow internal AI worker calls via internal token header
+    if (request.headers["x-internal-token"]) return;
+
+    const origin = (request.headers.origin as string | undefined)?.replace(/\/$/, "") ?? "";
+    const referer = (request.headers.referer as string | undefined) ?? "";
+
+    // Allow requests with no origin/referer (API clients, curl, mobile apps)
+    if (!origin && !referer) return;
+
+    const allowedOriginsForCsrf = [
+      process.env.CORS_ORIGIN || "https://v03.tech",
+      "http://localhost:5173",
+      "http://localhost:4173",
+    ].filter(Boolean).map((o) => o.replace(/\/$/, ""));
+
+    const isAllowed = allowedOriginsForCsrf.some(
+      (allowed) => origin === allowed || referer.startsWith(allowed + "/"),
+    );
+
+    if (!isAllowed) {
+      return reply.status(403).send({ error: "CSRF validation failed" });
+    }
   });
 
   // ── CORS (tightened) ─────────────────────────────────

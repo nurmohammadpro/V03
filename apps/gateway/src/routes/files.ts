@@ -5,6 +5,7 @@ import db from "../db";
 import { fileBlobs, projectFiles, projectFileVersions, projects } from "../db/schema";
 import { getRequestActor, requireAuthenticated } from "../middleware/auth";
 import { bootstrapProjectFromTemplate } from "../templates/bootstrap";
+import { exportProjectToTarGz, readExportedTarball } from "../runner/exportProjectToTarGz";
 
 function normalizePath(input: string) {
   const trimmed = input.trim().replace(/\\/g, "/");
@@ -308,5 +309,31 @@ export async function fileRoutes(app: FastifyInstance) {
     await db.update(projectFiles).set({ deletedAt: new Date(), updatedAt: new Date() }).where(eq(projectFiles.id, existing.id));
 
     return reply.send({ ok: true });
+  });
+
+  // GET /api/projects/:id/download — export project as .tgz
+  app.get("/api/projects/:id/download", async (request, reply) => {
+    const actor = getRequestActor(request);
+    const { id } = request.params as { id: string };
+
+    const project = await requireProjectAccess(id, actor);
+    if (!project) return reply.status(404).send({ error: "Project not found" });
+    if (project === "forbidden") return reply.status(403).send({ error: "Forbidden" });
+
+    try {
+      const { tarPath } = await exportProjectToTarGz(id);
+      const tarball = await readExportedTarball(tarPath);
+
+      const projectName = (project as any).name?.replace(/[^a-zA-Z0-9_\-]/g, "_") || "project";
+      reply.header("Content-Type", "application/gzip");
+      reply.header("Content-Disposition", `attachment; filename="${projectName}.tgz"`);
+      reply.header("Content-Length", String(tarball.length));
+
+      return reply.send(tarball);
+    } catch (err: any) {
+      request.log.error({ err, projectId: id }, "Project export failed");
+      const safeMsg = process.env.NODE_ENV === "production" ? "Export failed" : (err?.message || "Export failed");
+      return reply.status(500).send({ error: "Failed to export project", detail: safeMsg });
+    }
   });
 }

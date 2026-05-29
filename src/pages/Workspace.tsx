@@ -20,6 +20,7 @@ import api from "@/lib/api";
 import {
   ArrowLeft,
   Code2,
+  Download,
   FolderTree,
   History,
   KeyRound,
@@ -641,6 +642,21 @@ export default function Workspace(props: { params: { projectId: string } }) {
               <History className="h-4 w-4" />
               Audit
             </Button>
+
+            {files.length > 0 && (
+              <Button
+                type="button"
+                variant="outline"
+                className="h-9 rounded-[8px] border-0 bg-[var(--app-panel)] px-3 text-[var(--app-text-muted)] hover:bg-[var(--app-surface)] hover:text-[var(--app-text)]"
+                onClick={() => {
+                  const url = api.downloadProject(projectId);
+                  window.open(url, "_blank");
+                }}
+              >
+                <Download className="h-4 w-4" />
+                Export
+              </Button>
+            )}
 
             <ThemeToggle />
 

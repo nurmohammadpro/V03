@@ -10,6 +10,24 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
+# Optional: OpenAI SDK
+_has_openai = False
+try:
+    from openai import AsyncOpenAI
+
+    _has_openai = True
+except ImportError:
+    pass
+
+# Optional: Anthropic SDK
+_has_anthropic = False
+try:
+    from anthropic import AsyncAnthropic
+
+    _has_anthropic = True
+except ImportError:
+    pass
+
 app = FastAPI(title="v03 AI Worker", version="1.0.0")
 
 app.add_middleware(
@@ -103,7 +121,15 @@ FRAMEWORK_TEMPLATES = {
 ZAI_BASE_URL = os.getenv("ZAI_BASE_URL", "https://api.z.ai/api/paas/v4").rstrip("/")
 ZAI_MODEL = os.getenv("ZAI_MODEL", "glm-4.6")
 ZAI_API_KEY = os.getenv("ZAI_API_KEY", "").strip()
-AI_ENGINE = os.getenv("AI_ENGINE", "zai").strip().lower()  # gateway | zai | mock
+AI_ENGINE = os.getenv("AI_ENGINE", "zai").strip().lower()  # gateway | zai | openai | anthropic | mock
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "").strip()
+OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o")
+OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1").rstrip("/")
+
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "").strip()
+ANTHROPIC_MODEL = os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-20250514")
+ANTHROPIC_BASE_URL = os.getenv("ANTHROPIC_BASE_URL", "https://api.anthropic.com/v1").rstrip("/")
 
 GATEWAY_URL = os.getenv("GATEWAY_URL", "http://localhost:3001").rstrip("/")
 INTERNAL_API_TOKEN = os.getenv("INTERNAL_API_TOKEN", "").strip()
@@ -117,6 +143,12 @@ async def health() -> dict[str, Any]:
         "ai_engine": AI_ENGINE,
         "zai_model": ZAI_MODEL,
         "zai_base_url": ZAI_BASE_URL,
+        "has_openai": bool(OPENAI_API_KEY),
+        "has_openai_sdk": _has_openai,
+        "openai_model": OPENAI_MODEL,
+        "has_anthropic": bool(ANTHROPIC_API_KEY),
+        "has_anthropic_sdk": _has_anthropic,
+        "anthropic_model": ANTHROPIC_MODEL,
         "gateway_url": GATEWAY_URL,
         "has_zai_api_key": bool(ZAI_API_KEY),
         "has_internal_api_token": bool(INTERNAL_API_TOKEN),
@@ -222,22 +254,8 @@ async def call_openai_compatible_builder(
     model: str,
     chat_path: str,
 ) -> dict[str, Any]:
-    system = (
-        "You are a senior software engineer inside a web app builder.\n"
-        "Return ONLY valid JSON (no markdown) with keys:\n"
-        "- text: a short progress + summary string\n"
-        "- files: an array of nodes. Node is either:\n"
-        "  - {\"type\":\"directory\",\"name\":string,\"path\":string,\"children\":files[]}\n"
-        "  - {\"type\":\"file\",\"name\":string,\"path\":string,\"content\":string,\"language\":string}\n"
-        "Paths must be POSIX-style and relative (no leading slash)."
-    )
-
-    user = (
-        f"Framework: {framework}\n"
-        f"User request: {prompt}\n\n"
-        "Generate a runnable, conventional project scaffold (not pseudo code). "
-        "Include package/config files as needed. Keep it minimal but working."
-    )
+    system = _build_system_prompt()
+    user = _build_user_prompt(prompt, framework)
 
     payload = {
         "model": model,
@@ -273,6 +291,90 @@ async def call_openai_compatible_builder(
     return parsed
 
 
+def _build_system_prompt() -> str:
+    return (
+        "You are a senior software engineer inside a web app builder.\n"
+        "Return ONLY valid JSON (no markdown) with keys:\n"
+        "- text: a short progress + summary string\n"
+        "- files: an array of nodes. Node is either:\n"
+        "  - {\"type\":\"directory\",\"name\":string,\"path\":string,\"children\":files[]}\n"
+        "  - {\"type\":\"file\",\"name\":string,\"path\":string,\"content\":string,\"language\":string}\n"
+        "Paths must be POSIX-style and relative (no leading slash)."
+    )
+
+
+def _build_user_prompt(prompt: str, framework: str) -> str:
+    return (
+        f"Framework: {framework}\n"
+        f"User request: {prompt}\n\n"
+        "Generate a runnable, conventional project scaffold (not pseudo code). "
+        "Include package/config files as needed. Keep it minimal but working."
+    )
+
+
+async def call_openai_direct(prompt: str, framework: str) -> dict[str, Any]:
+    """Call OpenAI API directly using the official SDK."""
+    if not OPENAI_API_KEY:
+        raise HTTPException(status_code=500, detail="OPENAI_API_KEY is not configured on ai-worker")
+    if not _has_openai:
+        raise HTTPException(status_code=500, detail="openai SDK not installed. Run: pip install openai")
+
+    client = AsyncOpenAI(api_key=OPENAI_API_KEY, base_url=OPENAI_BASE_URL if OPENAI_BASE_URL != "https://api.openai.com/v1" else None)
+
+    system = _build_system_prompt()
+    user = _build_user_prompt(prompt, framework)
+
+    response = await client.chat.completions.create(
+        model=OPENAI_MODEL,
+        messages=[
+            {"role": "system", "content": system},
+            {"role": "user", "content": user},
+        ],
+        temperature=0.2,
+        max_tokens=8192,
+    )
+
+    content = response.choices[0].message.content if response.choices else None
+    parsed = _extract_json(content or "")
+    if not parsed or "files" not in parsed:
+        raise HTTPException(status_code=502, detail="OpenAI did not return valid JSON file payload")
+    return parsed
+
+
+async def call_anthropic_direct(prompt: str, framework: str) -> dict[str, Any]:
+    """Call Anthropic API directly using the official SDK."""
+    if not ANTHROPIC_API_KEY:
+        raise HTTPException(status_code=500, detail="ANTHROPIC_API_KEY is not configured on ai-worker")
+    if not _has_anthropic:
+        raise HTTPException(status_code=500, detail="anthropic SDK not installed. Run: pip install anthropic")
+
+    client = AsyncAnthropic(api_key=ANTHROPIC_API_KEY)
+
+    system = _build_system_prompt()
+    user = _build_user_prompt(prompt, framework)
+
+    response = await client.messages.create(
+        model=ANTHROPIC_MODEL,
+        system=system,
+        messages=[
+            {"role": "user", "content": user},
+        ],
+        temperature=0.2,
+        max_tokens=8192,
+    )
+
+    content = ""
+    if response.content:
+        for block in response.content:
+            if hasattr(block, "text"):
+                content += block.text
+
+    parsed = _extract_json(content or "")
+    if not parsed or "files" not in parsed:
+        raise HTTPException(status_code=502, detail="Anthropic did not return valid JSON file payload")
+    return parsed
+
+
 class GenerateRequest(BaseModel):
     prompt: str
     framework: str = "Next.js"
@@ -286,12 +388,12 @@ async def health():
     return {"status": "ok", "service": "ai-worker", "version": "1.0.0"}
 
 
-async def generate_events(req: GenerateRequest) -> AsyncGenerator[dict, None]:
-    """SSE event generator for code generation."""
+async def _generate_content(req: GenerateRequest) -> dict[str, Any]:
+    """Shared LLM invocation logic used by both streaming and sync endpoints."""
     framework = req.framework
-
     text = ""
     files: list[dict[str, Any]] = []
+    fallback_reason: str | None = None
 
     if AI_ENGINE == "gateway":
         provider_key = (req.provider_key or "zai").strip()
@@ -319,20 +421,51 @@ async def generate_events(req: GenerateRequest) -> AsyncGenerator[dict, None]:
             template = FRAMEWORK_TEMPLATES.get(framework, FRAMEWORK_TEMPLATES["Next.js"])
             text = f"{template['text']}\n\n(LLM fallback: {type(exc).__name__})"
             files = template["files"]
+            fallback_reason = str(exc)
     elif AI_ENGINE == "zai":
         try:
             result = await call_zai_builder(req.prompt, framework)
             text = str(result.get("text") or "Generation complete.")
             files = list(result.get("files") or [])
         except Exception as exc:
-            # Fallback to templates if provider fails.
             template = FRAMEWORK_TEMPLATES.get(framework, FRAMEWORK_TEMPLATES["Next.js"])
             text = f"{template['text']}\n\n(LLM fallback: {type(exc).__name__})"
             files = template["files"]
+            fallback_reason = str(exc)
+    elif AI_ENGINE == "openai":
+        try:
+            result = await call_openai_direct(req.prompt, framework)
+            text = str(result.get("text") or "Generation complete.")
+            files = list(result.get("files") or [])
+        except Exception as exc:
+            template = FRAMEWORK_TEMPLATES.get(framework, FRAMEWORK_TEMPLATES["Next.js"])
+            text = f"{template['text']}\n\n(LLM fallback: {type(exc).__name__})"
+            files = template["files"]
+            fallback_reason = str(exc)
+    elif AI_ENGINE == "anthropic":
+        try:
+            result = await call_anthropic_direct(req.prompt, framework)
+            text = str(result.get("text") or "Generation complete.")
+            files = list(result.get("files") or [])
+        except Exception as exc:
+            template = FRAMEWORK_TEMPLATES.get(framework, FRAMEWORK_TEMPLATES["Next.js"])
+            text = f"{template['text']}\n\n(LLM fallback: {type(exc).__name__})"
+            files = template["files"]
+            fallback_reason = str(exc)
     else:
         template = FRAMEWORK_TEMPLATES.get(framework, FRAMEWORK_TEMPLATES["Next.js"])
         text = template["text"]
         files = template["files"]
+
+    return {"text": text, "files": files, "fallback_reason": fallback_reason}
+
+
+async def generate_events(req: GenerateRequest) -> AsyncGenerator[dict, None]:
+    """SSE event generator for code generation."""
+    framework = req.framework
+    result = await _generate_content(req)
+    text = result["text"]
+    files = result["files"]
 
     yield {"event": "init", "data": json.dumps({"projectId": req.project_id or str(uuid.uuid4()), "framework": framework, "status": "started"})}
 
@@ -353,14 +486,16 @@ async def generate(req: GenerateRequest):
 
 @app.post("/generate/sync")
 async def generate_sync(req: GenerateRequest):
-    """Generate code (sync response for non-SSE clients)."""
-    template = FRAMEWORK_TEMPLATES.get(req.framework, FRAMEWORK_TEMPLATES["Next.js"])
+    """Generate code (sync response for non-SSE clients). Uses real LLM, not templates."""
+    result = await _generate_content(req)
     return {
         "projectId": req.project_id or str(uuid.uuid4()),
         "framework": req.framework,
-        "text": template["text"],
-        "files": template["files"],
+        "text": result["text"],
+        "files": result["files"],
         "status": "complete",
+        "fallback": result.get("fallback_reason") is not None,
+        "fallback_reason": result.get("fallback_reason"),
     }
 
 

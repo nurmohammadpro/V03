@@ -188,6 +188,64 @@ function workerFilesToOps(files: WorkerFileNode[]) {
   return ops;
 }
 
+const FRAMEWORK_EXTENSIONS: Record<string, Set<string>> = {
+  "Next.js": new Set([".ts", ".tsx", ".js", ".jsx", ".json", ".css", ".md", ".mjs", ".cjs"]),
+  "MERN": new Set([".js", ".jsx", ".json", ".css", ".md"]),
+  "Laravel": new Set([".php", ".json", ".css", ".md", ".blade.php"]),
+  "Django": new Set([".py", ".json", ".css", ".md", ".html"]),
+  "NestJS": new Set([".ts", ".js", ".json", ".css", ".md"]),
+};
+
+function validateFileOps(ops: Array<Record<string, unknown>>, framework?: string | null): {
+  valid: boolean;
+  errors: string[];
+  warnings: string[];
+} {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const validExts = framework ? FRAMEWORK_EXTENSIONS[framework] ?? null : null;
+
+  for (const raw of ops) {
+    const op = String(raw.op || "");
+    if (op !== "upsert_file") continue;
+
+    const pathRaw = String(raw.path || "");
+    const ext = pathRaw.split(".").pop()?.toLowerCase() ?? "";
+    const content = String(raw.content || "");
+
+    // Validate JSON files
+    if (ext === "json" && content.trim()) {
+      try {
+        JSON.parse(content);
+      } catch {
+        errors.push(`Invalid JSON in ${pathRaw}`);
+      }
+    }
+
+    // Warn about suspiciously small files
+    if (content.length < 10 && ext !== "env" && ext !== "gitignore") {
+      warnings.push(`${pathRaw} is suspiciously short (${content.length} chars)`);
+    }
+
+    // Check for common code issues
+    if (["ts", "tsx", "js", "jsx"].includes(ext)) {
+      if (!content.trim()) {
+        errors.push(`${pathRaw} is empty`);
+      }
+      if (content.includes("<script>") && content.includes("dangerouslySetInnerHTML")) {
+        warnings.push(`${pathRaw} may contain XSS vulnerability (dangerouslySetInnerHTML)`);
+      }
+    }
+
+    // Framework extension warnings
+    if (validExts && !validExts.has(`.${ext}`) && ext) {
+      warnings.push(`${pathRaw} has unexpected extension (.${ext}) for framework ${framework}`);
+    }
+  }
+
+  return { valid: errors.length === 0, errors, warnings };
+}
+
 async function applyOpsToProject(input: {
   projectId: string;
   actorUserId: string;
@@ -445,7 +503,31 @@ export async function generationRoutes(app: FastifyInstance) {
         })
         .where(eq(generationRuns.id, run.id));
 
+      const validation = validateFileOps(ops, project.framework);
+      if (validation.warnings.length > 0) {
+        request.log.warn({ runId: run.id, warnings: validation.warnings }, "Generation validation warnings");
+      }
+
       if (applyMode === "auto_apply" && insertedOps.length) {
+        if (!validation.valid) {
+          request.log.error({ runId: run.id, errors: validation.errors }, "Generation validation failed, skipping auto-apply");
+          await db
+            .update(generationRuns)
+            .set({
+              status: "failed",
+              finishedAt: new Date(),
+              summary: { error: `Syntax validation failed: ${validation.errors.join("; ")}`, opCount: insertedOps.length },
+            })
+            .where(eq(generationRuns.id, run.id));
+
+          return reply.status(422).send({
+            runId: run.id,
+            status: "failed",
+            errors: validation.errors,
+            ops,
+          });
+        }
+
         await applyOpsToProject({
           projectId: id,
           actorUserId: actor.userId,
@@ -462,9 +544,10 @@ export async function generationRoutes(app: FastifyInstance) {
 
       return reply.status(201).send({
         runId: run.id,
-        status: applyMode === "auto_apply" ? "applied" : "complete",
+        status: applyMode === "auto_apply" ? (validation.valid ? "applied" : "failed") : "complete",
         summary: data.text ?? null,
         ops,
+        validation: { errors: validation.errors, warnings: validation.warnings },
       });
     } catch (err: any) {
       request.log.error(
@@ -686,20 +769,35 @@ export async function generationRoutes(app: FastifyInstance) {
       }
 
       if (applyMode === "auto_apply" && ops.length) {
-        await applyOpsToProject({
-          projectId: id,
-          actorUserId: actor.userId,
-          ops,
-          source: "generation",
-          message: `Generation ${run.id}`,
-        });
-        applied = true;
+        const validation = validateFileOps(ops, project.framework);
+        if (validation.warnings.length > 0) {
+          request.log.warn({ runId: run.id, warnings: validation.warnings }, "Generation validation warnings");
+        }
+
+        if (validation.valid) {
+          await applyOpsToProject({
+            projectId: id,
+            actorUserId: actor.userId,
+            ops,
+            source: "generation",
+            message: `Generation ${run.id}`,
+          });
+          applied = true;
+        } else {
+          request.log.error({ runId: run.id, errors: validation.errors }, "Generation validation failed, skipping auto-apply");
+          const errorPayload = JSON.stringify({
+            error: "Syntax validation failed",
+            detail: validation.errors.join("; "),
+            runId: run.id,
+          });
+          reply.raw.write(`event: error\ndata: ${errorPayload}\n\n`);
+        }
       }
 
       await db
         .update(generationRuns)
         .set({
-          status: applied ? "applied" : "complete",
+          status: applied ? "applied" : ops.length > 0 && !applied ? "failed" : "complete",
           finishedAt: new Date(),
           summary: { opCount: ops.length },
         })

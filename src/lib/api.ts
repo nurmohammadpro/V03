@@ -503,6 +503,11 @@ export const api = {
   deleteProjectEnv: (projectId: string, key: string) =>
     request<{ ok: boolean }>(`/api/projects/${projectId}/env?key=${encodeURIComponent(key)}`, { method: "DELETE" }),
 
+  // Export project as .tgz
+  downloadProject: (projectId: string) => {
+    return `${buildApiUrl(`/api/projects/${projectId}/download`)}`;
+  },
+
   // Project audit
   getProjectAudit: (projectId: string, limit = 50) =>
     request<{
