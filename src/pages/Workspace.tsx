@@ -374,11 +374,36 @@ export default function Workspace(props: { params: { projectId: string } }) {
 
       return;
     }
-    setProjectId(projectId);
-    void refreshFileTree();
-    void restorePreviewForProject();
-    void api.getProjectGenerations(projectId).then((res) => setGenerationRuns(res.runs)).catch(() => {});
-  }, [framework, loading, projectId, refreshFileTree, restorePreviewForProject, setLocation, setProjectId, user, user?.isAdmin]);
+    let cancelled = false;
+
+    void (async () => {
+      setProjectId(projectId);
+      await refreshFileTree();
+      await restorePreviewForProject();
+      void api.getProjectGenerations(projectId).then((res) => setGenerationRuns(res.runs)).catch(() => {});
+
+      if (cancelled) return;
+      const { files: currentFiles, previewId: currentPreviewId } = useWorkspaceStore.getState();
+      if (!currentPreviewId && currentFiles.length > 0) {
+        await startPreview().catch(() => null);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    framework,
+    loading,
+    projectId,
+    refreshFileTree,
+    restorePreviewForProject,
+    setLocation,
+    setProjectId,
+    startPreview,
+    user,
+    user?.isAdmin,
+  ]);
 
   useEffect(() => {
     if (loading || !user?.isAdmin) return;
