@@ -475,6 +475,20 @@ export const api = {
       body: { mode },
     }),
 
+  getProjectActivePreview: (projectId: string) =>
+    request<{
+      preview: {
+        id: string;
+        projectId: string;
+        userId: string;
+        status: string;
+        url: string | null;
+        runnerRef: Record<string, unknown>;
+        createdAt: string;
+        endedAt: string | null;
+      } | null;
+    }>(`/api/projects/${projectId}/previews/active`),
+
   stopPreview: (previewId: string) =>
     request<{ ok: boolean }>(`/api/previews/${previewId}`, { method: "DELETE" }),
 

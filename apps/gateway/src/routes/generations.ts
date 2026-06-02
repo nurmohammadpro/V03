@@ -16,6 +16,7 @@ import {
 } from "../db/schema";
 import { getRequestActor, requireAuthenticated } from "../middleware/auth";
 import { getUserLimit, enforceActiveProjectsLimit } from "../billing/limits";
+import { refreshPreviewForProject } from "../runner/runnerQueue";
 
 const AI_WORKER_URL = process.env.AI_WORKER_URL || "http://localhost:8001";
 
@@ -535,6 +536,7 @@ export async function generationRoutes(app: FastifyInstance) {
           source: "generation",
           message: `Generation ${run.id}`,
         });
+        await refreshPreviewForProject(id).catch(() => null);
 
         await db
           .update(generationRuns)
@@ -782,6 +784,7 @@ export async function generationRoutes(app: FastifyInstance) {
             source: "generation",
             message: `Generation ${run.id}`,
           });
+          await refreshPreviewForProject(id).catch(() => null);
           applied = true;
         } else {
           request.log.error({ runId: run.id, errors: validation.errors }, "Generation validation failed, skipping auto-apply");
@@ -878,6 +881,7 @@ export async function generationRoutes(app: FastifyInstance) {
       source: "generation",
       message: `Apply generation ${run.id}`,
     });
+    await refreshPreviewForProject(run.projectId).catch(() => null);
 
     await db.update(generationRuns).set({ status: "applied" }).where(eq(generationRuns.id, run.id));
 

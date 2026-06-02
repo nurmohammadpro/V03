@@ -6,6 +6,7 @@ import { fileBlobs, projectFiles, projectFileVersions, projects } from "../db/sc
 import { getRequestActor, requireAuthenticated } from "../middleware/auth";
 import { bootstrapProjectFromTemplate } from "../templates/bootstrap";
 import { exportProjectToTarGz, readExportedTarball } from "../runner/exportProjectToTarGz";
+import { refreshPreviewForProject } from "../runner/runnerQueue";
 
 function normalizePath(input: string) {
   const trimmed = input.trim().replace(/\\/g, "/");
@@ -260,6 +261,8 @@ export async function fileRoutes(app: FastifyInstance) {
       message: body.message ?? null,
     });
 
+    await refreshPreviewForProject(id).catch(() => null);
+
     return reply.send({ ok: true, path: normalizedPath, sha256: blob.sha256 });
   });
 
@@ -307,6 +310,8 @@ export async function fileRoutes(app: FastifyInstance) {
     }
 
     await db.update(projectFiles).set({ deletedAt: new Date(), updatedAt: new Date() }).where(eq(projectFiles.id, existing.id));
+
+    await refreshPreviewForProject(id).catch(() => null);
 
     return reply.send({ ok: true });
   });

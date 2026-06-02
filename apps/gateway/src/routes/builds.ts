@@ -248,6 +248,30 @@ export async function buildRoutes(app: FastifyInstance) {
     return reply.status(201).send({ previewId: preview.id, status: "queued", url: publicUrl });
   });
 
+  // GET /api/projects/:id/previews/active
+  app.get("/api/projects/:id/previews/active", async (request, reply) => {
+    const actor = getRequestActor(request);
+    const { id } = request.params as { id: string };
+
+    const project = await requireProjectAccess(id, actor);
+    if (!project) return reply.status(404).send({ error: "Project not found" });
+    if (project === "forbidden") return reply.status(403).send({ error: "Forbidden" });
+
+    const [preview] = await db
+      .select()
+      .from(previewInstances)
+      .where(
+        and(
+          eq(previewInstances.projectId, id),
+          inArray(previewInstances.status, ["queued", "starting", "running", "ready"] as any),
+        ),
+      )
+      .orderBy(sql`${previewInstances.createdAt} desc`)
+      .limit(1);
+
+    return reply.send({ preview: preview ?? null });
+  });
+
   // GET /api/previews/:id
   app.get("/api/previews/:id", async (request, reply) => {
     const actor = getRequestActor(request);

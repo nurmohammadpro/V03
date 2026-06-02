@@ -1,9 +1,9 @@
-import { and, asc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
 import crypto from "node:crypto";
 import db from "../db";
 import { buildRuns, previewInstances } from "../db/schema";
 import { exportProjectToTarGz } from "./exportProjectToTarGz";
-import { runnerStartRun } from "./runnerClient";
+import { getRunnerUrl, runnerStartRun } from "./runnerClient";
 import { getProjectEnvVarsPlaintext } from "../routes/env";
 
 type QueueItem = { kind: "build" | "preview"; id: string; userId: string };
@@ -238,6 +238,50 @@ export class RunnerQueue {
 }
 
 export const runnerQueue = new RunnerQueue();
+
+export async function refreshPreviewForProject(projectId: string) {
+  const [preview] = await db
+    .select()
+    .from(previewInstances)
+    .where(and(eq(previewInstances.projectId, projectId), inArray(previewInstances.status, ["running", "ready"] as any)))
+    .orderBy(desc(previewInstances.createdAt))
+    .limit(1);
+
+  if (!preview) return null;
+
+  const runnerRef =
+    typeof preview.runnerRef === "object" && preview.runnerRef ? (preview.runnerRef as Record<string, unknown>) : {};
+  const containerId = typeof runnerRef.containerId === "string" ? runnerRef.containerId : null;
+
+  if (containerId) {
+    try {
+      await fetch(`${getRunnerUrl()}/runs/${containerId}`, { method: "DELETE" });
+    } catch {
+      // best-effort restart
+    }
+  }
+
+  const [queued] = await db
+    .update(previewInstances)
+    .set({
+      status: "queued",
+      endedAt: null,
+      runnerRef: {
+        ...runnerRef,
+        containerId: null,
+        url: null,
+        ready: null,
+      },
+    })
+    .where(eq(previewInstances.id, preview.id))
+    .returning();
+
+  if (!queued) return null;
+
+  runnerQueue.enqueuePreview({ previewId: queued.id, userId: queued.userId });
+  await runnerQueue.drain();
+  return queued.id;
+}
 
 export async function countActiveRunsForUser(userId: string) {
   const [[{ builds }], [{ previews }]] = await Promise.all([

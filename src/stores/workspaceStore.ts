@@ -49,6 +49,7 @@ interface WorkspaceState {
   setFiles: (files: FileNode[]) => void;
   setProjectId: (projectId: string) => void;
   refreshFileTree: () => Promise<void>;
+  restorePreviewForProject: () => Promise<void>;
   setActiveFile: (path: string) => Promise<void>;
   setActiveFileContent: (content: string) => void;
   saveActiveFile: () => Promise<void>;
@@ -168,7 +169,20 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
 
   setFiles: (files) => set({ files }),
 
-  setProjectId: (projectId) => set({ projectId }),
+  setProjectId: (projectId) =>
+    set((state) =>
+      state.projectId === projectId
+        ? { projectId }
+        : {
+            projectId,
+            previewId: null,
+            previewUrl: null,
+            previewLogs: "",
+            isPreviewStarting: false,
+            isPreviewReady: false,
+            previewIsPublic: false,
+          },
+    ),
 
   refreshFileTree: async () => {
     const projectId = get().projectId;
@@ -178,6 +192,39 @@ export const useWorkspaceStore = create<WorkspaceState>((set, get) => ({
       res.files.map((f) => ({ path: f.path, fileType: (f.fileType === "dir" ? "dir" : "file") as any })),
     );
     set({ files: tree });
+  },
+
+  restorePreviewForProject: async () => {
+    const projectId = get().projectId;
+    if (!projectId) return;
+
+    const res = await api.getProjectActivePreview(projectId);
+    const preview = res.preview;
+
+    if (!preview) {
+      set({
+        previewId: null,
+        previewUrl: null,
+        previewLogs: "",
+        isPreviewStarting: false,
+        isPreviewReady: false,
+        previewIsPublic: false,
+      });
+      return;
+    }
+
+    const runnerRef = (preview.runnerRef || {}) as Record<string, unknown>;
+    const mode = runnerRef.mode === "dev" ? "dev" : "build";
+    set({
+      previewId: preview.id,
+      previewUrl: preview.url,
+      previewMode: mode,
+      previewLogs: "",
+      isPreviewStarting: false,
+      isPreviewReady: preview.status === "ready",
+      previewIsPublic: runnerRef.isPublic === true,
+      outputTab: "preview",
+    });
   },
 
   setActiveFile: async (path) => {
