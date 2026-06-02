@@ -306,6 +306,8 @@ export default function Workspace(props: { params: { projectId: string } }) {
   const setFiles = useWorkspaceStore((s) => s.setFiles);
   const setIsGenerating = useWorkspaceStore((s) => s.setIsGenerating);
   const setSelectedFramework = useWorkspaceStore((s) => s.setSelectedFramework);
+  const previewId = useWorkspaceStore((s) => s.previewId);
+  const startPreview = useWorkspaceStore((s) => s.startPreview);
   const activeFileContent = useWorkspaceStore((s) => s.activeFileContent);
   const activeFilePath = useWorkspaceStore((s) => s.activeFilePath);
   const files = useWorkspaceStore((s) => s.files);
@@ -490,6 +492,9 @@ export default function Workspace(props: { params: { projectId: string } }) {
               await refreshFileTree();
               const res2 = await api.getProjectGenerations(projectId);
               setGenerationRuns(res2.runs);
+              if (!previewId) {
+                await startPreview().catch(() => null);
+              }
             }
           }
         }
@@ -515,7 +520,18 @@ export default function Workspace(props: { params: { projectId: string } }) {
 
       setIsGenerating(false);
     },
-    [addMessage, appendToLastAssistantMessage, framework, isGenerating, setFiles, setIsGenerating, updateLastAssistantMessage]
+    [
+      addMessage,
+      appendToLastAssistantMessage,
+      framework,
+      isGenerating,
+      previewId,
+      refreshFileTree,
+      setFiles,
+      setIsGenerating,
+      startPreview,
+      updateLastAssistantMessage,
+    ]
   );
 
   function parseSseBlock(block: string): { event: string; data: unknown } | null {
