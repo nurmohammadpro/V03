@@ -35,6 +35,20 @@ type ActorRequest = FastifyRequest & {
 
 let jwks: ReturnType<typeof createRemoteJWKSet> | null = null;
 
+function getProAccessEmails() {
+  const raw = process.env.PRO_USER_EMAILS || "mohammodnur07@gmail.com";
+  return new Set(
+    raw
+      .split(",")
+      .map((email) => email.trim().toLowerCase())
+      .filter(Boolean),
+  );
+}
+
+function shouldForceProPlan(email: string) {
+  return getProAccessEmails().has(email.trim().toLowerCase());
+}
+
 function getSupabaseUrl() {
   const url = process.env.SUPABASE_URL;
   if (!url) {
@@ -132,6 +146,7 @@ async function upsertUserFromSupabase(payload: SupabaseJwtPayload) {
 
   const fullName = payload.user_metadata?.full_name ?? payload.user_metadata?.name ?? null;
   const avatarUrl = payload.user_metadata?.avatar_url ?? payload.user_metadata?.picture ?? null;
+  const forcePro = shouldForceProPlan(email);
   const nextMetadata = {
     supabaseUserId: payload.sub ?? null,
     providers: payload.app_metadata?.providers ?? [],
@@ -147,7 +162,7 @@ async function upsertUserFromSupabase(payload: SupabaseJwtPayload) {
         email,
         fullName,
         avatarUrl,
-        plan: "free",
+        plan: forcePro ? "professional" : "free",
         status: "active",
         metadata: nextMetadata,
       })
@@ -166,6 +181,7 @@ async function upsertUserFromSupabase(payload: SupabaseJwtPayload) {
     .set({
       fullName,
       avatarUrl,
+      ...(forcePro ? { plan: "professional", status: "active" } : {}),
       metadata: mergedMetadata,
       updatedAt: new Date(),
     })
