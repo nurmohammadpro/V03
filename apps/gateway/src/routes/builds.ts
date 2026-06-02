@@ -12,6 +12,23 @@ import { redactSecrets } from "../secrets/redact";
 const RUNNER_URL = getRunnerUrl();
 const PUBLIC_BASE_URL = process.env.PUBLIC_BASE_URL?.replace(/\/$/, "") || null;
 
+function getPublicScheme(request: any) {
+  if (PUBLIC_BASE_URL) {
+    try {
+      return new URL(PUBLIC_BASE_URL).protocol.replace(":", "");
+    } catch {
+      // fall through to forwarded headers
+    }
+  }
+
+  const forwardedProto = request.headers["x-forwarded-proto"];
+  if (typeof forwardedProto === "string" && forwardedProto.trim()) {
+    return forwardedProto.split(",")[0].trim();
+  }
+
+  return "https";
+}
+
 async function requireProjectAccess(projectId: string, actor: { userId: string; isAdmin: boolean }) {
   const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
   if (!project) {
@@ -236,9 +253,7 @@ export async function buildRoutes(app: FastifyInstance) {
       .returning();
 
     const previewDomain = process.env.PREVIEW_DOMAIN?.trim();
-    const scheme =
-      process.env.PREVIEW_SCHEME?.trim() ||
-      String(request.headers["x-forwarded-proto"] ?? "http");
+    const scheme = process.env.PREVIEW_SCHEME?.trim() || getPublicScheme(request);
     const publicUrl = previewDomain
       ? `${scheme}://${preview.id}.${previewDomain}/?t=${shareToken}`
       : `${String(base).replace(/\/$/, "")}/p/${preview.id}/?t=${shareToken}`;
@@ -307,9 +322,7 @@ export async function buildRoutes(app: FastifyInstance) {
     const ttlSeconds = parseInt(process.env.PREVIEW_TOKEN_TTL_SECONDS || "86400", 10);
     const expiresAt = Number.isFinite(ttlSeconds) && ttlSeconds > 0 ? Date.now() + ttlSeconds * 1000 : null;
     const previewDomain = process.env.PREVIEW_DOMAIN?.trim();
-    const scheme =
-      process.env.PREVIEW_SCHEME?.trim() ||
-      String(request.headers["x-forwarded-proto"] ?? "http");
+    const scheme = process.env.PREVIEW_SCHEME?.trim() || getPublicScheme(request);
     const publicUrl = previewDomain
       ? `${scheme}://${preview.id}.${previewDomain}/?t=${shareToken}`
       : `${String(base).replace(/\/$/, "")}/p/${preview.id}/?t=${shareToken}`;
