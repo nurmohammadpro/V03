@@ -1,0 +1,63 @@
+name: Test & Lint
+
+on:
+  push:
+    branches: [main, production-ready-app]
+  pull_request:
+    branches: [main, production-ready-app]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: v03_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'pnpm'
+
+      - name: Install pnpm
+        run: npm install -g pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint code
+        run: pnpm lint
+
+      - name: Type check
+        run: pnpm build
+
+      - name: Run tests
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/v03_test
+          NODE_ENV: test
+          JWT_SECRET: test-secret-key-minimum-32-characters-long
+          BETTER_AUTH_SECRET: test-auth-secret-minimum-32-characters-long
+        run: pnpm test
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v3
+        if: always()
+        with:
+          files: ./coverage/coverage-final.json
+          flags: unittests
+          name: codecov-umbrella
