@@ -31,7 +31,7 @@ export async function registerErrorHandler(app: FastifyInstance) {
     }
 
     // Handle validation errors from Fastify
-    if (error.statusCode === 400 && (error as any).validation) {
+    if ((error as any).statusCode === 400 && (error as any).validation) {
       logger.debug("[ValidationError]", {
         requestId,
         method,
@@ -48,7 +48,7 @@ export async function registerErrorHandler(app: FastifyInstance) {
     }
 
     // Handle not found errors
-    if (error.statusCode === 404) {
+    if ((error as any).statusCode === 404) {
       logger.debug("[NotFound]", { requestId, method, url });
       return reply.status(404).send({
         error: "NOT_FOUND",
@@ -58,7 +58,7 @@ export async function registerErrorHandler(app: FastifyInstance) {
     }
 
     // Handle method not allowed
-    if (error.statusCode === 405) {
+    if ((error as any).statusCode === 405) {
       logger.debug("[MethodNotAllowed]", {
         requestId,
         method,
@@ -77,14 +77,14 @@ export async function registerErrorHandler(app: FastifyInstance) {
       requestId,
       method,
       url,
-      statusCode: error.statusCode || 500,
+      statusCode: (error as any).statusCode || 500,
       error: error.message,
       stack: error.stack,
       name: error.name,
     });
 
     // Send generic error response to client (don't leak stack traces in production)
-    return reply.status(error.statusCode || 500).send({
+    return reply.status((error as any).statusCode || 500).send({
       error: "INTERNAL_SERVER_ERROR",
       message: "An unexpected error occurred",
       requestId,

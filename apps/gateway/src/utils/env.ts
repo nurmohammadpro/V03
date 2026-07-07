@@ -3,7 +3,7 @@ import { z } from "zod";
 const envSchema = z.object({
   // Server
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
-  PORT: z.string().transform(Number).default("3001"),
+  PORT: z.string().transform(Number).default(3001),
   HOST: z.string().default("0.0.0.0"),
 
   // Security
@@ -13,8 +13,8 @@ const envSchema = z.object({
 
   // Database
   DATABASE_URL: z.string().url("DATABASE_URL must be a valid URL"),
-  DATABASE_CONNECTION_POOL_SIZE: z.string().transform(Number).default("20"),
-  DATABASE_IDLE_TIMEOUT: z.string().transform(Number).default("30000"),
+  DATABASE_CONNECTION_POOL_SIZE: z.string().transform(Number).default(20),
+  DATABASE_IDLE_TIMEOUT: z.string().transform(Number).default(30000),
 
   // Supabase (optional, for project preview)
   SUPABASE_URL: z.string().url().optional(),
@@ -57,8 +57,8 @@ export function getEnv(): Env {
     return validatedEnv;
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const missingVars = error.errors
-        .map((e) => `${e.path.join(".")}: ${e.message}`)
+      const missingVars = (error as z.ZodError).issues
+        .map((e: z.ZodIssue) => `${e.path.join(".")}: ${e.message}`)
         .join("\n");
       throw new Error(`Environment validation failed:\n${missingVars}`);
     }

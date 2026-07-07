@@ -67,16 +67,13 @@ export function handleError(
   const requestId = (reply.request as any).id;
 
   if (isAppError(error)) {
-    logger?.warn(
-      {
-        requestId,
-        code: error.code,
-        statusCode: error.statusCode,
-        message: error.message,
-        details: error.details,
-      },
-      "[AppError]",
-    );
+    logger?.warn("[AppError]", {
+      requestId,
+      code: error.code,
+      statusCode: error.statusCode,
+      message: error.message,
+      details: error.details,
+    });
 
     return reply.status(error.statusCode).send({
       error: error.code,
@@ -87,14 +84,11 @@ export function handleError(
   }
 
   if (error instanceof Error) {
-    logger?.error(
-      {
-        requestId,
-        message: error.message,
-        stack: error.stack,
-      },
-      "[UnhandledError]",
-    );
+    logger?.error("[UnhandledError]", {
+      requestId,
+      message: error.message,
+      stack: error.stack,
+    });
 
     return reply.status(500).send({
       error: "INTERNAL_SERVER_ERROR",
@@ -103,10 +97,7 @@ export function handleError(
     });
   }
 
-  logger?.error(
-    { requestId, error },
-    "[UnknownError]",
-  );
+  logger?.error("[UnknownError]", { requestId, error });
 
   return reply.status(500).send({
     error: "INTERNAL_SERVER_ERROR",

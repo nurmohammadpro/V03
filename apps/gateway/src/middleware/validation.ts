@@ -45,7 +45,7 @@ export function sendValidationError(
   error: ZodError,
   statusCode: number = 400,
 ) {
-  const formatted = error.errors.map((e) => ({
+  const formatted = error.issues.map((e: z.ZodIssue) => ({
     path: e.path.join("."),
     message: e.message,
     code: e.code,

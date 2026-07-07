@@ -1,51 +1,41 @@
-import { Pool, PoolConfig } from "postgres";
+import postgres from "postgres";
 import { getEnv } from "../utils/env";
 import { getLogger } from "../utils/logger";
 
-let pool: Pool | null = null;
+let sql: ReturnType<typeof postgres> | null = null;
 
-export function createConnectionPool(): Pool {
+export function createConnectionPool(): ReturnType<typeof postgres> {
   const env = getEnv();
   const logger = getLogger();
 
-  const config: PoolConfig = {
-    max: env.DATABASE_CONNECTION_POOL_SIZE,
-    idleTimeoutMillis: env.DATABASE_IDLE_TIMEOUT,
-    connectionTimeoutMillis: 30000,
-  };
-
   logger.info("Creating database connection pool", {
-    maxConnections: config.max,
-    idleTimeout: config.idleTimeoutMillis,
+    maxConnections: env.DATABASE_CONNECTION_POOL_SIZE,
+    idleTimeout: env.DATABASE_IDLE_TIMEOUT,
   });
 
-  const newPool = new Pool(
-    {
-      url: env.DATABASE_URL,
-    },
-    config,
-  );
-
-  newPool.on("error", (err) => {
-    logger.error("Unexpected error on idle client", { error: err.message });
+  const connection = postgres({
+    host: env.DATABASE_URL,
+    max: env.DATABASE_CONNECTION_POOL_SIZE,
+    idle_timeout: env.DATABASE_IDLE_TIMEOUT,
+    connect_timeout: 30,
   });
 
-  return newPool;
+  return connection;
 }
 
-export function getConnectionPool(): Pool {
-  if (!pool) {
-    pool = createConnectionPool();
+export function getConnectionPool(): ReturnType<typeof postgres> {
+  if (!sql) {
+    sql = createConnectionPool();
   }
-  return pool;
+  return sql;
 }
 
 export async function testDatabaseConnection(): Promise<boolean> {
   const logger = getLogger();
   try {
     const connection = getConnectionPool();
-    const result = await connection.query("SELECT NOW()");
-    if (result.length > 0) {
+    const result = await connection`SELECT NOW()`;
+    if (result && result.length > 0) {
       logger.info("Database connection test successful");
       return true;
     }
@@ -59,10 +49,10 @@ export async function testDatabaseConnection(): Promise<boolean> {
 
 export async function closeConnectionPool(): Promise<void> {
   const logger = getLogger();
-  if (pool) {
+  if (sql) {
     logger.info("Closing database connection pool");
-    await pool.end();
-    pool = null;
+    await sql.end();
+    sql = null;
   }
 }
 

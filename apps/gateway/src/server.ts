@@ -1,5 +1,4 @@
 import Fastify, { FastifyRequest } from "fastify";
-import helmet from "helmet";
 import cors from "@fastify/cors";
 import cookie from "@fastify/cookie";
 import rateLimit from "@fastify/rate-limit";
@@ -55,30 +54,11 @@ async function start() {
       trustProxy: true,
       requestIdLogLabel: "reqId",
       disableRequestLogging: false,
-      logger: logger,
+      logger: logger as any,
     });
 
     // ── Step 5: Register security middleware ───────────
     logger.info("Registering security middleware...");
-    
-    // Helmet for security headers
-    await app.register(helmet, {
-      contentSecurityPolicy: {
-        directives: {
-          defaultSrc: ["'self'"],
-          scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "blob:", "https://cdn.jsdelivr.net"],
-          styleSrc: ["'self'", "'unsafe-inline'", "https://cdn.jsdelivr.net"],
-          imgSrc: ["'self'", "data:", "blob:"],
-          fontSrc: ["'self'", "data:"],
-          connectSrc: ["'self'", "https://*.supabase.co", "wss://*.supabase.co"],
-          frameSrc: ["'self'", "blob:"],
-          objectSrc: ["'none'"],
-          baseUri: ["'self'"],
-        },
-      },
-      referrerPolicy: { policy: "strict-origin-when-cross-origin" },
-      crossOriginEmbedderPolicy: false,
-    });
 
     // Global Rate Limiting
     await app.register(rateLimit, {
@@ -143,8 +123,8 @@ async function start() {
 
     // ── Step 5b: Register error handler and logging ─────
     logger.info("Registering error handling and logging...");
-    await registerErrorHandler(app);
-    await registerLoggingMiddleware(app);
+    await registerErrorHandler(app as any);
+    await registerLoggingMiddleware(app as any);
 
     // ── Step 6: Register routes ────────────────────────
     logger.info("Registering routes...");
@@ -175,7 +155,7 @@ async function start() {
       });
     }
 
-    registerPreviewWebsocketProxy(app.server);
+    registerPreviewWebsocketProxy(app.server as any);
 
     try {
       await runnerQueue.rehydrateFromDb();
