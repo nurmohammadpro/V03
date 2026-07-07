@@ -1,0 +1,181 @@
+groups:
+  - name: v03_alerts
+    interval: 30s
+    rules:
+      # ────────────────────────────────────────────────────────────────────────
+      # Critical Alerts (Page on-call)
+      # ────────────────────────────────────────────────────────────────────────
+
+      - alert: GatewayDown
+        expr: up{job="v03-gateway"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "V03 Gateway is down"
+          description: "Gateway instance {{ $labels.instance }} has been down for over 1 minute"
+          runbook_url: "https://docs.v03.tech/runbook#gateway-down"
+
+      - alert: HighErrorRate
+        expr: |
+          (sum(rate(http_requests_total{status=~"5.."}[5m])) by (job)) /
+          (sum(rate(http_requests_total[5m])) by (job)) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} for {{ $labels.job }}"
+          runbook_url: "https://docs.v03.tech/runbook#high-error-rate"
+
+      - alert: DatabaseDown
+        expr: pg_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "PostgreSQL database is down"
+          description: "Database {{ $labels.instance }} is unreachable"
+          runbook_url: "https://docs.v03.tech/runbook#database-down"
+
+      - alert: DiskSpaceHigh
+        expr: (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) < 0.15
+        for: 5m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Low disk space"
+          description: "Disk space on {{ $labels.instance }} is below 15%"
+          runbook_url: "https://docs.v03.tech/runbook#low-disk-space"
+
+      - alert: MemoryExhausted
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.9
+        for: 5m
+        labels:
+          severity: critical
+          team: platform
+        annotations:
+          summary: "Memory utilization critical"
+          description: "Memory usage on {{ $labels.instance }} is above 90%"
+          runbook_url: "https://docs.v03.tech/runbook#memory-exhausted"
+
+      # ────────────────────────────────────────────────────────────────────────
+      # High Priority Alerts (Slack notification)
+      # ────────────────────────────────────────────────────────────────────────
+
+      - alert: SlowRequests
+        expr: histogram_quantile(0.99, http_request_duration_ms) > 1000
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Slow request latency"
+          description: "99th percentile request latency is {{ $value }}ms"
+          runbook_url: "https://docs.v03.tech/runbook#slow-requests"
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Memory usage is high"
+          description: "Memory usage on {{ $labels.instance }} is above 80%"
+          runbook_url: "https://docs.v03.tech/runbook#high-memory"
+
+      - alert: HighDatabaseConnections
+        expr: pg_stat_activity_count > 80
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "High database connection count"
+          description: "Database has {{ $value }} active connections"
+          runbook_url: "https://docs.v03.tech/runbook#high-db-connections"
+
+      - alert: ErrorRateElevated
+        expr: |
+          (sum(rate(http_requests_total{status=~"5.."}[5m])) by (job)) /
+          (sum(rate(http_requests_total[5m])) by (job)) > 0.05
+        for: 5m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Elevated error rate"
+          description: "Error rate is {{ $value | humanizePercentage }} for {{ $labels.job }}"
+          runbook_url: "https://docs.v03.tech/runbook#high-error-rate"
+
+      - alert: SlowDatabase
+        expr: rate(pg_stat_statements_mean_exec_time[5m]) > 1000
+        for: 10m
+        labels:
+          severity: warning
+          team: platform
+        annotations:
+          summary: "Database queries are slow"
+          description: "Average query execution time is {{ $value }}ms"
+          runbook_url: "https://docs.v03.tech/runbook#slow-queries"
+
+      # ────────────────────────────────────────────────────────────────────────
+      # Informational Alerts (Channel notification)
+      # ────────────────────────────────────────────────────────────────────────
+
+      - alert: RecentDeployment
+        expr: deployment_info != 0 offset 5m
+        labels:
+          severity: info
+          team: platform
+        annotations:
+          summary: "Recent deployment detected"
+          description: "Gateway was deployed recently. Monitor for issues."
+
+      - alert: CertificateExpiringSoon
+        expr: ssl_cert_not_after - time() < 30 * 86400
+        labels:
+          severity: info
+          team: platform
+        annotations:
+          summary: "SSL certificate expiring soon"
+          description: "Certificate expires in {{ $value | humanizeDuration }}"
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # SLA Recording Rules
+  # ──────────────────────────────────────────────────────────────────────────
+
+  - name: sla_recording
+    interval: 30s
+    rules:
+      - record: sla:request_success_rate:5m
+        expr: |
+          (sum(rate(http_requests_total{status=~"2.."}[5m])) by (job)) /
+          (sum(rate(http_requests_total[5m])) by (job))
+
+      - record: sla:request_latency_p99:5m
+        expr: histogram_quantile(0.99, rate(http_request_duration_ms[5m]))
+
+      - record: sla:uptime:5m
+        expr: up{job="v03-gateway"}
+
+  # ──────────────────────────────────────────────────────────────────────────
+  # Performance Recording Rules
+  # ──────────────────────────────────────────────────────────────────────────
+
+  - name: performance_recording
+    interval: 30s
+    rules:
+      - record: instance:node_cpu:rate5m
+        expr: rate(node_cpu_seconds_total[5m])
+
+      - record: instance:node_memory_util:ratio
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes))
+
+      - record: instance:node_disk_util:ratio
+        expr: (1 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}))
