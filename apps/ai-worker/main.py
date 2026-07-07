@@ -38,21 +38,84 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+NEXT_FALLBACK_PACKAGE_JSON = json.dumps(
+    {
+        "name": "v03-nextjs",
+        "private": True,
+        "version": "1.0.0",
+        "scripts": {
+            "dev": "next dev -p 3000",
+            "build": "next build",
+            "start": "next start -p 3000",
+        },
+        "dependencies": {
+            "next": "^15.3.4",
+            "react": "^19.0.0",
+            "react-dom": "^19.0.0",
+            "@prisma/client": "^6.0.0",
+        },
+        "devDependencies": {
+            "@types/node": "^22.0.0",
+            "@types/react": "^19.0.0",
+            "@types/react-dom": "^19.0.0",
+            "autoprefixer": "^10.4.20",
+            "postcss": "^8.4.49",
+            "prisma": "^6.0.0",
+            "tailwindcss": "^3.4.17",
+            "typescript": "^5.5.0",
+        },
+    },
+    indent=2,
+)
+
+NEXT_FALLBACK_TSCONFIG_JSON = json.dumps(
+    {
+        "compilerOptions": {
+            "target": "es2017",
+            "lib": ["dom", "dom.iterable", "esnext"],
+            "allowJs": False,
+            "skipLibCheck": True,
+            "strict": True,
+            "forceConsistentCasingInFileNames": True,
+            "noEmit": True,
+            "esModuleInterop": True,
+            "module": "esnext",
+            "moduleResolution": "bundler",
+            "resolveJsonModule": True,
+            "isolatedModules": True,
+            "jsx": "preserve",
+            "incremental": True,
+            "plugins": [{"name": "next"}],
+        },
+        "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+        "exclude": ["node_modules"],
+    },
+    indent=2,
+)
+
 FRAMEWORK_TEMPLATES = {
     "Next.js": {
         "text": "Generating a Next.js project with App Router, TypeScript, Tailwind CSS, and Prisma... Done!",
         "files": [
             {"name": "src", "path": "src", "type": "directory", "children": [
                 {"name": "app", "path": "src/app", "type": "directory", "children": [
-                    {"name": "layout.tsx", "path": "src/app/layout.tsx", "type": "file", "content": "export default function RootLayout({ children }: { children: React.ReactNode }) {\n  return (\n    <html lang=\"en\">\n      <body>{children}</body>\n    </html>\n  );\n}", "language": "tsx"},
-                    {"name": "page.tsx", "path": "src/app/page.tsx", "type": "file", "content": "export default function Home() {\n  return <h1>Hello V03</h1>;\n}", "language": "tsx"},
+                    {"name": "layout.tsx", "path": "src/app/layout.tsx", "type": "file", "content": "import './globals.css';\n\nexport default function RootLayout({ children }: { children: React.ReactNode }) {\n  return (\n    <html lang=\"en\">\n      <body>{children}</body>\n    </html>\n  );\n}", "language": "tsx"},
+                    {"name": "page.tsx", "path": "src/app/page.tsx", "type": "file", "content": "export default function Home() {\n  return (\n    <main className=\"min-h-screen bg-zinc-950 text-zinc-100\">\n      <div className=\"mx-auto flex min-h-screen max-w-4xl flex-col items-center justify-center px-6 py-24 text-center\">\n        <p className=\"mb-4 text-sm uppercase tracking-[0.3em] text-emerald-400\">V03 fallback scaffold</p>\n        <h1 className=\"text-4xl font-semibold tracking-tight sm:text-6xl\">Hello V03</h1>\n        <p className=\"mt-5 max-w-2xl text-base leading-7 text-zinc-400 sm:text-lg\">\n          This fallback project is intentionally minimal, but it is fully bootable inside Docker so preview can still render.\n        </p>\n        <div className=\"mt-10 rounded-2xl border border-zinc-800 bg-zinc-900/60 px-5 py-4 text-sm text-zinc-300 shadow-2xl shadow-black/20\">\n          Next.js • App Router • TypeScript • Tailwind CSS\n        </div>\n      </div>\n    </main>\n  );\n}", "language": "tsx"},
+                    {"name": "globals.css", "path": "src/app/globals.css", "type": "file", "content": "@tailwind base;\n@tailwind components;\n@tailwind utilities;\n\n:root {\n  color-scheme: dark;\n}\n\nhtml,\nbody {\n  margin: 0;\n  min-height: 100%;\n  background: #09090b;\n}\n\n* {\n  box-sizing: border-box;\n}\n", "language": "css"},
                 ]},
                 {"name": "components", "path": "src/components", "type": "directory", "children": [
                     {"name": "Header.tsx", "path": "src/components/Header.tsx", "type": "file", "content": "export default function Header() {\n  return <header>V03 App</header>;\n}", "language": "tsx"},
                 ]},
             ]},
-            {"name": "package.json", "path": "package.json", "type": "file", "content": json.dumps({"name": "v03-nextjs", "version": "1.0.0", "scripts": {"dev": "next dev", "build": "next build"}}, indent=2), "language": "json"},
-            {"name": "tsconfig.json", "path": "tsconfig.json", "type": "file", "content": json.dumps({"compilerOptions": {"target": "es2017", "lib": ["dom", "dom.iterable", "esnext"], "module": "esnext", "strict": True}}, indent=2), "language": "json"},
+            {"name": "next.config.mjs", "path": "next.config.mjs", "type": "file", "content": "/** @type {import('next').NextConfig} */\nconst nextConfig = {};\n\nexport default nextConfig;\n", "language": "js"},
+            {"name": "postcss.config.mjs", "path": "postcss.config.mjs", "type": "file", "content": "export default {\n  plugins: {\n    tailwindcss: {},\n    autoprefixer: {},\n  },\n};\n", "language": "js"},
+            {"name": "tailwind.config.ts", "path": "tailwind.config.ts", "type": "file", "content": "import type { Config } from 'tailwindcss';\n\nconst config: Config = {\n  content: ['./src/**/*.{js,ts,jsx,tsx,mdx}'],\n  theme: {\n    extend: {},\n  },\n  plugins: [],\n};\n\nexport default config;\n", "language": "ts"},
+            {"name": "package.json", "path": "package.json", "type": "file", "content": NEXT_FALLBACK_PACKAGE_JSON, "language": "json"},
+            {"name": "tsconfig.json", "path": "tsconfig.json", "type": "file", "content": NEXT_FALLBACK_TSCONFIG_JSON, "language": "json"},
+            {"name": "next-env.d.ts", "path": "next-env.d.ts", "type": "file", "content": "/// <reference types=\"next\" />\n/// <reference types=\"next/image-types/global\" />\n\n// NOTE: This file should not be edited\n// see https://nextjs.org/docs/app/building-your-application/configuring/typescript for more information.\n", "language": "ts"},
+            {"name": "prisma", "path": "prisma", "type": "directory", "children": [
+                {"name": "schema.prisma", "path": "prisma/schema.prisma", "type": "file", "content": "generator client {\n  provider = \"prisma-client-js\"\n}\n\ndatasource db {\n  provider = \"postgresql\"\n  url      = env(\"DATABASE_URL\")\n}\n\nmodel User {\n  id    Int     @id @default(autoincrement())\n  email String  @unique\n  name  String?\n}\n", "language": "prisma"},
+            ]},
         ],
     },
     "MERN": {
