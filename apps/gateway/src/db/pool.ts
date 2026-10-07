@@ -13,8 +13,17 @@ export function createConnectionPool(): ReturnType<typeof postgres> {
     idleTimeout: env.DATABASE_IDLE_TIMEOUT,
   });
 
-  const connection = postgres({
-    host: env.DATABASE_URL,
+  // DATABASE_RUNTIME_URL (when present) takes precedence, matching db/index.ts
+  const connectionString = process.env.DATABASE_RUNTIME_URL || env.DATABASE_URL;
+
+  // Supabase's transaction pooler (port 6543) does not support prepared statements
+  const shouldDisablePrepare =
+    process.env.DATABASE_DISABLE_PREPARE === "true" ||
+    connectionString.includes("pooler.supabase.com") ||
+    connectionString.includes(":6543/");
+
+  const connection = postgres(connectionString, {
+    prepare: !shouldDisablePrepare,
     max: env.DATABASE_CONNECTION_POOL_SIZE,
     idle_timeout: env.DATABASE_IDLE_TIMEOUT,
     connect_timeout: 30,
