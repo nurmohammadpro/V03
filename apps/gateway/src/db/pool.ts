@@ -41,17 +41,32 @@ export function getConnectionPool(): ReturnType<typeof postgres> {
 
 export async function testDatabaseConnection(): Promise<boolean> {
   const logger = getLogger();
-  try {
+
+  // A single boot-time query can hang forever if the pooler stalls the
+  // connection (TCP connect succeeds but TLS/auth never completes), so race
+  // each attempt against a timeout and retry before giving up.
+  for (let attempt = 1; attempt <= 3; attempt++) {
     const connection = getConnectionPool();
-    const result = await connection`SELECT NOW()`;
-    if (result && result.length > 0) {
-      logger.info("Database connection test successful");
-      return true;
+    try {
+      const result = await Promise.race([
+        connection`SELECT NOW()`,
+        new Promise<never>((_, reject) =>
+          setTimeout(() => reject(new Error(`query timed out (attempt ${attempt})`)), 15000),
+        ),
+      ]);
+      if (result && result.length > 0) {
+        logger.info("Database connection test successful");
+        return true;
+      }
+    } catch (error) {
+      logger.error("Database connection test failed", {
+        attempt,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      if (attempt < 3) {
+        await new Promise((resolve) => setTimeout(resolve, 2000));
+      }
     }
-  } catch (error) {
-    logger.error("Database connection test failed", {
-      error: error instanceof Error ? error.message : String(error),
-    });
   }
   return false;
 }
