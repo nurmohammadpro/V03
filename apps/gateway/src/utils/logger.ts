@@ -64,11 +64,21 @@ export function initializeLogger() {
   return logger;
 }
 
-// Log levels: error, warn, info, debug, trace
+// Fastify requires fatal/error/warn/info/debug/trace/child on a custom logger.
+// Winston has no fatal or trace levels, so they map to error/debug.
 export const logger = {
+  fatal: (message: string, meta?: any) => getLogger().error(message, meta),
   error: (message: string, meta?: any) => getLogger().error(message, meta),
   warn: (message: string, meta?: any) => getLogger().warn(message, meta),
   info: (message: string, meta?: any) => getLogger().info(message, meta),
   debug: (message: string, meta?: any) => getLogger().debug(message, meta),
   trace: (message: string, meta?: any) => getLogger().debug(message, meta),
+  child: (bindings: Record<string, any>) => ({
+    fatal: (message: string, meta?: any) => getLogger().error(message, { ...bindings, ...meta }),
+    error: (message: string, meta?: any) => getLogger().error(message, { ...bindings, ...meta }),
+    warn: (message: string, meta?: any) => getLogger().warn(message, { ...bindings, ...meta }),
+    info: (message: string, meta?: any) => getLogger().info(message, { ...bindings, ...meta }),
+    debug: (message: string, meta?: any) => getLogger().debug(message, { ...bindings, ...meta }),
+    trace: (message: string, meta?: any) => getLogger().debug(message, { ...bindings, ...meta }),
+  }),
 };
