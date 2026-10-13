@@ -54,7 +54,10 @@ async function start() {
       trustProxy: true,
       requestIdLogLabel: "reqId",
       disableRequestLogging: false,
-      logger: logger as any,
+      // Fastify v5: `logger` only accepts a config object; a pre-built
+      // logger instance goes in `loggerInstance`. Runtime has fatal/trace
+      // via custom winston levels; the types don't declare them.
+      loggerInstance: logger as any,
     });
 
     // ── Step 5: Register security middleware ───────────
