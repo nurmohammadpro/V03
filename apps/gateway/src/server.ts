@@ -1,4 +1,4 @@
-import Fastify, { FastifyRequest } from "fastify";
+import Fastify, { FastifyInstance, FastifyRequest } from "fastify";
 import cors from "@fastify/cors";
 import cookie from "@fastify/cookie";
 import rateLimit from "@fastify/rate-limit";
@@ -42,6 +42,22 @@ async function start() {
     console.log("[v03] Initializing logger...");
     const logger = initializeLogger();
 
+    // Register shutdown handlers before touching the database so a SIGTERM
+    // during startup (e.g. the healthcheck killing a slow boot) still closes
+    // the connection pool instead of leaking Supabase sessions.
+    let app: FastifyInstance | null = null;
+    const shutdown = async (signal: string) => {
+      logger.info(`Received ${signal}, starting graceful shutdown...`);
+      try {
+        if (app) await app.close();
+        await closeConnectionPool();
+      } finally {
+        process.exit(0);
+      }
+    };
+    process.on("SIGTERM", () => void shutdown("SIGTERM"));
+    process.on("SIGINT", () => void shutdown("SIGINT"));
+
     // ── Step 3: Test database connection ───────────────
     logger.info("Testing database connection...");
     const dbConnected = await testDatabaseConnection();
@@ -50,7 +66,7 @@ async function start() {
     }
 
     // ── Step 4: Create Fastify instance ────────────────
-    const app = Fastify({
+    app = Fastify({
       trustProxy: true,
       requestIdLogLabel: "reqId",
       disableRequestLogging: false,
@@ -185,17 +201,6 @@ async function start() {
       );
     }, 30_000);
     previewTtlInterval.unref?.();
-
-    // ── Step 8: Graceful shutdown ──────────────────────
-    const signals = ["SIGTERM", "SIGINT"];
-    for (const signal of signals) {
-      process.on(signal, async () => {
-        logger.info(`Received ${signal}, starting graceful shutdown...`);
-        await app.close();
-        await closeConnectionPool();
-        process.exit(0);
-      });
-    }
 
     // Handle uncaught exceptions
     process.on("uncaughtException", (err) => {

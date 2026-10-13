@@ -24,8 +24,12 @@ export function createConnectionPool(): ReturnType<typeof postgres> {
 
   const connection = postgres(connectionString, {
     prepare: !shouldDisablePrepare,
-    max: env.DATABASE_CONNECTION_POOL_SIZE,
-    idle_timeout: env.DATABASE_IDLE_TIMEOUT,
+    // Supabase session-mode pooler allows only 15 clients per user (free
+    // tier); cap well below it so several containers can coexist.
+    max: Math.min(env.DATABASE_CONNECTION_POOL_SIZE, 5),
+    // postgres.js measures idle_timeout in seconds; the env value is
+    // expressed in milliseconds.
+    idle_timeout: Math.round(env.DATABASE_IDLE_TIMEOUT / 1000),
     connect_timeout: 30,
   });
 
