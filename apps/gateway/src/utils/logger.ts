@@ -1,10 +1,34 @@
 import winston from "winston";
 import { getEnv } from "./env";
 
+winston.addColors({
+  fatal: "red",
+  error: "red",
+  warn: "yellow",
+  info: "green",
+  http: "magenta",
+  verbose: "cyan",
+  debug: "blue",
+  trace: "gray",
+});
+
 function createLogger() {
   const env = getEnv();
 
   const logger = winston.createLogger({
+    // Fastify validates custom loggers and requires fatal/error/warn/info/
+    // debug/trace(/child). Winston doesn't ship fatal or trace, so declare
+    // them as custom levels; child() is built into winston.
+    levels: {
+      fatal: 0,
+      error: 1,
+      warn: 2,
+      info: 3,
+      http: 4,
+      verbose: 5,
+      debug: 6,
+      trace: 7,
+    },
     level: env.LOG_LEVEL,
     format: winston.format.combine(
       winston.format.timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
@@ -64,21 +88,11 @@ export function initializeLogger() {
   return logger;
 }
 
-// Fastify requires fatal/error/warn/info/debug/trace/child on a custom logger.
-// Winston has no fatal or trace levels, so they map to error/debug.
+// Log levels: error, warn, info, debug, trace
 export const logger = {
-  fatal: (message: string, meta?: any) => getLogger().error(message, meta),
   error: (message: string, meta?: any) => getLogger().error(message, meta),
   warn: (message: string, meta?: any) => getLogger().warn(message, meta),
   info: (message: string, meta?: any) => getLogger().info(message, meta),
   debug: (message: string, meta?: any) => getLogger().debug(message, meta),
   trace: (message: string, meta?: any) => getLogger().debug(message, meta),
-  child: (bindings: Record<string, any>) => ({
-    fatal: (message: string, meta?: any) => getLogger().error(message, { ...bindings, ...meta }),
-    error: (message: string, meta?: any) => getLogger().error(message, { ...bindings, ...meta }),
-    warn: (message: string, meta?: any) => getLogger().warn(message, { ...bindings, ...meta }),
-    info: (message: string, meta?: any) => getLogger().info(message, { ...bindings, ...meta }),
-    debug: (message: string, meta?: any) => getLogger().debug(message, { ...bindings, ...meta }),
-    trace: (message: string, meta?: any) => getLogger().debug(message, { ...bindings, ...meta }),
-  }),
 };
